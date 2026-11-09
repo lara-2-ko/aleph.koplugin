@@ -6,6 +6,61 @@ Aleph works with books and reading data on your device. No Aleph account or Book
 
 **This is a modified version of BookOrbit and is not an official BookOrbit release. Modified 9 November 2026.**
 
+## Screenshots
+
+<table>
+  <tr>
+    <td><img src="screenshots/home.png" alt="Home dashboard" width="260"></td>
+    <td><img src="screenshots/book-details.png" alt="Book details" width="260"></td>
+    <td><img src="screenshots/series.png" alt="Series reading order" width="260"></td>
+  </tr>
+  <tr>
+    <td align="center">Home</td>
+    <td align="center">Book details</td>
+    <td align="center">Series</td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/authors.png" alt="Authors list with portraits" width="260"></td>
+    <td><img src="screenshots/library-sort-filter.png" alt="Library sort and filter" width="260"></td>
+    <td><img src="screenshots/top-menu-controls.png" alt="Top menu Controls tab" width="260"></td>
+  </tr>
+  <tr>
+    <td align="center">Authors</td>
+    <td align="center">Sort and filter</td>
+    <td align="center">Top menu controls</td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/reader-menu.png" alt="Reader menu, This book" width="260"></td>
+    <td><img src="screenshots/reader-menu-also-reading.png" alt="Reader menu, Also reading" width="260"></td>
+    <td><img src="screenshots/bookmarks.png" alt="Bookmarks with filters" width="260"></td>
+  </tr>
+  <tr>
+    <td align="center">Reader menu</td>
+    <td align="center">Also reading</td>
+    <td align="center">Bookmarks</td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/highlight-actions.png" alt="Highlight actions" width="260"></td>
+    <td><img src="screenshots/highlight-style.png" alt="Highlight style and colour" width="260"></td>
+    <td><img src="screenshots/highlight-colour-wheel.png" alt="Highlight colour wheel" width="260"></td>
+  </tr>
+  <tr>
+    <td align="center">Highlight actions</td>
+    <td align="center">Highlight style and colour</td>
+    <td align="center">Custom colours</td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/pinned-picture.png" alt="Pinned picture drawer" width="260"></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td align="center">Pinned pictures</td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+
 ## Installation
 
 1. Download **aleph.koplugin.zip** from this repository's Releases page.
@@ -57,7 +112,7 @@ Open **Aleph → Menu → Settings**.
 | Home → Starting layout | Reader, Stats or Library starting order; replaces customized pages after confirmation | Reader |
 | Home → Tile style | Outline, Soft or Ink | Outline |
 | Home → Colour | Accents, Tinted or Off; available on color-enabled screens | Accents; grayscale on monochrome screens |
-| Home → Interface size | 1×, 1.05×, 1.1×, 1.15× or 1.2× | 1× |
+| Home → Interface size | 1×, 1.05×, 1.1×, 1.15× or 1.2× | 1.05× |
 | Home → Reset Home | Restore the selected starting layout and outline tiles | Confirmation required |
 | Library folders | Add/remove roots, refresh or cancel a scan | Home folder if configured, plus reading history |
 | Book margins | Enable header/footer statistics and customize their content | Enabled; both lines on |
@@ -136,7 +191,7 @@ Quick Top Bar adds Controls and Apps to the top menu. Controls include supported
 | KOSyncthing+ | Optional start/quick-sync control; synchronization is performed by that plugin |
 | Bookshelf | Optional book-details fallback for the current-book top-bar action |
 
-The standalone **Quick Top Bar** takes precedence over Aleph's built-in top bar. Choose which implementation to use. Remove/disable the old **readingboard.koplugin** after migration. Other plugins or patches that replace the same reader menus, highlight panels or top menu can conflict; their combinations have not all been tested.
+The standalone **Quick Top Bar** takes precedence over Aleph's built-in top bar. Choose which implementation to use. Other plugins or patches that replace the same reader menus, highlight panels or top menu can conflict; their combinations have not all been tested.
 
 ## Network use and stored data
 
