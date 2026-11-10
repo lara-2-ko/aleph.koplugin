@@ -42,17 +42,41 @@ local function colorFor(index)
 end
 
 -- Gives the open book its page color.
+-- Whether a colour can be a page: light enough for black text (a page
+-- background is paper, not a dark theme; night mode is KOReader's own).
+function Config.isPageColor(hex)
+    local r, g, b = tostring(hex or ""):match("^#?(%x%x)(%x%x)(%x%x)$")
+    if not r then return false end
+    local lum = (0.299 * tonumber(r, 16) + 0.587 * tonumber(g, 16) + 0.114 * tonumber(b, 16)) / 255
+    return lum >= 0.6
+end
+
+-- The page colour to use now: white in night mode (KOReader inverts the
+-- whole screen there, so a coloured page would be inverted too: a dark one
+-- came out as a white page that flashed on every turn) and white for a
+-- colour too dark to read on.
+function Config.effectiveColor(index)
+    local hex = colorFor(tonumber(index) or 1)
+    if Screen.night_mode or not Config.isPageColor(hex) then return "#FFFFFF" end
+    return hex
+end
+
 function Config.applyBackground(ui, index)
     index = tonumber(index) or 1
-    local hex = colorFor(index)
+    local hex = Config.effectiveColor(index)
     local document = ui and ui.document
     if not document then return end
     if document.setBackgroundColor then
         pcall(document.setBackgroundColor, document, tonumber(hex:sub(2), 16))
     end
     if ui.view then
-        local ok, color = pcall(Blitbuffer.colorFromString, hex)
-        if ok and color then ui.view.page_bgcolor = color end
+        if hex == "#FFFFFF" then
+            -- KOReader's own page colour, as without Aleph.
+            ui.view.page_bgcolor = nil
+        else
+            local ok, color = pcall(Blitbuffer.colorFromString, hex)
+            if ok and color then ui.view.page_bgcolor = color end
+        end
     end
     if ui.rolling and ui.document.configurable then
         ui:handleEvent(Event:new("UpdatePos"))
@@ -67,11 +91,22 @@ function Config.applySaved(ui)
     if index and index ~= 1 then Config.applyBackground(ui, index) end
 end
 
+-- Night mode switched: the book's colour goes (or comes back) with it.
+function Config.nightChanged(ui)
+    local configurable = ui and ui.document and ui.document.configurable
+    local index = configurable and tonumber(configurable.rb_page_background)
+    if index and index ~= 1 then Config.applyBackground(ui, index) end
+end
+
 function Config.pickCustom(ui, done)
     local current = colorFor(5)
     require("aleph_color_wheel").open{
         title = _("Page color"), hex = current,
         on_use = function(hex)
+            if not Config.isPageColor(hex) then
+                pcall(function() require("aleph_toast").show(_("Too dark for a page: pick a lighter colour. Night mode makes pages dark."), { icon = "triangle-alert" }) end)
+                return
+            end
             local settings = G_reader_settings:readSetting("aleph")
             if type(settings) ~= "table" then settings = {}; G_reader_settings:saveSetting("aleph", settings) end
             settings.page_bg_custom = hex

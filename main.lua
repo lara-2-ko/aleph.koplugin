@@ -182,6 +182,17 @@ function Board:onFileManagerReady()
     if not self.ui.document then openOver(self.ui) end
 end
 -- The Background tab of the reader controls: White, Paper, Sepia, Gray, Custom.
+-- KOReader's night mode on or off: the page colour follows (white at night).
+-- Not consumed, so KOReader still switches night mode itself.
+function Board:onToggleNightMode()
+    if not self.ui or not self.ui.document then return end
+    local ui = self.ui
+    UIManager:nextTick(function()
+        if ui.document then pcall(function() require("aleph_config").nightChanged(ui) end) end
+    end)
+end
+Board.onSetNightMode = Board.onToggleNightMode
+
 function Board:onRBSetPageBackground(index)
     local Config = require("aleph_config")
     if index == 5 then

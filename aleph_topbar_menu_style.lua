@@ -93,7 +93,8 @@ end
 function Mark:paintTo(bb, x, y)
     if not self.checkable then return end
     local radius = floor(Style.px(20) / 2)
-    local cx, cy = x + floor(self.w / 2), y + floor(self.h / 2)
+    -- At the start of its slot; the rest of the slot is the gap to the text.
+    local cx, cy = x + radius + Style.px(1), y + floor(self.h / 2)
     local color = self.enabled and ink.black or ink.g8
     local ring = math.max(1, Style.px(1.5))
     if self.radio then
@@ -196,6 +197,19 @@ local function styleRow(menu, plugin, row)
     if item.checked_func then checked = item.checked_func() end
     local old = holder[1]
     local slot = old:getSize()
+    -- KOReader sizes this slot to its check glyph, which is narrower than
+    -- Aleph's round mark at Aleph's font sizes: the mark ran into the text.
+    -- The slot takes the mark plus a gap, and the text gives up the room.
+    local wanted = Style.px(20) + Style.px(2) + Style.px(12)
+    if slot.w < wanted then
+        local extra = wanted - slot.w
+        slot = { w = wanted, h = slot.h }
+        if holder.dimen then holder.dimen.w = wanted end
+        if text_widget.max_width then
+            local narrower = math.max(Style.px(40), text_widget.max_width - extra)
+            if text_widget.setMaxWidth then text_widget:setMaxWidth(narrower) else text_widget.max_width = narrower end
+        end
+    end
     holder[1] = Mark:new{
         checkable = item.checked_func ~= nil, checked = checked and true or false,
         enabled = enabled ~= false, radio = item.radio and true or false,
@@ -204,11 +218,20 @@ local function styleRow(menu, plugin, row)
     -- The submenu arrow: KOReader appends " ▸" to the text; an icon at the
     -- row's right edge takes its place.
     local text = text_widget.text
-    local plain = type(text) == "string" and text:gsub("%s*[▸◂]%s*$", "") or text
+    -- (Matched as whole characters: a Lua set like [▸◂] works byte by byte
+    -- and would cut a UTF-8 arrow in half.)
+    local plain = text
+    if type(text) == "string" then
+        for _i, arrow in ipairs({ "▸", "◂" }) do
+            local stripped = text:gsub("%s*" .. arrow .. "%s*$", "")
+            if stripped ~= text then plain = stripped; break end
+        end
+    end
     if plain ~= text then
         local icon_size = Style.px(16)
         local row_width = row.dimen.w - 2 * Size.padding.default
-        text_widget.max_width = row_width - slot.w - icon_size - Style.px(8)
+        local max_w = row_width - slot.w - icon_size - Style.px(8)
+        if text_widget.setMaxWidth then text_widget:setMaxWidth(max_w) else text_widget.max_width = max_w end
         text_widget:setText(plain)
         local gap = row_width - slot.w - text_widget:getSize().w - icon_size
         group[3] = HorizontalSpan:new{ width = math.max(0, gap) }

@@ -1,4 +1,19 @@
-# Aleph (formerly Reading Board) — modifications, 2026-11-07 to 2026-11-09
+# Aleph (formerly Reading Board) — modifications, 2026-11-07 to 2026-11-10
+
+## 2026-11-10 — 1.0.1 fixes
+
+- **Page colour and night mode:** a book with a page colour chosen in
+  Reading settings > Background kept that colour in night mode, where
+  KOReader inverts the whole screen; a black custom colour came out as a
+  white page that flashed on every turn, for that book only. The page is now
+  KOReader's own white in night mode (the colour comes back when night mode
+  is switched off), and a colour too dark to read on is never used (the
+  colour wheel says so).
+- **Top menu check marks** no longer touch their text: KOReader sizes the
+  mark's slot to its own check glyph, narrower than Aleph's round mark at
+  Aleph's font sizes. The slot now holds the mark and a gap, and the text
+  gives up the room. A submenu row's "▸" is also removed as a whole
+  character (it was matched byte by byte and could be cut in half).
 
 ## 2026-11-09 — 1.0.0 first release
 
