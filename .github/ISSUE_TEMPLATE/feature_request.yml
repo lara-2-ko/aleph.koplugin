@@ -1,0 +1,21 @@
+name: Feature request
+description: An idea for something Aleph could do
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: What would you like Aleph to do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it would help
+      description: How would you use it? If another plugin or app already does this, mention it.
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Optional, but useful for anything to do with the screen, light or colour.
