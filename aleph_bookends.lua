@@ -14,6 +14,9 @@ left, a middle and a right slot. A slot shows one to three items, joined by
   wifi          the Wi-Fi mark (only while on)   light   ☀ 19
   session       12m read (since the book was opened)
 
+The text is light gray, gray (the default) or black, or a colour of one's
+own on a colour screen, and regular or bold.
+
 Under the header, optionally, a hairline progress line (the read part inked),
 with ticks at the chapters if wanted.
 
@@ -72,6 +75,13 @@ for _i, it in ipairs(Bookends.ITEMS) do ITEM_BY_ID[it.id] = it end
 Bookends.ITEM_BY_ID = ITEM_BY_ID
 
 Bookends.SIZES = { small = 12, medium = 13, large = 15 }
+-- The text's ink: three grays, or a colour of one's own (colour screens).
+Bookends.INKS = { "light", "gray", "black", "custom" }
+local INK_PRESETS = {
+    light = { col = "g6", hex = "#666666" },
+    gray = { col = "g3", hex = "#333333" },
+    black = { col = "black", hex = "#000000" },
+}
 Bookends.LINES = { "none", "progress", "chapters" }
 Bookends.MAX_ITEMS = 3
 
@@ -87,7 +97,13 @@ local DEFAULTS = {
     line = "progress",
     size = "small",
     hide_stock = false,
+    ink = "gray", ink_hex = nil,
+    bold = false,
+    -- How far the top line sits from the top edge and the bottom line from
+    -- the bottom edge, in steps of 2 from where they are by default.
+    top_offset = 0, bottom_offset = 0,
 }
+Bookends.OFFSET_MIN, Bookends.OFFSET_MAX, Bookends.OFFSET_STEP = -6, 40, 2
 
 local function copy(t)
     if type(t) ~= "table" then return t end
@@ -101,7 +117,7 @@ function Bookends.config()
     local stored = G_reader_settings:readSetting("aleph")
     local saved = type(stored) == "table" and type(stored.bookends) == "table" and stored.bookends or {}
     local c = copy(DEFAULTS)
-    for _i, key in ipairs({ "top", "bottom", "line", "size", "hide_stock" }) do
+    for _i, key in ipairs({ "top", "bottom", "line", "size", "hide_stock", "ink", "ink_hex", "bold", "top_offset", "bottom_offset" }) do
         if saved[key] ~= nil then c[key] = saved[key] end
     end
     if type(saved.slots) == "table" then
@@ -119,7 +135,44 @@ function Bookends.config()
         end
     end
     if not Bookends.SIZES[c.size] then c.size = DEFAULTS.size end
+    if not (INK_PRESETS[c.ink] or (c.ink == "custom" and type(c.ink_hex) == "string" and c.ink_hex:match("^#%x%x%x%x%x%x$"))) then
+        c.ink = DEFAULTS.ink
+    end
+    c.bold = c.bold == true
+    for _i, key in ipairs({ "top_offset", "bottom_offset" }) do
+        local v = tonumber(c[key]) or 0
+        c[key] = math.max(Bookends.OFFSET_MIN, math.min(Bookends.OFFSET_MAX, floor(v + 0.5)))
+    end
     return c
+end
+
+-- Whether a colour is light enough that text in it would be hard to read on
+-- a white page.
+function Bookends.tooLight(hex)
+    local r, g, b = tostring(hex or ""):match("#?(%x%x)(%x%x)(%x%x)")
+    if not r then return true end
+    return (0.299 * tonumber(r, 16) + 0.587 * tonumber(g, 16) + 0.114 * tonumber(b, 16)) / 255 > 0.7
+end
+
+function Bookends.colourScreen()
+    local ok, on = pcall(function() return Screen:isColorEnabled() end)
+    return ok and on and true or false
+end
+
+-- The text's colour: { col = a colour for text and shapes, hex = for icons }.
+-- A custom colour on a gray screen becomes the gray of its brightness.
+function Bookends.ink(c)
+    local preset = INK_PRESETS[c.ink]
+    if preset then return { col = INK[preset.col], hex = preset.hex } end
+    local hex = c.ink_hex
+    local Blitbuffer = require("ffi/blitbuffer")
+    if Bookends.colourScreen() then
+        local ok, col = pcall(Blitbuffer.colorFromString, hex)
+        if ok and col then return { col = col, hex = hex } end
+    end
+    local r, g, b = hex:match("#?(%x%x)(%x%x)(%x%x)")
+    local level = floor(0.299 * tonumber(r, 16) + 0.587 * tonumber(g, 16) + 0.114 * tonumber(b, 16) + 0.5)
+    return { col = Blitbuffer.Color8(level), hex = string.format("#%02x%02x%02x", level, level, level) }
 end
 
 -- The settings for drawing, read-only, kept until they change: the bands are
@@ -266,7 +319,7 @@ end
 -- ----------------------------------------------------------------- drawing
 -- The board's battery: an outline, its fill and the nub (as in its status
 -- cluster), the bolt while charging.
-local function battery(v, size, col)
+local function battery(v, size, col, hex)
     local bw, bh = px(size + 7), px(floor(size * 0.85 + 0.5))
     local b = math.max(1, px(1.25))
     local pad = px(1.5)
@@ -274,21 +327,22 @@ local function battery(v, size, col)
     local body = BoardUI.box({ w = bw, h = bh, border = b, border_col = col, radius = px(2.5) },
         BoardUI.hstack({ h = bh - 2 * b }, { BoardUI.space(pad, 1), BoardUI.rect(fill_w, bh - 2 * b - 2 * pad, col, px(1)) }))
     local parts = {}
-    if v.charging then parts[#parts + 1] = BoardUI.icon("zap", px(size + 2), { sw = 1.25 }) end
+    if v.charging then parts[#parts + 1] = BoardUI.icon("zap", px(size + 2), { sw = 1.25, col = hex }) end
     parts[#parts + 1] = BoardUI.hstack({}, { body, BoardUI.rect(px(2), px(4.5), col) })
     return BoardUI.hstack({ gap = px(4) }, parts)
 end
 Bookends.batteryWidget = battery
 
 -- One slot's widget, items joined by " · ".
-local function slotWidget(ids, s, ui, size, col, max_w)
+local function slotWidget(ids, s, ui, size, ink, max_w, bold)
+    local col = ink.col
     local parts = {}
     for _i, id in ipairs(ids) do
         local ok, v = pcall(Bookends.value, id, s, ui)
         if ok and v then
-            if #parts > 0 then parts[#parts + 1] = BoardUI.text("·", { s = size, col = col }) end
-            if v.battery then parts[#parts + 1] = battery(v, size, col) end
-            if v.icon then parts[#parts + 1] = BoardUI.icon(v.icon, px(size + 3), { sw = 2.25, col = "g3" }) end
+            if #parts > 0 then parts[#parts + 1] = BoardUI.text("·", { s = size, col = col, b = bold }) end
+            if v.battery then parts[#parts + 1] = battery(v, size, col, ink.hex) end
+            if v.icon then parts[#parts + 1] = BoardUI.icon(v.icon, px(size + 3), { sw = bold and 2.75 or 2.25, col = ink.hex }) end
             if v.text and v.text ~= "" then
                 parts[#parts + 1] = { text = v.text }
             end
@@ -307,10 +361,10 @@ local function slotWidget(ids, s, ui, size, col, max_w)
     local widgets = {}
     for i, p in ipairs(parts) do
         if p.text then
-            local t = BoardUI.text(p.text, { s = size, col = col, data = true })
+            local t = BoardUI.text(p.text, { s = size, col = col, b = bold, data = true })
             if each and t:getSize().w > each then
                 t:free()
-                t = BoardUI.text(p.text, { s = size, col = col, w = math.max(px(16), each), data = true })
+                t = BoardUI.text(p.text, { s = size, col = col, b = bold, w = math.max(px(16), each), data = true })
             end
             widgets[i] = t
         else
@@ -322,13 +376,13 @@ end
 
 -- A band: left, middle and right; the middle is centred on the page and the
 -- sides have what is left either side of it.
-local function band(slots, s, ui, size, col, w, mx)
+local function band(slots, s, ui, size, ink, w, mx, bold)
     local h = BoardMetrics.lh1(size) + px(2)
-    local middle = slotWidget(slots.middle or {}, s, ui, size, col, floor(w * 0.5))
+    local middle = slotWidget(slots.middle or {}, s, ui, size, ink, floor(w * 0.5), bold)
     local mw = middle and middle:getSize().w or 0
     local side = floor((w - 2 * mx - mw) / 2) - px(12)
-    local left = slotWidget(slots.left or {}, s, ui, size, col, side)
-    local right = slotWidget(slots.right or {}, s, ui, size, col, side)
+    local left = slotWidget(slots.left or {}, s, ui, size, ink, side, bold)
+    local right = slotWidget(slots.right or {}, s, ui, size, ink, side, bold)
     local layers = {}
     local function place(widget, x)
         local wh = widget:getSize().h
@@ -387,22 +441,39 @@ local function progressLine(ui, s, w, mx, ticks)
     return BoardUI.overlay(lw, thick, layers), thick
 end
 
+-- Whether KOReader's status bar draws anything. It can be "on" with every
+-- item and the progress bar turned off: it then still has a height, and the
+-- bottom line sat that much higher over an empty bar.
+local function footerShows(footer)
+    local settings = footer.settings or {}
+    if not settings.disable_progress_bar then return true end
+    if footer.has_no_mode then return false end
+    local text = footer.footer_text and footer.footer_text.text
+    if type(text) == "string" and not text:match("%S") then return false end
+    return true
+end
+Bookends.footerShows = footerShows
+
 -- Where the bands go on this screen (also used by the pin badge).
 function Bookends.geometry(ui)
     local c = Bookends.current()
     local size = Bookends.SIZES[c.size]
     local sw, sh = Screen:getWidth(), Screen:getHeight()
     local text_h = BoardMetrics.lh1(size) + px(2)
-    local top_h = c.top and (px(8) + text_h + ((c.line ~= "none") and (px(5) + px(2)) or 0) + px(4)) or 0
+    local top_y = px(8 + (c.top_offset or 0))
+    local top_h = c.top and (top_y + text_h + ((c.line ~= "none") and (px(5) + px(2)) or 0) + px(4)) or 0
     local footer_h = 0
     local footer = ui and ui.view and ui.view.footer
     if footer and ui.view.footer_visible and not c.hide_stock and footer.getHeight then
-        local ok, height = pcall(footer.getHeight, footer)
-        footer_h = ok and height or 0
+        local ok, shows = pcall(footerShows, footer)
+        if not ok or shows then
+            local ok2, height = pcall(footer.getHeight, footer)
+            footer_h = ok2 and tonumber(height) or 0
+        end
     end
-    local bottom_h = c.bottom and (text_h + px(10)) or 0
+    local bottom_h = c.bottom and (text_h + px(10 + (c.bottom_offset or 0))) or 0
     return {
-        config = c, size = size, sw = sw, sh = sh, text_h = text_h,
+        config = c, size = size, sw = sw, sh = sh, text_h = text_h, top_y = top_y,
         top = Geom:new{ x = 0, y = 0, w = sw, h = top_h },
         bottom = Geom:new{ x = 0, y = sh - footer_h - bottom_h, w = sw, h = bottom_h },
         footer_h = footer_h,
@@ -431,12 +502,12 @@ function Bookends.paint(view, bb)
     local c = g.config
     if not c.top and not c.bottom then return end
     local s = Bookends.state(ui)
-    local col = INK.g3
+    local ink = Bookends.ink(c)
     local mx = math.max(px(18), floor(g.sw * 0.06))
     local widgets = {}
     if c.top then
-        local b = band(c.slots.top, s, ui, g.size, col, g.sw, mx)
-        local y = px(8)
+        local b = band(c.slots.top, s, ui, g.size, ink, g.sw, mx, c.bold)
+        local y = g.top_y
         if b then widgets[#widgets + 1] = { b, 0, y } end
         if c.line ~= "none" then
             local line = progressLine(ui, s, g.sw, mx, c.line == "chapters")
@@ -444,7 +515,7 @@ function Bookends.paint(view, bb)
         end
     end
     if c.bottom then
-        local b = band(c.slots.bottom, s, ui, g.size, col, g.sw, mx)
+        local b = band(c.slots.bottom, s, ui, g.size, ink, g.sw, mx, c.bold)
         if b then widgets[#widgets + 1] = { b, 0, g.bottom.y + px(4) } end
     end
     for _i, w in ipairs(widgets) do
