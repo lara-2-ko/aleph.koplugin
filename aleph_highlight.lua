@@ -343,6 +343,35 @@ end
 -- ends of the highlight. Same actions, in the board's style. Tap an arrow to
 -- move by the current step (a word or a letter); hold one to switch the step
 -- and move a letter, as KOReader does.
+-- The Pin button the pins add to KOReader's text menu, if they did.
+function Highlight.pinButton(hl)
+    local buttons = hl._highlight_buttons
+    return type(buttons) == "table" and buttons["13_rb_pin"] or nil
+end
+
+-- "Pin" or "Unpin" for the page a highlight is on, as that button says.
+function Highlight.pinLabel(hl, it)
+    local make = Highlight.pinButton(hl)
+    local saved = hl.selected_text
+    hl.selected_text = it
+    local ok, button = pcall(make, hl)
+    hl.selected_text = saved
+    return ok and type(button) == "table" and button.text or _("Pin")
+end
+
+-- Pins (or unpins) the page of a highlight, through that same button.
+function Highlight.pin(hl, it)
+    local make = Highlight.pinButton(hl)
+    if not make then return end
+    hl.selected_text = require("util").tableDeepCopy(it)
+    local ok, button = pcall(make, hl)
+    if ok and type(button) == "table" and button.callback then
+        local done, err = pcall(button.callback)
+        if not done then require("logger").warn("Aleph: pin from highlight failed:", err) end
+    end
+    hl.selected_text = nil
+end
+
 function Highlight.openActions(hl, index)
     local util = require("util")
     local function item() return hl.ui.annotation.annotations[index] end
@@ -354,50 +383,50 @@ function Highlight.openActions(hl, index)
             local it = item()
             if not it then p:close(); return BoardUI.overlay(sw, sh, {}) end
             local w = math.min(px(500), sw - 2 * px(12))
-            local pad = px(16)
+            local pad = px(12)
             local iw = w - 2 * pad
             local movable = not it.text_edited
-            -- The five actions, each an icon over its name.
+            -- The actions, each an icon over its name; Pin when pins are on.
             local actions = {
-                { "trash", _("Delete"), "delete" }, { "palette", _("Style & color"), "style" },
-                { "pen-line", _("Note"), "note" }, { "info", _("Details"), "details" }, { "ellipsis", _("More"), "more" },
+                { "trash", _("Delete"), "delete" }, { "palette", _("Style"), "style" },
+                { "pen-line", _("Note"), "note" },
             }
-            local gap = px(8)
-            local cw = floor((iw - 4 * gap) / 5)
-            local ch = px(72)
+            if Highlight.pinButton(hl) then actions[#actions + 1] = { "pin", Highlight.pinLabel(hl, it), "pin" } end
+            actions[#actions + 1] = { "info", _("Details"), "details" }
+            actions[#actions + 1] = { "ellipsis", _("More"), "more" }
+            local n = #actions
+            local gap = px(6)
+            local cw = floor((iw - (n - 1) * gap) / n)
+            local ch = px(58)
             local border = math.max(1, px(1.25))
             local cells = {}
-            for _i, a in ipairs(actions) do
-                local inner = BoardUI.vstack({ w = cw - 2 * border, h = ch - 2 * border, align = "center" }, {
-                    BoardUI.flex(0), BoardUI.icon(a[1], px(24), { sw = 2.25 }), BoardUI.space(nil, px(5)),
-                    BoardUI.text(a[2], { s = 12, b = true, w = cw - px(6), align = "center", data = true }), BoardUI.flex(0),
+            for i, a in ipairs(actions) do
+                local this_w = i == n and (iw - (n - 1) * (cw + gap)) or cw
+                local inner = BoardUI.vstack({ w = this_w - 2 * border, h = ch - 2 * border, align = "center" }, {
+                    BoardUI.flex(0), BoardUI.icon(a[1], px(20), { sw = 2.25 }), BoardUI.space(nil, px(4)),
+                    BoardUI.text(a[2], { s = 12, b = true, w = this_w - px(6), align = "center", data = true }), BoardUI.flex(0),
                 })
-                table.insert(cells, BoardUI.hit(BoardUI.box({ w = cw, h = ch, radius = px(12), border = border, border_col = INK.g6, bg = INK.white }, inner),
+                table.insert(cells, BoardUI.hit(BoardUI.box({ w = this_w, h = ch, radius = px(12), border = border, border_col = INK.g6, bg = INK.white }, inner),
                     { kind = a[3] }))
             end
-            -- The arrows: start and end, each earlier or later.
+            -- The arrows: start and end, each earlier or later, with the step
+            -- (a word or a letter) between them, all on one line.
             local function arrow(side, dir)
                 local name = dir < 0 and "chevron-left" or "chevron-right"
-                local aw, ah = px(54), px(44)
-                local box = BoardUI.box({ w = aw, h = ah, radius = px(12), border = border, border_col = movable and INK.g6 or INK.gd, bg = INK.white },
+                local aw, ah = px(42), px(36)
+                local box = BoardUI.box({ w = aw, h = ah, radius = px(10), border = border, border_col = movable and INK.g6 or INK.gd, bg = INK.white },
                     BoardUI.hstack({ w = aw - 2 * border, h = ah - 2 * border }, { BoardUI.flex(0),
-                        BoardUI.icon(name, px(22), { col = movable and "black" or "gb", sw = 2.5 }), BoardUI.flex(0) }))
+                        BoardUI.icon(name, px(18), { col = movable and "black" or "gb", sw = 2.5 }), BoardUI.flex(0) }))
                 return movable and BoardUI.hit(box, { kind = "move", side = side, dir = dir }) or box
             end
-            local function lab(str) return BoardUI.text(str, { s = 13, b = true, col = INK.g4 }) end
-            local moves = BoardUI.hstack({ w = iw, gap = px(8) }, {
+            local function lab(str) return BoardUI.text(str, { s = 12, b = true, col = INK.g4 }) end
+            local moves = BoardUI.hstack({ w = iw, gap = px(6) }, {
                 lab(_("Start")), arrow(0, -1), arrow(0, 1), BoardUI.flex(0),
-                lab(_("End")), arrow(1, -1), arrow(1, 1),
-            })
-            local step = BoardUI.hstack({ w = iw, gap = px(10) }, {
-                BoardUI.text(_("Move by"), { s = 13, b = true, col = INK.g4 }),
-                MenuUI.pill(by_letter and _("Letter") or _("Word"), { kind = "outline", h = 34, s = 13, pad_x = 16, action = { kind = "step" } }),
+                MenuUI.pill(by_letter and _("Letter") or _("Word"), { kind = "outline", h = 32, s = 12, pad_x = 12, action = { kind = "step" } }),
                 BoardUI.flex(0),
-                BoardUI.text(_("Hold an arrow to switch"), { s = 12, col = INK.g4 }),
+                arrow(1, -1), arrow(1, 1), lab(_("End")),
             })
-            local items = { BoardUI.hstack({ w = iw, gap = gap }, cells), BoardUI.space(nil, px(14)), moves, BoardUI.space(nil, px(10)), step }
-            table.insert(items, BoardUI.space(nil, px(8)))
-            table.insert(items, BoardUI.text(_("Drag the posts at either end of the highlight to stretch or shrink it."), { s = 12, col = INK.g4, w = iw, lines = 2 }))
+            local items = { BoardUI.hstack({ w = iw, gap = gap }, cells), BoardUI.space(nil, px(10)), moves }
             if not movable then
                 table.insert(items, BoardUI.space(nil, px(8)))
                 table.insert(items, BoardUI.text(_("The text of this highlight was edited, so its ends cannot be moved."), { s = 12, col = INK.g4, w = iw, lines = 2 }))
@@ -416,6 +445,10 @@ function Highlight.openActions(hl, index)
             elseif k == "style" then p:close(); Highlight.openSheet(hl, index)
             elseif k == "note" then p:close(); hl:editNote(index)
             elseif k == "details" then p:close(); hl.ui.bookmark:showBookmarkDetails(index)
+            elseif k == "pin" then
+                local it = item()
+                p:close()
+                if it then Highlight.pin(hl, it) end
             elseif k == "more" then
                 local it = item()
                 p:close()
@@ -450,7 +483,7 @@ end
 -- icon.
 local MENU_ICONS = {
     ["01_select"] = "arrow-right", ["02_highlight"] = "highlighter", ["03_copy"] = "files", ["04_add_note"] = "pen-line",
-    ["05_wikipedia"] = "globe", ["06_dictionary"] = "book-open-text", ["07_translate"] = "arrow-left-right",
+    ["05_wikipedia"] = "wikipedia", ["06_dictionary"] = "book-open-text", ["07_translate"] = "arrow-left-right",
     ["08_share_text"] = "corner-up-right", ["09_view_html"] = "scroll-text", ["10_user_dict"] = "book-marked",
     ["11_follow_link"] = "arrow-up-right", ["12_search"] = "search", ["12_generate_qr_code"] = "layout-grid",
     ["12_0_make_handmade_toc_item"] = "list-ordered", ["13_rb_pin"] = "pin",
@@ -495,6 +528,15 @@ function Highlight.openMenu(hl, index, entries)
                 if #row == 2 then flush() end
             end
             flush()
+            -- From a highlight's More: a way back to its menu.
+            if index and hl.ui.annotation.annotations[index] then
+                local back = BoardUI.hstack({ h = px(32), gap = px(4) }, {
+                    BoardUI.icon("chevron-left", px(18), { sw = 2.5 }),
+                    BoardUI.text(_("Back"), { s = 14, b = true }),
+                })
+                table.insert(rows, 1, BoardUI.space(nil, px(6)))
+                table.insert(rows, 1, BoardUI.hstack({ w = iw }, { BoardUI.hit(back, { kind = "back" }), BoardUI.flex(0) }))
+            end
             local content = BoardUI.vstack({ w = w, pad = pad }, rows)
             local b2 = math.max(1, px(1.5))
             local ph = content:getSize().h + 2 * b2
@@ -504,6 +546,13 @@ function Highlight.openMenu(hl, index, entries)
             return BoardUI.overlay(sw, sh, { { widget = widget, x = x, y = y } })
         end,
         on_action = function(p, action)
+            if action.kind == "back" then
+                p:close()
+                hl.highlight_dialog = nil
+                hl.selected_text = nil
+                Highlight.openActions(hl, index)
+                return
+            end
             local e = entries[action.i]
             if e and e.button.callback then e.button.callback() end
         end,

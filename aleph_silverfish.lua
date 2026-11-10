@@ -10,6 +10,9 @@ local Desenho = require("traca_desenho")
 
 local Card = Widget:extend{}
 local speech = {}
+-- Whether the bubble on the board had to cut its text short (a tap then
+-- opens the whole of it, see Card.openPopup).
+Card.truncated = false
 
 function Card:init()
     self.pet_width = math.min(math.floor(self.width * 0.27), self.height)
@@ -63,7 +66,8 @@ function Card:paintTo(bb, x, y)
         text = speech.text or "…", face = face,
         width = bw - 2 * pad, alignment = "center",
     }
-    if text:getSize().h > avail_h then
+    Card.truncated = text:getSize().h > avail_h
+    if Card.truncated then
         text:free()
         text = TextBoxWidget:new{
             text = speech.text or "…", face = face,
@@ -80,6 +84,82 @@ function Card:free()
     local pet = self.pet
     self.pet = nil
     if pet and type(pet.free) == "function" then pet:free() end
+end
+
+-- What the companion is saying now, as on the board.
+function Card.speechText()
+    return speech.text
+end
+
+-- ------------------------------------------------------------------ popup
+-- Aleph modification, 2026-11-10: the whole of a long speech. A tap on a
+-- Silverfish widget whose bubble had to cut its text opens this sheet: the
+-- companion drawn larger and everything it says, in Aleph's sheet style and
+-- type, with a way on to Silverfish's own screen.
+local PetBox = Widget:extend{ pet = nil, size = 0 }
+function PetBox:getSize() return Geom:new{ w = self.size, h = self.size } end
+function PetBox:paintTo(bb, x, y)
+    self.dimen = Geom:new{ x = x, y = y, w = self.size, h = self.size }
+    if self.pet then self.pet:paintTo(bb, x, y) end
+end
+
+-- module: Silverfish's micro-module (render, on_tap); on_open runs its own tap.
+function Card.openPopup(module, on_open)
+    local SheetUI = require("aleph_sheet_ui")
+    local BoardUI = require("aleph_board_ui")
+    local BoardMetrics = require("aleph_board_metrics")
+    local TextPages = require("aleph_text_pages")
+    local _ = require("gettext")
+    local INK, px = BoardMetrics.INK, BoardMetrics.px
+    local said = speech.text or "…"
+    local pets = {}
+    local function freePets()
+        for _i, pet in ipairs(pets) do
+            if type(pet.free) == "function" then pcall(pet.free, pet) end
+        end
+        pets = {}
+    end
+    return SheetUI.open{
+        name = "aleph_silverfish_speech",
+        build = function(page, sw, sh)
+            freePets()
+            return SheetUI.sheet(page, sw, sh, function(w, max_h)
+                local size = math.min(px(150), math.floor(w * 0.36))
+                local ok, pet = pcall(module.render, { width = size, height = size, surface = "dashboard", preview = true })
+                if ok and pet then pets[#pets + 1] = pet else pet = nil end
+                local gap = px(14)
+                local bw = w - size - gap
+                local pad = px(14)
+                local tw = bw - 2 * pad
+                local lines = math.max(1, TextPages.linesNeeded(said, { s = 16 }, tw))
+                -- Never taller than the sheet allows; a longer speech ends in "…".
+                local room = max_h - px(140)
+                lines = math.max(1, math.min(lines, math.floor(room / BoardMetrics.lh(16))))
+                local words = BoardUI.text(said, { s = 16, w = tw, lines = lines, align = "center", data = true })
+                local bh = math.max(size, words:getSize().h + 2 * pad)
+                local bubble = BoardUI.box({ w = bw, h = bh, radius = px(14), border = math.max(1, px(1.5)), border_col = INK.black, bg = INK.white },
+                    BoardUI.vstack({ w = bw, h = bh, align = "center" }, { BoardUI.flex(0), words, BoardUI.flex(0) }))
+                return {
+                    SheetUI.titleRow(w, _("Silverfish"), _("Your reading companion")),
+                    BoardUI.hstack({ w = w, gap = gap, valign = "center" }, {
+                        BoardUI.vstack({ w = size, h = bh }, { BoardUI.flex(0), PetBox:new{ pet = pet, size = size }, BoardUI.flex(0) }),
+                        bubble,
+                    }),
+                    SheetUI.pillRow(w, {
+                        { label = _("Open Silverfish"), icon = "chevron-right", kind = "outline", action = { kind = "open" } },
+                    }),
+                }
+            end, { pop_w = 560 })
+        end,
+        on_action = function(page, action)
+            if action.kind == "open" then
+                page:close()
+                if on_open then require("ui/uimanager"):tickAfterNext(on_open) end
+            end
+            return true
+        end,
+        on_close = freePets,
+    }
 end
 
 return Card

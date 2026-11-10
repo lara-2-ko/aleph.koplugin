@@ -62,17 +62,125 @@ function Local.new(settings, ui)
         books = cache:readSetting("books", {}), errors = {}}, Local)
 end
 
+-- The metadata set by hand in KOReader (Book information > Set custom):
+-- its file, or nil.
+local function customFile(path)
+    local file
+    pcall(function() file = DocSettings:findCustomMetadataFile(path) end)
+    return type(file) == "string" and file or nil
+end
+
 -- Where KOReader keeps the book's own settings (its sidecar) and when that
 -- file last changed, as one string; "none" when the book has no sidecar.
+-- The custom metadata file counts too: editing it changes the book's entry.
 local function sidecarStamp(path)
     local file
     pcall(function()
         if DocSettings.findSidecarFile then file = DocSettings:findSidecarFile(path)
         elseif DocSettings.getSidecarFile then file = DocSettings:getSidecarFile(path) end
     end)
-    if type(file) ~= "string" then return "none" end
-    local modified = lfs.attributes(file, "modification")
-    return modified and (file .. "@" .. modified) or "none"
+    local stamp = "none"
+    if type(file) == "string" then
+        local modified = lfs.attributes(file, "modification")
+        if modified then stamp = file .. "@" .. modified end
+    end
+    local custom = customFile(path)
+    local custom_mod = custom and lfs.attributes(custom, "modification")
+    if custom_mod then stamp = stamp .. "|" .. custom .. "@" .. custom_mod end
+    return stamp
+end
+
+-- ------------------------------------------------------------ comic books
+-- KOReader reads no metadata from comic archives (CBZ and the like), so a
+-- comic shows as its file name. Most comic tools write a ComicInfo.xml inside
+-- the archive; this reads its title, series, number, writers, genres and
+-- summary. Read once per file (kept in the index until the file changes).
+local COMIC_FORMATS = { cbz = true, cbr = true, cb7 = true, cbt = true }
+Local.COMIC_FORMATS = COMIC_FORMATS
+
+local function xmlField(xml, name)
+    local v = xml:match("<" .. name .. "[^>]*>(.-)</" .. name .. ">")
+    if not v then return nil end
+    v = v:gsub("^%s*<!%[CDATA%[(.-)%]%]>%s*$", "%1")
+    v = util.trim(unescape(v))
+    return v ~= "" and v or nil
+end
+
+local function listOf(...)
+    local out, seen = {}, {}
+    for _, value in ipairs({ ... }) do
+        for item in tostring(value or ""):gmatch("[^,;]+") do
+            item = util.trim(item)
+            if item ~= "" and not seen[item:lower()] then seen[item:lower()] = true; out[#out + 1] = item end
+        end
+    end
+    return out
+end
+
+-- ComicInfo.xml's text as KOReader-style props (title, authors, series,
+-- series_index, keywords, description, language); nil when there is none.
+function Local.parseComicInfo(xml)
+    if type(xml) ~= "string" or not xml:find("<ComicInfo", 1, true) then return nil end
+    local props = {}
+    local series = xmlField(xml, "Series")
+    local number = xmlField(xml, "Number")
+    local volume = xmlField(xml, "Volume")
+    props.series = series
+    props.series_index = tonumber(number) or tonumber(volume)
+    local title = xmlField(xml, "Title")
+    if not title and series then
+        -- An issue with no title of its own: "Saga #12".
+        if number then title = series .. " #" .. number
+        elseif volume then title = series .. " " .. volume end
+    end
+    props.title = title
+    local writers = listOf(xmlField(xml, "Writer"))
+    if #writers == 0 then writers = listOf(xmlField(xml, "Penciller")) end
+    if #writers > 0 then props.authors = table.concat(writers, "\n") end
+    local tags = listOf(xmlField(xml, "Genre"), xmlField(xml, "Tags"))
+    if #tags > 0 then props.keywords = table.concat(tags, "\n") end
+    props.description = xmlField(xml, "Summary")
+    props.language = xmlField(xml, "LanguageISO")
+    if not next(props) then return nil end
+    return props
+end
+
+-- The ComicInfo.xml inside a comic archive, as props, or false when it has
+-- none (so the archive is not opened again).
+function Local.comicInfo(path)
+    local ok, result = pcall(function()
+        local Archiver = require("ffi/archiver")
+        local arc = Archiver.Reader:new()
+        if not arc:open(path) then return false end
+        local key
+        for entry in arc:iterate() do
+            local name = entry.path:match("([^/\\]+)$") or entry.path
+            if entry.mode == "file" and name:lower() == "comicinfo.xml" and entry.size > 0 and entry.size < 1048576 then
+                key = entry.path
+                break
+            end
+        end
+        local xml = key and arc:extractToMemory(key)
+        arc:close()
+        return xml and Local.parseComicInfo(xml) or false
+    end)
+    return ok and result or false
+end
+
+-- What a book shows: the props KOReader stored for it (or read from it), the
+-- gaps filled from a comic's ComicInfo.xml, then the metadata set by hand in
+-- KOReader on top, as KOReader's own book information does.
+local PROP_KEYS = { "title", "authors", "series", "series_index", "language", "keywords", "description" }
+local function blank(v) return v == nil or v == "" end
+function Local.mergeProps(base, comic, custom)
+    local props = {}
+    for k, v in pairs(base or {}) do props[k] = v end
+    for _, k in ipairs(PROP_KEYS) do
+        if blank(props[k]) and comic and not blank(comic[k]) then props[k] = comic[k] end
+        if custom and not blank(custom[k]) then props[k] = custom[k] end
+    end
+    if blank(props.title) then props.title = nil end
+    return props
 end
 Local.sidecarStamp = sidecarStamp
 
@@ -97,14 +205,36 @@ function Local:readBook(path, attr, history, old)
     local ds = open_here and self.ui.doc_settings or DocSettings:open(path)
     local props = ds:readSetting("doc_props")
     local cached = old and old.modified == attr.modification and old.size == attr.size
-    if not props or not props.title then
-        if cached then props = old.props end
-        if not props then
+    if not props or blank(props.title) then
+        -- No title stored (a book never opened, or one whose file has none):
+        -- the cached entry's, or what KOReader's book information has.
+        local fallback = cached and old.props or nil
+        if not fallback then
             local Info = require("apps/filemanager/filemanagerbookinfo")
-            props = Info.getDocProps({ui = self.ui or {}}, path)
+            local ok, got = pcall(Info.getDocProps, {ui = self.ui or {}}, path)
+            fallback = ok and got or nil
+        end
+        if fallback then
+            local merged = {}
+            for k, v in pairs(fallback) do merged[k] = v end
+            for k, v in pairs(props or {}) do if not blank(v) then merged[k] = v end end
+            props = merged
         end
     end
     props = props or {}
+    -- A comic's ComicInfo.xml, read once per file.
+    local ext = (path:match("%.([^%.]+)$") or ""):lower()
+    local comic = nil
+    if COMIC_FORMATS[ext] then
+        if cached and old.comic ~= nil then comic = old.comic else comic = Local.comicInfo(path) end
+    end
+    local custom = nil
+    local custom_path = customFile(path)
+    if custom_path then
+        pcall(function() custom = DocSettings.openSettingsFile(custom_path):readSetting("custom_props") end)
+        if type(custom) ~= "table" then custom = nil end
+    end
+    props = Local.mergeProps(props, comic or nil, custom)
     local summary = ds:readSetting("summary", {})
     local progress = tonumber(ds:readSetting("percent_finished")) or 0
     local status = summary.status
@@ -115,7 +245,7 @@ function Local:readBook(path, attr, history, old)
     else status = "unread" end
     local book = { id = path, path = path, title = props.title or path:match("([^/]+)$"),
         authors = names(props.authors), series = props.series, seriesIndex = tonumber(props.series_index),
-        props = props, modified = attr.modification, size = attr.size,
+        props = props, comic = comic, modified = attr.modification, size = attr.size,
         added = old and old.added or os.time(), last_open = history[path] or 0,
         lastReadAt = iso(history[path]), progressPercentage = math.max(0, math.min(100, progress * 100)),
         readStatus = status, rating = tonumber(summary.rating),

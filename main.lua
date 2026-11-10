@@ -100,6 +100,8 @@ function Board:init()
     UIManager:nextTick(function()
         pcall(function() require("aleph_migrate").gestures(ui) end)
         pcall(function() require("aleph_migrate").warnOldFolder(ui) end)
+        -- ZenOS replaces the same screens: say so (Aleph runs as usual).
+        pcall(function() require("aleph_conflicts").check(ui) end)
     end)
     -- The first file browser of a session is being built while this runs, before
     -- the hook above can see its showFiles finish: open over it as soon as it is

@@ -4,7 +4,8 @@ Replaces KOReader's ConfirmBox for the board's own questions (downloading or
 removing author portraits): a rounded panel with the board's font and sizes, a
 title, the explanation, and Cancel / action pills. Tapping outside cancels.
 
-  Confirm.show{ title, text, ok_label, cancel_label, on_ok }
+  Confirm.show{ title, text, ok_label, cancel_label, on_ok, on_cancel }
+  (on_cancel: run by the cancel pill only, not by a tap outside)
 ]]
 
 local Geom = require("ui/geometry")
@@ -36,7 +37,7 @@ function Confirm.show(o)
                 BoardUI.text(o.text or "", { s = 15, col = INK.g2, w = iw, lines = 14, data = true }),
                 BoardUI.space(nil, px(18)),
                 BoardUI.hstack({ w = iw, gap = gap }, {
-                    MenuUI.pill(o.cancel_label or _("Cancel"), { kind = "outline", w = half, h = 48, s = 16, action = { kind = "close" } }),
+                    MenuUI.pill(o.cancel_label or _("Cancel"), { kind = "outline", w = half, h = 48, s = 16, action = { kind = o.on_cancel and "cancel" or "close" } }),
                     MenuUI.pill(o.ok_label or _("OK"), { kind = "dark", w = half, h = 48, s = 16, action = { kind = "ok" } }),
                 }),
             }
@@ -52,6 +53,9 @@ function Confirm.show(o)
             if action.kind == "ok" then
                 p:close()
                 if o.on_ok then o.on_ok() end
+            elseif action.kind == "cancel" then
+                p:close()
+                o.on_cancel()
             end
         end,
     }

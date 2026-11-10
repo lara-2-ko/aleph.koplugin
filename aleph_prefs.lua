@@ -8,7 +8,7 @@ they ask here now.
 local Prefs = {}
 
 -- Aleph's version, shown in Settings and the menu (and _meta.lua).
-Prefs.VERSION = "1.0.1"
+Prefs.VERSION = "1.1.0"
 
 -- The settings table (an empty one when there is none yet; not saved).
 function Prefs.get()

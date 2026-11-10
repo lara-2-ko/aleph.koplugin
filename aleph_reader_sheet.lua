@@ -14,7 +14,9 @@ view above it, dimmed.
               spacing, contrast…), Contents, Bookmarks, Pages (the page
               browser); Bookmark this page; Book details (its Aleph
               page, with the highlight and bookmark counts); Aleph
-              Home
+              Home; with BT Manager - HID Passthrough or Syncery installed, a
+              row of small buttons under the tiles: a Bluetooth switch for
+              the HID daemon, Sync now, and Syncery's progress browser
   Also        the other books you are reading, newest first, with their
   reading     covers and progress: tap one to switch to it; All books opens
               the library
@@ -115,6 +117,24 @@ function Sheet.others(books, current_path, limit)
     return out
 end
 
+-- Other plugins the sheet offers shortcuts to, when they are installed.
+local function plugin(ui, name)
+    local p = ui and rawget(ui, name)
+    if type(p) ~= "table" then
+        pcall(function() p = require("pluginloader"):getPluginInstance(name) end)
+    end
+    return type(p) == "table" and p or nil
+end
+Sheet.plugin = plugin
+
+-- Whether the HID daemon is running: a question to it on this device
+-- (answered at once when it is off), asked when the sheet opens.
+local function hidRunning(hid)
+    local ok, on = pcall(hid.isRunning, hid)
+    return ok and on == true
+end
+Sheet.hidRunning = hidRunning
+
 function Sheet.data(ui)
     local doc = ui.document
     local props = ui.doc_props or {}
@@ -143,8 +163,15 @@ function Sheet.data(ui)
     local xray = Xray.plugin(ui)
     local authors = props.authors
     if type(authors) == "table" then authors = table.concat(authors, ", ") end
+    local hid = plugin(ui, "hidpassthrough")
+    if hid and type(hid.isRunning) ~= "function" then hid = nil end
+    local syncery = plugin(ui, "syncery")
+    if syncery and type(syncery.syncNow) ~= "function" then syncery = nil end
     return {
-        title = props.display_title or props.title or (file and file:match("([^/]+)$")) or "",
+        -- The library's title first: it has a comic's ComicInfo.xml title,
+        -- which KOReader does not read.
+        title = (props.title and props.title ~= "" and props.title) or (this and this.title)
+            or props.display_title or (file and file:match("([^/]+)$")) or "",
         author = type(authors) == "string" and authors:gsub("\n", ", ") or "",
         page = page, pages = pages, percent = percent,
         chapter = type(chapter) == "string" and chapter:match("%S") and chapter or nil,
@@ -156,6 +183,8 @@ function Sheet.data(ui)
         file = file,
         xray = xray ~= nil,
         xray_summary = xray and Xray.summary(xray) or nil,
+        hid = hid ~= nil, hid_on = hid and hidRunning(hid) or false,
+        syncery = syncery ~= nil,
     }
 end
 
@@ -262,6 +291,51 @@ local function tiles(page, w)
     return hstack({ w = w, gap = gap }, cells)
 end
 
+-- A switch half the size of a row's, for the small buttons.
+local function miniSwitch(on)
+    local w, h, k, pad = px(30), px(18), px(12), px(3)
+    local b = math.max(1, px(1.25))
+    local track = on and BoardUI.rect(w, h, INK.black, floor(h / 2))
+        or BoardUI.box({ w = w, h = h, radius = floor(h / 2), border = b, border_col = INK.g5, bg = INK.white })
+    local knob = BoardUI.rect(k, k, on and INK.white or INK.g5, floor(k / 2))
+    return BoardUI.overlay(w, h, { { widget = track }, { widget = knob, x = on and (w - pad - k) or pad, y = pad } })
+end
+
+-- Shortcuts into other plugins, as small outlined buttons in one row: only
+-- those installed are shown, and nothing when none is.
+local function quickRow(page, w)
+    local d = page.data
+    local items = {}
+    if d.hid then items[#items + 1] = { icon = "bluetooth", label = _("Bluetooth"), switch = d.hid_on, action = { kind = "hid" } } end
+    if d.syncery then
+        items[#items + 1] = { icon = "refresh-cw", label = _("Sync now"), action = { kind = "sync" } }
+        items[#items + 1] = { icon = "smartphone", label = _("Progress"), action = { kind = "sync_progress" } }
+    end
+    if #items == 0 then return nil end
+    local gap = px(8)
+    local bw = floor((w - (#items - 1) * gap) / #items)
+    local h = px(42)
+    local b = math.max(1, px(1.25))
+    local cells = {}
+    for i, it in ipairs(items) do
+        local cw = i == #items and (w - (#items - 1) * (bw + gap)) or bw
+        local inner_w = cw - 2 * b - 2 * px(10)
+        local glyph = icon(it.icon, px(18), { sw = 2.25 })
+        local switch = it.switch ~= nil and miniSwitch(it.switch) or nil
+        local room = inner_w - wOf(glyph) - px(8) - (switch and (wOf(switch) + px(8)) or 0)
+        local label = text(it.label, { s = 13, b = true, data = true })
+        if wOf(label) > room then label:free(); label = text(it.label, { s = 13, b = true, w = math.max(px(16), room), data = true }) end
+        local row = { glyph, space(px(8), 1), label }
+        if switch then row[#row + 1] = flex(0); row[#row + 1] = switch
+        else table.insert(row, 1, flex(0)); row[#row + 1] = flex(0) end
+        local box = BoardUI.box({ w = cw, h = h, radius = px(12), border = b, border_col = INK.g6, bg = INK.white },
+            hstack({ w = cw - 2 * b, h = h - 2 * b }, { space(px(10), 1), hstack({ w = inner_w, h = h - 2 * b }, row), space(px(10), 1) }))
+        cells[i] = BoardUI.hit(box, it.action)
+    end
+    return hstack({ w = w, gap = gap }, cells)
+end
+Sheet.quickRow = quickRow
+
 local function thisBook(page, w)
     local d = page.data
     local rows = {
@@ -281,6 +355,8 @@ local function thisBook(page, w)
         if index > 1 then list[#list + 1] = MenuUI.divider(w) end
         list[#list + 1] = r
     end
+    local quick = quickRow(page, w)
+    if quick then return { tiles(page, w), space(nil, px(10)), quick, space(nil, px(10)), vstack({ w = w }, list) } end
     return { tiles(page, w), space(nil, px(10)), vstack({ w = w }, list) }
 end
 
@@ -400,6 +476,31 @@ local function onAction(page, action)
         local h, b = annotationCounts(ui)
         page.data.highlights, page.data.bookmarks = h, b
         page:refresh()
+    elseif k == "hid" then
+        -- The plugin's own toggle: it says what it does, and starting can
+        -- take a few seconds. The switch flips now and is checked after.
+        local hid = plugin(ui, "hidpassthrough")
+        if not hid then return true end
+        page.data.hid_on = not page.data.hid_on
+        page:refresh()
+        local ok = pcall(function()
+            if hid.onHIDPassthroughToggle then hid:onHIDPassthroughToggle() else hid:toggle() end
+        end)
+        if not ok then require("logger").warn("Aleph: HID passthrough toggle failed") end
+        UIManager:scheduleIn(0.5, function()
+            if page.closed then return end
+            page.data.hid_on = hidRunning(hid)
+            page:refresh()
+        end)
+    elseif k == "sync" then
+        local syncery = plugin(ui, "syncery")
+        if syncery then handOff(page, function() syncery:syncNow() end) end
+    elseif k == "sync_progress" then
+        local syncery = plugin(ui, "syncery")
+        if syncery then handOff(page, function()
+            if syncery.onSynceryProgressBrowser then syncery:onSynceryProgressBrowser()
+            else require("syncery_ui/progress_browser/init").show(syncery) end
+        end) end
     elseif k == "xray" then
         local d = page.data
         page:close()

@@ -1,7 +1,89 @@
 # Aleph (formerly Reading Board) — modifications, 2026-11-07 to 2026-11-10
 
+## 2026-11-10 — 1.1.0
+
+Everything since 1.0.1, tested as 1.0.2 to 1.0.7.
+
+- **Reader menu shortcuts to other plugins.** With BT Manager - HID
+  Passthrough installed, the reader menu has a small Bluetooth button with a
+  switch that starts or stops its daemon (the plugin's own toggle, with its
+  messages; the switch is checked again once it is done). With Syncery
+  installed, Sync now and Progress (its progress browser) sit beside it.
+  They sit in one row under Style, Contents, Bookmarks and Pages, only for
+  the plugins installed; with neither, the menu is as before.
+- **Book margins: text colour and weight.** Settings > Book margins > Look
+  has two new choices: Text colour (Light gray, Gray as before, Black, and on
+  a colour screen a colour of one's own from the colour wheel; one too light
+  to read is refused) and Text weight (Regular or Bold). The preview and the
+  book's top and bottom lines follow them; icons and the battery take the
+  same colour. A custom colour shows as its gray on a black-and-white screen.
+- **Top menu slider:** at full or lowest brightness (or warmth) the knob
+  touched the + and - buttons. The rail is now a little shorter at both
+  ends, so the knob keeps clear of them; touches near the ends still move it.
+- **Comic books (CBZ) and their metadata.** KOReader reads no metadata from
+  comic archives, so comics showed as their file names. The library now
+  reads the ComicInfo.xml most comic tools put inside the archive: title
+  (or "Series #Number" when an issue has none), series and number, writers,
+  genres, summary and language. Each archive is read once and kept in the
+  library's index until the file changes. CBZ, CBR, CB7 and CBT.
+- **Series and titles of opened books.** Once a book had been opened, the
+  library used only what KOReader stored when opening it, which for a
+  comic has no title or series: comics marked Reading or Finished dropped
+  out of the Series view and lost their titles. That stored data is now
+  completed from the book's other sources (ComicInfo.xml, KOReader's book
+  information) instead of replacing them.
+- **Metadata set by hand in KOReader** (Book information > Set custom) is
+  now used by the library for every book, as KOReader's own book
+  information does, and a change to it is picked up on the next scan.
+- The reader menu shows the library's title, so an open comic shows its
+  ComicInfo title rather than its file name.
+- **Book margins: the bottom line sat too high.** It is placed above
+  KOReader's own status bar, and KOReader keeps that bar's height even when
+  the bar shows nothing (every item and the progress bar turned off). An
+  empty bar is now left out, so the line goes back to the foot of the page.
+- **Book margins: distance from the edge.** The Top and Bottom tabs have a
+  Distance from the top / from the bottom setting with − and + (steps of 2,
+  from 6 nearer the edge to 40 further in).
+- **Highlight menu, trimmer:** the five buttons are smaller and joined by
+  Pin (Unpin when the page is pinned); the start and end arrows and the
+  Word / Letter step share one line; the two hint lines are gone (holding
+  an arrow still moves by a letter, and the posts can still be dragged).
+- **More, from a highlight:** a Back button at the top returns to the
+  highlight's menu.
+- **Wikipedia's icon** is a serif W (in the text menu and the dictionary)
+  instead of the globe.
+- **Dictionary: Highlight did nothing visible.** KOReader's Highlight
+  button in the dictionary only marks the word, to be highlighted when the
+  pop-up closes, and shows it by changing its words to "Unhighlight". In
+  Aleph's row of icons those words never show, so a tap seemed to do
+  nothing, and the next tap took it back (the log shows three taps on it,
+  each one turning it on or off). A tap now highlights the word and closes
+  the pop-up, so the highlight is on the page at once.
+- **A warning when ZenOS or Simple UI is on.** ZenOS (or Zen UI) replaces the same parts
+  of KOReader as Aleph (the home screen built when a book closes, the
+  reader's menus, the page browser, the dictionary, the status bars); with
+  both on, closing a book builds two home screens and their covers at once,
+  and a Kobo Clara Colour was reported freezing and crashing. Simple UI
+  also puts its own home screen over the file browser (ZenOS's own check
+  turns it off for that reason). At startup Aleph now says so
+  (aleph_conflicts.lua), once per start of KOReader, one warning naming
+  whichever is on, with "Don't show again" kept for each. Nothing else
+  changes: Aleph runs as usual.
+- The board's confirmation (aleph_confirm.lua) can run something for its
+  cancel button (used for "Don't show again").
+- **README: Other plugins.** Not compatible: ZenOS and Simple UI. Works
+  alongside: Bookshelf (use one of them as the start-up screen), Project:
+  Title and the Cover browser (the list view uses less memory), the
+  Bookends plugin. Menu restyling plugins: turn off Aleph dialogs.
+- README: the new features in their sections; Bluetooth (HID Passthrough)
+  and Syncery among the optional integrations.
+
 ## 2026-11-10 — 1.0.1 fixes
 
+- **Silverfish: the whole speech.** When the Silverfish widget's bubble has
+  to cut its text short, a tap opens a sheet in Aleph's style with the
+  companion drawn larger and everything it says, plus "Open Silverfish" for
+  its own screen. When the text fits, a tap opens Silverfish as before.
 - **Page colour and night mode:** a book with a page colour chosen in
   Reading settings > Background kept that colour in night mode, where
   KOReader inverts the whole screen; a black custom colour came out as a

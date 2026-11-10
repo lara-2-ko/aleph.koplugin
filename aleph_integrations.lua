@@ -33,6 +33,14 @@ end
 function Integrations.openSilverfish()
     local card = silverfishModule()
     if card then
+        -- A speech cut short on the board opens whole first, in Aleph's
+        -- sheet; otherwise (and from the sheet) Silverfish's own screen.
+        local Card = require("aleph_silverfish")
+        if Card.truncated and Card.speechText() then
+            local ok, err = pcall(Card.openPopup, card, function() card.on_tap() end)
+            if ok then return end
+            logger.warn("Aleph: Silverfish speech sheet failed:", err)
+        end
         return card.on_tap()
     end
     inform(_("Install or enable Silverfish 1.1.0 or newer in KOReader to use this widget."))

@@ -4,10 +4,11 @@
 A page in the board's style: a preview of a book page with its top and bottom
 lines drawn from sample values, then three tabs.
 
-  Top      show it; what the left, middle and right show; the line under it
-           (None / Progress / Chapters)
-  Bottom   show it; left, middle and right
-  Look     text size; hide KOReader's own status bar; book margins on or off;
+  Top      show it; what the left, middle and right show; its distance
+           from the top edge; the line under it (None / Progress / Chapters)
+  Bottom   show it; left, middle and right; its distance from the bottom
+  Look     text size, colour (three grays, or one's own on a colour
+           screen) and weight (regular or bold); hide KOReader's own status bar; book margins on or off;
            reset
 
 A slot opens a sheet of every item as a chip: tap to add (in the order tapped,
@@ -53,18 +54,20 @@ Page.summary = summary
 
 -- ---------------------------------------------------------------- preview
 -- A book page in miniature with sample values in its margins.
-local function sampleSlot(list, size, max_w)
+local function sampleSlot(list, size, max_w, ink, bold)
+    local col = ink.col
     local parts = {}
     for _i, id in ipairs(list or {}) do
         local it = Bookends.ITEM_BY_ID[id]
         local str = it.sample
         if id == "clock" then str = require("datetime").secondsToHour(os.time(), G_reader_settings:isTrue("twelve_hour_clock")) end
-        if id == "wifi" then parts[#parts + 1] = icon("wifi", px(size + 2), { sw = 2.25, col = "g3" })
-        elseif id == "light" then parts[#parts + 1] = icon("sun", px(size + 2), { sw = 2.25, col = "g3" }); parts[#parts + 1] = text(str, { s = size, col = INK.g3 })
+        local sw = bold and 2.75 or 2.25
+        if id == "wifi" then parts[#parts + 1] = icon("wifi", px(size + 2), { sw = sw, col = ink.hex })
+        elseif id == "light" then parts[#parts + 1] = icon("sun", px(size + 2), { sw = sw, col = ink.hex }); parts[#parts + 1] = text(str, { s = size, col = col, b = bold })
         else
-            if id == "battery" then parts[#parts + 1] = Bookends.batteryWidget({ battery = 88 }, size, INK.g3) end
-            local t = text(str, { s = size, col = INK.g3, data = true })
-            if wOf(t) > max_w then t:free(); t = text(str, { s = size, col = INK.g3, w = max_w, data = true }) end
+            if id == "battery" then parts[#parts + 1] = Bookends.batteryWidget({ battery = 88 }, size, col, ink.hex) end
+            local t = text(str, { s = size, col = col, b = bold, data = true })
+            if wOf(t) > max_w then t:free(); t = text(str, { s = size, col = col, b = bold, w = max_w, data = true }) end
             parts[#parts + 1] = t
         end
     end
@@ -78,11 +81,12 @@ local function preview(page, w)
     local h = px(150)
     local inner_w = w - 2 * px(16)
     local layers = {}
+    local ink = Bookends.ink(c)
     local function band(slots, y)
         local side = floor(inner_w / 3) - px(4)
-        local l = sampleSlot(slots.left, size, side)
-        local m = sampleSlot(slots.middle, size, side)
-        local r = sampleSlot(slots.right, size, side)
+        local l = sampleSlot(slots.left, size, side, ink, c.bold)
+        local m = sampleSlot(slots.middle, size, side, ink, c.bold)
+        local r = sampleSlot(slots.right, size, side, ink, c.bold)
         if l then layers[#layers + 1] = { widget = l, x = px(16), y = y } end
         if m then layers[#layers + 1] = { widget = m, x = floor((w - wOf(m)) / 2), y = y } end
         if r then layers[#layers + 1] = { widget = r, x = w - px(16) - wOf(r), y = y } end
@@ -129,6 +133,17 @@ local function slotRows(page, iw, edge)
     return rows
 end
 
+-- Where a line sits: nearer the edge of the screen or further in.
+local function offsetRow(c, iw, key)
+    local v = c[key] or 0
+    local shown = v == 0 and "0" or (v > 0 and ("+" .. v) or tostring(v))
+    local minus = v > Bookends.OFFSET_MIN and { kind = "offset", key = key, delta = -Bookends.OFFSET_STEP } or nil
+    local plus = v < Bookends.OFFSET_MAX and { kind = "offset", key = key, delta = Bookends.OFFSET_STEP } or nil
+    return MenuUI.row(iw, { icon = key == "top_offset" and "arrow-down" or "arrow-up",
+        label = key == "top_offset" and _("Distance from the top") or _("Distance from the bottom"),
+        sub = _("+ moves the line in, away from the edge"), h = 64, trail = MenuUI.stepper(shown, nil, minus, plus) })
+end
+
 local function body(page, w, compact)
     local c = page.config
     local iw = MenuUI.rowsIn(w)
@@ -141,6 +156,10 @@ local function body(page, w, compact)
     items[#items + 1] = space(nil, px(12))
     if tab == "top" or tab == "bottom" then
         items[#items + 1] = MenuUI.group(w, slotRows(page, iw, tab))
+        if c[tab] then
+            items[#items + 1] = space(nil, px(12))
+            items[#items + 1] = MenuUI.group(w, { offsetRow(c, iw, tab == "top" and "top_offset" or "bottom_offset") })
+        end
         if tab == "top" then
             local lines = { _("No line"), _("Progress"), _("Chapters") }
             local at = c.line == "progress" and 2 or c.line == "chapters" and 3 or 1
@@ -154,6 +173,18 @@ local function body(page, w, compact)
         local on = Bookends.enabledHere()
         items[#items + 1] = MenuUI.section(w, _("Text size"), MenuUI.segmented(w, sizes, at,
             function(index) return { kind = "size", value = index == 1 and "small" or index == 2 and "medium" or "large" } end))
+        items[#items + 1] = space(nil, px(12))
+        -- The text's colour: three grays, and a colour of one's own on a
+        -- colour screen (or when one was chosen there).
+        local inks = { _("Light gray"), _("Gray"), _("Black") }
+        local custom = Bookends.colourScreen() or c.ink == "custom"
+        if custom then inks[4] = _("Colour") end
+        local ink_at = ({ light = 1, gray = 2, black = 3, custom = 4 })[c.ink] or 2
+        items[#items + 1] = MenuUI.section(w, _("Text colour"), MenuUI.segmented(w, inks, ink_at,
+            function(index) return { kind = "ink", value = Bookends.INKS[index] } end))
+        items[#items + 1] = space(nil, px(12))
+        items[#items + 1] = MenuUI.section(w, _("Text weight"), MenuUI.segmented(w, { _("Regular"), _("Bold") }, c.bold and 2 or 1,
+            function(index) return { kind = "bold", value = index == 2 } end))
         items[#items + 1] = space(nil, px(12))
         local note = Bookends.otherBookends(page.ui) and _("The Bookends plugin is on: these lines stay hidden while it is. Turn it off in Plugin management.") or nil
         items[#items + 1] = MenuUI.group(w, {
@@ -246,6 +277,26 @@ function Page.openPicker(page, edge, slot)
     }
 end
 
+-- A colour of one's own for the text, from the colour wheel. One too light
+-- to read on a white page is refused.
+function Page.pickInk(page)
+    local c = Bookends.config()
+    require("aleph_color_wheel").open{
+        title = _("Text colour"), hex = c.ink == "custom" and c.ink_hex or "#335577",
+        on_use = function(hex)
+            if Bookends.tooLight(hex) then
+                pcall(function() require("aleph_toast").show(_("Too light to read on the page: pick a darker colour."), { icon = "triangle-alert" }) end)
+                return
+            end
+            local now = Bookends.config()
+            now.ink, now.ink_hex = "custom", hex
+            Bookends.save(now)
+            if not page.closed then page:refresh() end
+            Page.changed(page)
+        end,
+    }
+end
+
 function Page.changed(page)
     if page.ui then pcall(Bookends.changed, page.ui) end
 end
@@ -258,6 +309,13 @@ local function onAction(page, action)
     elseif k == "slot" then Page.openPicker(page, action.edge, action.slot); return true
     elseif k == "line" then c.line = action.value; Bookends.save(c)
     elseif k == "size" then c.size = action.value; Bookends.save(c)
+    elseif k == "bold" then c.bold = action.value; Bookends.save(c)
+    elseif k == "offset" then
+        c[action.key] = math.max(Bookends.OFFSET_MIN, math.min(Bookends.OFFSET_MAX, (c[action.key] or 0) + action.delta))
+        Bookends.save(c)
+    elseif k == "ink" then
+        if action.value == "custom" then Page.pickInk(page); return true end
+        c.ink = action.value; Bookends.save(c)
     elseif k == "stock" then
         c.hide_stock = not c.hide_stock
         Bookends.save(c)

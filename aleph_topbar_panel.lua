@@ -171,8 +171,13 @@ function Panel:addSlider(spec, y)
     end
     -- Room between the title with its light / warmth switch and the rail.
     local bar_y = y + scale(50)
+    -- The rail stops short of the - and + buttons, so the knob at either end
+    -- (radius 8) keeps clear of their rings.
+    local gap = scale(16)
     self.slider = {
-        x = edge, y = bar_y, w = width - 2 * edge, h = scale(34), spec = spec,
+        x = edge + gap, y = bar_y, w = width - 2 * (edge + gap), h = scale(34), spec = spec,
+        -- Touches still count up to the buttons.
+        hit = { x = edge, y = bar_y, w = width - 2 * edge, h = scale(34) },
     }
     local function step(x, name, delta)
         local ring = scale(30)
@@ -402,7 +407,7 @@ function Panel:handle(kind, gesture)
     local x, y = gesture.pos.x - self.dimen.x, gesture.pos.y - self.dimen.y
     local bar = self.slider
     if bar and not gesture.mousewheel_direction then
-        local on_bar = inside(bar, x, y)
+        local on_bar = inside(bar.hit or bar, x, y)
         if kind == "release" or kind == "swipe" then
             local swipe_on_bar = kind == "swipe" and on_bar and gesture.end_pos
                 and gesture.direction ~= "north" and gesture.direction ~= "south"
@@ -413,7 +418,7 @@ function Panel:handle(kind, gesture)
             end
         elseif kind == "pan" then
             local start = gesture.start_pos or gesture.pos
-            if self.dragging or (inside(bar, start.x - self.dimen.x, start.y - self.dimen.y)
+            if self.dragging or (inside(bar.hit or bar, start.x - self.dimen.x, start.y - self.dimen.y)
                     and gesture.direction ~= "north" and gesture.direction ~= "south") then
                 self.dragging = true
                 self:setPosition(x)

@@ -9,7 +9,8 @@ builder). Only its look changes, in place, after KOReader has built it:
   - a rounded frame in the board's colors
   - a header: results menu, dictionary name, close
   - a pencil for editing the looked up word
-  - the buttons: Previous / Next dictionary, Wikipedia, Highlight, Search and
+  - the buttons: Previous / Next dictionary, Wikipedia, Highlight (a tap
+    highlights the word and closes the pop-up), Search and
     Close (and Wikipedia's link and Save) as one row of icons; any button
     with words (the vocabulary builder, plugin buttons) on a row of its own,
     its words centred, hairlines between the rows
@@ -36,7 +37,7 @@ local ICONS = {
     prev_dict = "chevrons-left",
     next_dict = "chevrons-right",
     highlight = "highlighter",
-    wikipedia = "globe",
+    wikipedia = "wikipedia",
     search = "search",
     close = "x",
     link = "arrow-up-right",
@@ -105,6 +106,20 @@ local function withSettings(overrides, fn, ...)
     if rawget(settings, "readSetting") == nil and settings.readSetting ~= original then settings.readSetting = original end
     if not ok then error(result, 0) end
     return result
+end
+
+-- KOReader's Highlight button only marks the word to be highlighted when the
+-- pop-up closes, and says so by changing its words to "Unhighlight". In the
+-- row of icons those words never show, so a tap seemed to do nothing (and a
+-- second tap took it back). Here a tap highlights the word and closes the
+-- pop-up, so the highlight shows on the page at once.
+function Dict.highlightNow(self, button)
+    return setmetatable({
+        callback = function()
+            self.save_highlight = true
+            self:onClose()
+        end,
+    }, { __index = button })
 end
 
 -- -------------------------------------------------------------- restyle
@@ -235,7 +250,9 @@ function Dict.restyle(self)
                 local cw = floor(row_w / per_row)
                 for k = start, start + n - 1 do
                     local entry = icon_buttons[k]
-                    cells[#cells + 1] = Cell:new{ w = cw, h = px(52), bare = true, icon_size = 24, icon_name = ICONS[entry.id], source = entry.button }
+                    local source = entry.button
+                    if entry.id == "highlight" then source = Dict.highlightNow(self, entry.button) end
+                    cells[#cells + 1] = Cell:new{ w = cw, h = px(52), bare = true, icon_size = 24, icon_name = ICONS[entry.id], source = source }
                 end
                 table.insert(rows, BoardUI.hstack({ w = row_w }, { BoardUI.flex(0), BoardUI.hstack({}, cells), BoardUI.flex(0) }))
             end
