@@ -13,6 +13,7 @@ Custom (a color wheel). It is KOReader's own page background, so margins and
 the page itself take the color; it is remembered for each book.
 ]]
 
+local Prefs = require("aleph_prefs")
 local Blitbuffer = require("ffi/blitbuffer")
 local Device = require("device")
 local Event = require("ui/event")
@@ -21,9 +22,11 @@ local _ = require("gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardIcons = require("aleph_board_icons")
+local try = require("aleph_try").call
 
 local Screen = Device.screen
 local px = BoardMetrics.px
+local Override = require("aleph_override")
 
 local Config = {}
 
@@ -32,8 +35,7 @@ local PRESETS = { "#FFFFFF", "#F4ECD8", "#E9D8B4", "#E4E4E4" }
 Config.PRESETS = PRESETS
 
 local function stored()
-    local settings = G_reader_settings:readSetting("aleph")
-    return type(settings) == "table" and settings or {}
+    return Prefs.get()
 end
 
 local function colorFor(index)
@@ -67,7 +69,7 @@ function Config.applyBackground(ui, index)
     local document = ui and ui.document
     if not document then return end
     if document.setBackgroundColor then
-        pcall(document.setBackgroundColor, document, tonumber(hex:sub(2), 16))
+        try(document.setBackgroundColor, document, tonumber(hex:sub(2), 16))
     end
     if ui.view then
         if hex == "#FFFFFF" then
@@ -86,15 +88,17 @@ end
 
 -- The reader's saved choice, applied when a book opens.
 function Config.applySaved(ui)
+    -- A choice saved for this book under the option's name before 1.1.46.
+    try(function() require("aleph_migrate").pageBackground(ui) end)
     local configurable = ui.document and ui.document.configurable
-    local index = configurable and tonumber(configurable.rb_page_background)
+    local index = configurable and tonumber(configurable.aleph_page_background)
     if index and index ~= 1 then Config.applyBackground(ui, index) end
 end
 
 -- Night mode switched: the book's colour goes (or comes back) with it.
 function Config.nightChanged(ui)
     local configurable = ui and ui.document and ui.document.configurable
-    local index = configurable and tonumber(configurable.rb_page_background)
+    local index = configurable and tonumber(configurable.aleph_page_background)
     if index and index ~= 1 then Config.applyBackground(ui, index) end
 end
 
@@ -104,13 +108,12 @@ function Config.pickCustom(ui, done)
         title = _("Page color"), hex = current,
         on_use = function(hex)
             if not Config.isPageColor(hex) then
-                pcall(function() require("aleph_toast").show(_("Too dark for a page: pick a lighter colour. Night mode makes pages dark."), { icon = "triangle-alert" }) end)
+                try(function() require("aleph_toast").show(_("Too dark for a page: pick a lighter colour. Night mode makes pages dark."), { icon = "triangle-alert" }) end)
                 return
             end
-            local settings = G_reader_settings:readSetting("aleph")
-            if type(settings) ~= "table" then settings = {}; G_reader_settings:saveSetting("aleph", settings) end
+            local settings = Prefs.table()
             settings.page_bg_custom = hex
-            pcall(function() G_reader_settings:flush() end)
+            try(function() G_reader_settings:flush() end)
             done()
         end,
     }
@@ -123,16 +126,16 @@ function Config.installOptions()
     if not ok or type(CreOptions) ~= "table" or CreOptions._aleph_tab then return end
     CreOptions._aleph_tab = true
     table.insert(CreOptions, {
-        icon = "appbar.contrast", rb_tab = true,
+        icon = "appbar.contrast", aleph_tab = true,
         options = {
             {
-                name = "rb_page_background",
+                name = "aleph_page_background",
                 name_text = _("Background"),
                 toggle = { _("White"), _("Paper"), _("Sepia"), _("Gray"), _("Custom") },
                 values = { 1, 2, 3, 4, 5 },
                 default_value = 1,
                 args = { 1, 2, 3, 4, 5 },
-                event = "RBSetPageBackground",
+                event = "AlephSetPageBackground",
                 help_text = _("The color of the page and its margins. Custom opens a color wheel."),
             },
         },
@@ -149,30 +152,13 @@ local FACES = { cfont = true, ffont = true, smallinfofont = true, x_smallinfofon
 
 -- Option names and choices: the board's font; sizes land on the board's
 -- 15, 14 and 12 whatever KOReader asked for.
+local function boardSize(size)
+    return size >= 20 and BoardMetrics.fontSize(15) or size >= 15 and BoardMetrics.fontSize(14) or BoardMetrics.fontSize(12)
+end
 local function withFonts(build)
-    local Font = require("ui/font")
-    local original = Font.getFace
-    local file = BoardMetrics.faceFile("sans")
-    Font.getFace = function(font, name, size, ...)
-        if FACES[name] then
-            name = file
-            size = size and (size >= 20 and BoardMetrics.fontSize(15) or size >= 15 and BoardMetrics.fontSize(14) or BoardMetrics.fontSize(12)) or size
-        end
-        return original(font, name, size, ...)
-    end
-    -- The tab bar's icons are sized from one constant; answer it with a smaller one.
-    local ok, full = pcall(function() return G_defaults:readSetting("DGENERIC_ICON_SIZE") end)
-    full = ok and full or 48
-    local own_scale = rawget(Screen, "scaleBySize")
-    local original_scale = Screen.scaleBySize
-    Screen.scaleBySize = function(screen, size)
-        if size == full then return px(26) end
-        return original_scale(screen, size)
-    end
-    local built, err = pcall(build)
-    Font.getFace = original
-    Screen.scaleBySize = own_scale
-    if not built then error(err, 0) end
+    -- The tab bar's icons are sized from one constant; it is answered with
+    -- a smaller one (aleph_override.lua).
+    Override.fonts(FACES, boardSize, Override.tabIcons, px(26), build)
 end
 
 local function restyleTabs(dialog)
@@ -181,7 +167,7 @@ local function restyleTabs(dialog)
     local IconWidget = require("ui/widget/iconwidget")
     for index, button in ipairs(bar.menu_items) do
         local spec = dialog.config_options[index]
-        local name = spec and (spec.rb_tab and "palette" or TAB_ICONS[spec.icon])
+        local name = spec and (spec.aleph_tab and "palette" or TAB_ICONS[spec.icon])
         local file = name and BoardIcons.file(name, "#000000", 2.25)
         if file and button.image and button.image.file ~= file then
             button.image:free()
@@ -192,8 +178,7 @@ local function restyleTabs(dialog)
 end
 
 local function wanted()
-    local settings = stored()
-    return not (settings.style_dialogs == false)
+    return Prefs.styleDialogs()
 end
 
 function Config.install()

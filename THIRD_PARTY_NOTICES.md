@@ -35,3 +35,48 @@ forked thumbnail renderer, and a minute refresh that waits while the reader is
 covered. The code is Reading Board's own and much smaller (no token language,
 presets or icon fonts). Bookends is licensed under the GNU Affero General
 Public License 3.0, the same licence as Reading Board.
+
+## Literary Clock (readinpixels/literary-clock) — MIT License
+
+`aleph_literary_clock.lua` (2026-11-14) adapts its quote lookup, time in words, fallback lines and word wrapping with a bold time phrase. The quote data it ships (`aleph_literary_clock/en/`) is not under this licence: see "Literary clock quotes" below.
+
+MIT License
+
+Copyright (c) 2026 readinpixels
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+## Literary clock quotes — CC BY-NC-SA 2.5
+
+
+The quotes in `aleph_literary_clock/en/` are readinpixels' conversion
+(literary-clock) of the English collection (`quotes/quotes.en-US.csv`) of
+cdmoro/literature-clock by Carlos Bonadeo, which comes from
+JohannesNE/literature-clock, which grew out of The Guardian's
+reader-contributed literary clock (2011). JohannesNE's collection is licensed
+under the Creative Commons Attribution-NonCommercial-ShareAlike 2.5 Generic
+License (http://creativecommons.org/licenses/by-nc-sa/2.5/), and the quote
+data here is shared under the same terms: credit the sources, no commercial
+use, share changes under the same licence. No single verified licence covers
+every quotation; each quote remains the work of its author, named next to it,
+and is included as a short excerpt.
+
+Credit to The Guardian and its readers, to JohannesNE, to Carlos Bonadeo and
+the other contributors, to readinpixels, and to the authors of the books
+quoted.

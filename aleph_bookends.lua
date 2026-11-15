@@ -37,6 +37,7 @@ page to change them is aleph_bookends_page.lua. While the Bookends
 plugin itself is on, nothing is painted here, so the two never overlap.
 ]]
 
+local Prefs = require("aleph_prefs")
 local Device = require("device")
 local Geom = require("ui/geometry")
 local UIManager = require("ui/uimanager")
@@ -45,6 +46,7 @@ local _ = require("gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
+local try = require("aleph_try").call
 
 local Screen = Device.screen
 local INK = BoardMetrics.INK
@@ -97,6 +99,9 @@ local DEFAULTS = {
     line = "progress",
     size = "small",
     hide_stock = false,
+    -- The Bluetooth page turner's battery at the end of the bottom right
+    -- (aleph_page_turner.lua), while one reports it.
+    page_turner = true,
     ink = "gray", ink_hex = nil,
     bold = false,
     -- How far the top line sits from the top edge and the bottom line from
@@ -114,10 +119,10 @@ end
 
 -- The saved settings over the defaults.
 function Bookends.config()
-    local stored = G_reader_settings:readSetting("aleph")
-    local saved = type(stored) == "table" and type(stored.bookends) == "table" and stored.bookends or {}
+    local stored = Prefs.get()
+    local saved = type(stored.bookends) == "table" and stored.bookends or {}
     local c = copy(DEFAULTS)
-    for _i, key in ipairs({ "top", "bottom", "line", "size", "hide_stock", "ink", "ink_hex", "bold", "top_offset", "bottom_offset" }) do
+    for _i, key in ipairs({ "top", "bottom", "line", "size", "hide_stock", "page_turner", "ink", "ink_hex", "bold", "top_offset", "bottom_offset" }) do
         if saved[key] ~= nil then c[key] = saved[key] end
     end
     if type(saved.slots) == "table" then
@@ -182,8 +187,7 @@ local current_cache = { version = -1 }
 Bookends._version = 0
 
 function Bookends.current()
-    local stored = G_reader_settings:readSetting("aleph")
-    local saved = type(stored) == "table" and stored.bookends or nil
+    local saved = Prefs.get().bookends or nil
     if current_cache.version == Bookends._version and current_cache.saved == saved and current_cache.config then
         return current_cache.config
     end
@@ -194,24 +198,16 @@ end
 
 function Bookends.save(c)
     Bookends._version = Bookends._version + 1
-    local stored = G_reader_settings:readSetting("aleph")
-    if type(stored) ~= "table" then stored = {} end
-    stored.bookends = c
-    G_reader_settings:saveSetting("aleph", stored)
+    Prefs.set("bookends", c)
 end
 
 function Bookends.reset()
     Bookends._version = Bookends._version + 1
-    local stored = G_reader_settings:readSetting("aleph")
-    if type(stored) == "table" then
-        stored.bookends = nil
-        G_reader_settings:saveSetting("aleph", stored)
-    end
+    Prefs.set("bookends", nil)
 end
 
 local function enabledHere()
-    local stored = G_reader_settings:readSetting("aleph")
-    return not (type(stored) == "table" and stored.bookends_enabled == false)
+    return Prefs.on("bookends_enabled")
 end
 Bookends.enabledHere = enabledHere
 
@@ -242,19 +238,19 @@ end
 -- The state an item is drawn from, read once per paint.
 function Bookends.state(ui)
     local s = {}
-    pcall(function() s.page = ui:getCurrentPage() end)
-    pcall(function() s.pages = ui.document:getPageCount() end)
+    try(function() s.page = ui:getCurrentPage() end)
+    try(function() s.pages = ui.document:getPageCount() end)
     s.page, s.pages = tonumber(s.page), tonumber(s.pages)
     if s.page and s.pages and s.pages > 0 then s.percent = s.page / s.pages end
-    pcall(function() s.chapter_left = tonumber(ui.toc:getChapterPagesLeft(s.page)) end)
-    pcall(function() s.chapter = ui.toc:getTocTitleByPage(s.page) end)
+    try(function() s.chapter_left = tonumber(ui.toc:getChapterPagesLeft(s.page)) end)
+    try(function() s.chapter = ui.toc:getTocTitleByPage(s.page) end)
     s.avg = avgSeconds(ui)
     local props = ui.doc_props or {}
     s.title = props.display_title or props.title
     local authors = props.authors
     if type(authors) == "table" then authors = table.concat(authors, ", ") end
     s.author = type(authors) == "string" and authors:gsub("\n", ", ") or nil
-    s.session_start = ui._rb_bookends_since
+    s.session_start = ui._aleph_bookends_since
     return s
 end
 
@@ -294,12 +290,17 @@ function Bookends.value(id, s, ui)
         local ok, cap = pcall(function() return Device:hasBattery() and Device:getPowerDevice():getCapacity() end)
         if ok and cap then
             local charging = false
-            pcall(function() charging = Device:getPowerDevice():isCharging() and true or false end)
+            try(function() charging = Device:getPowerDevice():isCharging() and true or false end)
             return { battery = cap, charging = charging, text = cap .. "%" }
         end
+    elseif id == "page_turner" then
+        -- The Bluetooth page turner's battery (aleph_page_turner.lua).
+        local PT = require("aleph_page_turner")
+        local level = PT.wanted() and PT.level(ui)
+        if level then return { icon = "bluetooth", text = level .. "%" } end
     elseif id == "wifi" then
         local on = false
-        pcall(function() on = require("ui/network/manager"):isWifiOn() end)
+        try(function() on = require("ui/network/manager"):isWifiOn() end)
         if on then return { icon = "wifi" } end
     elseif id == "light" then
         local ok, level = pcall(function()
@@ -320,35 +321,60 @@ end
 -- The board's battery: an outline, its fill and the nub (as in its status
 -- cluster), the bolt while charging.
 local function battery(v, size, col, hex)
-    local bw, bh = px(size + 7), px(floor(size * 0.85 + 0.5))
-    local b = math.max(1, px(1.25))
-    local pad = px(1.5)
-    local fill_w = math.max(1, floor((bw - 2 * b - 2 * pad) * v.battery / 100 + 0.5))
-    local body = BoardUI.box({ w = bw, h = bh, border = b, border_col = col, radius = px(2.5) },
-        BoardUI.hstack({ h = bh - 2 * b }, { BoardUI.space(pad, 1), BoardUI.rect(fill_w, bh - 2 * b - 2 * pad, col, px(1)) }))
     local parts = {}
     if v.charging then parts[#parts + 1] = BoardUI.icon("zap", px(size + 2), { sw = 1.25, col = hex }) end
-    parts[#parts + 1] = BoardUI.hstack({}, { body, BoardUI.rect(px(2), px(4.5), col) })
+    parts[#parts + 1] = BoardUI.battery(v.battery, { w = size + 7, h = floor(size * 0.85 + 0.5), col = col })
     return BoardUI.hstack({ gap = px(4) }, parts)
 end
 Bookends.batteryWidget = battery
 
--- One slot's widget, items joined by " · ".
-local function slotWidget(ids, s, ui, size, ink, max_w, bold)
+-- The slots' widgets are kept from one paint to the next, each for as long
+-- as what it shows stays the same. The page is painted again on every
+-- page turn, every step of a text selection and every menu that closes,
+-- and making a slot (laying out its text) is the dear part: a clock is
+-- made once a minute this way, a title once per book. Only the widgets
+-- are kept, not a picture of them, so they are still drawn over whatever
+-- the page has under them.
+local slot_cache = {}
+
+function Bookends.dropCache()
+    for _name, hit in pairs(slot_cache) do
+        if hit.widget and hit.widget.free then pcall(hit.widget.free, hit.widget) end
+    end
+    slot_cache = {}
+end
+
+-- One slot's widget, items joined by " · ". `name` is the slot's place
+-- ("top/left"): its widget is kept under it.
+local function slotWidget(name, ids, s, ui, size, ink, max_w, bold)
     local col = ink.col
-    local parts = {}
+    local values = {}
+    local key = { Bookends._version, size, bold and "b" or "r", tostring(ink.hex), tostring(max_w), px(100) }
     for _i, id in ipairs(ids) do
         local ok, v = pcall(Bookends.value, id, s, ui)
         if ok and v then
-            if #parts > 0 then parts[#parts + 1] = BoardUI.text("·", { s = size, col = col, b = bold }) end
-            if v.battery then parts[#parts + 1] = battery(v, size, col, ink.hex) end
-            if v.icon then parts[#parts + 1] = BoardUI.icon(v.icon, px(size + 3), { sw = bold and 2.75 or 2.25, col = ink.hex }) end
-            if v.text and v.text ~= "" then
-                parts[#parts + 1] = { text = v.text }
-            end
+            values[#values + 1] = v
+            key[#key + 1] = id .. "=" .. tostring(v.text) .. "/" .. tostring(v.icon) .. "/" .. tostring(v.battery) .. "/" .. tostring(v.charging)
         end
     end
-    if #parts == 0 then return nil end
+    key = table.concat(key, "\1")
+    local hit = slot_cache[name]
+    if hit and hit.key == key then return hit.widget end
+    if hit and hit.widget and hit.widget.free then pcall(hit.widget.free, hit.widget) end
+    slot_cache[name] = nil
+    local parts = {}
+    for _i, v in ipairs(values) do
+        if #parts > 0 then parts[#parts + 1] = BoardUI.text("·", { s = size, col = col, b = bold }) end
+        if v.battery then parts[#parts + 1] = battery(v, size, col, ink.hex) end
+        if v.icon then parts[#parts + 1] = BoardUI.icon(v.icon, px(size + 3), { sw = bold and 2.75 or 2.25, col = ink.hex }) end
+        if v.text and v.text ~= "" then
+            parts[#parts + 1] = { text = v.text }
+        end
+    end
+    if #parts == 0 then
+        slot_cache[name] = { key = key }
+        return nil
+    end
     -- Text parts are made last, so a slot too wide for its room is cut in its
     -- text, never in its marks.
     local fixed, texts = 0, 0
@@ -371,18 +397,29 @@ local function slotWidget(ids, s, ui, size, ink, max_w, bold)
             widgets[i] = p
         end
     end
-    return BoardUI.hstack({ gap = gap }, widgets)
+    local widget = BoardUI.hstack({ gap = gap }, widgets)
+    slot_cache[name] = { key = key, widget = widget }
+    return widget
 end
 
 -- A band: left, middle and right; the middle is centred on the page and the
 -- sides have what is left either side of it.
-local function band(slots, s, ui, size, ink, w, mx, bold)
+local function band(edge, slots, s, ui, size, ink, w, mx, bold)
     local h = BoardMetrics.lh1(size) + px(2)
-    local middle = slotWidget(slots.middle or {}, s, ui, size, ink, floor(w * 0.5), bold)
+    local middle = slotWidget(edge .. "/middle", slots.middle or {}, s, ui, size, ink, floor(w * 0.5), bold)
     local mw = middle and middle:getSize().w or 0
     local side = floor((w - 2 * mx - mw) / 2) - px(12)
-    local left = slotWidget(slots.left or {}, s, ui, size, ink, side, bold)
-    local right = slotWidget(slots.right or {}, s, ui, size, ink, side, bold)
+    local left = slotWidget(edge .. "/left", slots.left or {}, s, ui, size, ink, side, bold)
+    local right_ids = slots.right or {}
+    if edge == "bottom" then
+        -- The page turner's battery ends the bottom right, after a dot, when
+        -- a Bluetooth page turner reports one (aleph_page_turner.lua).
+        local with = {}
+        for i, id in ipairs(right_ids) do with[i] = id end
+        with[#with + 1] = "page_turner"
+        right_ids = with
+    end
+    local right = slotWidget(edge .. "/right", right_ids, s, ui, size, ink, side, bold)
     local layers = {}
     local function place(widget, x)
         local wh = widget:getSize().h
@@ -409,7 +446,7 @@ end
 local ticks_cache = {}
 function Bookends.ticks(ui, pages, lw, thick)
     local toc
-    pcall(function() toc = ui.toc.toc end)
+    try(function() toc = ui.toc.toc end)
     if type(toc) ~= "table" then toc = {} end
     if ticks_cache.toc ~= toc or ticks_cache.pages ~= pages or ticks_cache.lw ~= lw then
         local xs = {}
@@ -504,23 +541,28 @@ function Bookends.paint(view, bb)
     local s = Bookends.state(ui)
     local ink = Bookends.ink(c)
     local mx = math.max(px(18), floor(g.sw * 0.06))
+    -- The minute tick runs only while something shown changes with time
+    -- (see tick): a paint that finds it stopped sets it again.
+    if not ui._aleph_bookends_armed and Bookends.timed(c) then Bookends.arm(ui) end
+    -- { widget, x, y, kept }: a band is made of the slots' kept widgets and
+    -- is not freed after the paint; the progress line is made each time.
     local widgets = {}
     if c.top then
-        local b = band(c.slots.top, s, ui, g.size, ink, g.sw, mx, c.bold)
+        local b = band("top", c.slots.top, s, ui, g.size, ink, g.sw, mx, c.bold)
         local y = g.top_y
-        if b then widgets[#widgets + 1] = { b, 0, y } end
+        if b then widgets[#widgets + 1] = { b, 0, y, true } end
         if c.line ~= "none" then
             local line = progressLine(ui, s, g.sw, mx, c.line == "chapters")
             widgets[#widgets + 1] = { line, mx, y + g.text_h + px(5) }
         end
     end
     if c.bottom then
-        local b = band(c.slots.bottom, s, ui, g.size, ink, g.sw, mx, c.bold)
-        if b then widgets[#widgets + 1] = { b, 0, g.bottom.y + px(4) } end
+        local b = band("bottom", c.slots.bottom, s, ui, g.size, ink, g.sw, mx, c.bold)
+        if b then widgets[#widgets + 1] = { b, 0, g.bottom.y + px(4), true } end
     end
     for _i, w in ipairs(widgets) do
-        pcall(w[1].paintTo, w[1], bb, w[2], w[3])
-        if w[1].free then pcall(w[1].free, w[1]) end
+        try(w[1].paintTo, w[1], bb, w[2], w[3])
+        if not w[4] and w[1].free then pcall(w[1].free, w[1]) end
     end
 end
 
@@ -557,13 +599,44 @@ local function uncovered(ui)
     return top == nil or top == ui or top == ui.dialog or (top.name == "ReaderUI")
 end
 
+-- Whether these settings show anything that changes with time, worked out
+-- once per settings (c is Bookends.current()'s, kept until they change).
+function Bookends.timed(c)
+    local t = rawget(c, "_timed")
+    if t == nil then
+        t = usesTimed(c)
+        rawset(c, "_timed", t)
+    end
+    return t
+end
+
+-- The minute tick set for the next minute, so the clock turns with the
+-- device's, unless it is set already.
+function Bookends.arm(ui)
+    if not ui or not ui._aleph_bookends_timer or ui._aleph_bookends_armed then return end
+    ui._aleph_bookends_armed = true
+    UIManager:scheduleIn(60 - (os.time() % 60) + 1, ui._aleph_bookends_timer)
+end
+
+-- The tick stopped: while the device sleeps (main.lua, onSuspend), and
+-- when a book closes.
+function Bookends.disarm(ui)
+    if not ui or not ui._aleph_bookends_timer then return end
+    UIManager:unschedule(ui._aleph_bookends_timer)
+    ui._aleph_bookends_armed = false
+end
+
 local function tick(ui)
-    if not ui._rb_bookends_timer then return end
-    if Bookends.showing(ui) and usesTimed(Bookends.current()) and uncovered(ui) then
+    ui._aleph_bookends_armed = false
+    if not ui._aleph_bookends_timer then return end
+    -- With the lines off, or nothing on them that changes with time, the
+    -- tick stops; the next paint that needs it sets it again (Bookends.paint).
+    local wanted = enabledHere() and Bookends.timed(Bookends.current())
+    if not wanted then return end
+    if Bookends.showing(ui) and uncovered(ui) then
         Bookends.repaint(ui)
     end
-    -- On the next minute, so the clock turns with the device's.
-    UIManager:scheduleIn(60 - (os.time() % 60) + 1, ui._rb_bookends_timer)
+    Bookends.arm(ui)
 end
 
 -- ---------------------------------------------------------------- install
@@ -582,7 +655,7 @@ function Bookends.install()
     end
     -- Never in the forked thumbnail renderer (Bookends: its battery and other
     -- reads can block there, and a thumbnail has no room for them).
-    pcall(function()
+    try(function()
         require("ffi/util").addRunInSubProcessAfterForkFunc("aleph_bookends_skip", function()
             Bookends._subprocess = true
         end)
@@ -596,22 +669,24 @@ function Bookends.applyStock(ui)
     if not footer or not footer.mode_list then return end
     local c = Bookends.config()
     if Bookends.showing(ui) and c.hide_stock and c.bottom then
-        pcall(function() footer:applyFooterMode(footer.mode_list.off) end)
+        try(function() footer:applyFooterMode(footer.mode_list.off) end)
     end
 end
 
 function Bookends.attach(ui)
-    if not ui or not ui.document or ui._rb_bookends_timer then return end
-    ui._rb_bookends_since = os.time()
-    ui._rb_bookends_timer = function() tick(ui) end
-    UIManager:scheduleIn(60 - (os.time() % 60) + 1, ui._rb_bookends_timer)
+    if not ui or not ui.document or ui._aleph_bookends_timer then return end
+    ui._aleph_bookends_since = os.time()
+    ui._aleph_bookends_timer = function() tick(ui) end
+    Bookends.arm(ui)
     Bookends.applyStock(ui)
 end
 
 function Bookends.detach(ui)
-    if not ui or not ui._rb_bookends_timer then return end
-    UIManager:unschedule(ui._rb_bookends_timer)
-    ui._rb_bookends_timer = nil
+    Bookends.dropCache()
+    if not ui or not ui._aleph_bookends_timer then return end
+    UIManager:unschedule(ui._aleph_bookends_timer)
+    ui._aleph_bookends_timer = nil
+    ui._aleph_bookends_armed = false
 end
 
 -- After a change in the settings: KOReader's bar, then the page.

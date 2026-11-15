@@ -17,17 +17,20 @@ The highlight dialog's Style and Color buttons become one, which opens this.
 The prompts shown while making a new highlight are left as KOReader's.
 ]]
 
+local Prefs = require("aleph_prefs")
 local Blitbuffer = require("ffi/blitbuffer")
 local Device = require("device")
 local Event = require("ui/event")
 local Geom = require("ui/geometry")
 local UIManager = require("ui/uimanager")
+local T = require("ffi/util").template
 local _ = require("gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
 local MenuUI = require("aleph_menu_ui")
 local Panel = require("aleph_panel")
+local try = require("aleph_try").call
 
 local INK = BoardMetrics.INK
 local px = BoardMetrics.px
@@ -42,11 +45,7 @@ local Palette = {}
 local defaults
 
 local function saved()
-    local stored = G_reader_settings:readSetting("aleph")
-    if type(stored) ~= "table" then
-        stored = {}
-        G_reader_settings:saveSetting("aleph", stored)
-    end
+    local stored = Prefs.table()
     stored.highlight_palette = stored.highlight_palette or {}
     return stored.highlight_palette
 end
@@ -88,7 +87,7 @@ local function update(class, id, change)
     change(mine)
     custom[id] = (mine.name or mine.hex) and mine or nil
     Palette.apply(class)
-    pcall(function() G_reader_settings:flush() end)
+    try(function() G_reader_settings:flush() end)
 end
 
 function Palette.setName(class, id, name)
@@ -132,7 +131,42 @@ end
 -- ---------------------------------------------------------- the pieces
 -- What a style does, shown on a word: Lighten a tinted band, Underline and
 -- Strikethrough a line in the color, Invert white on black.
-local function styleSample(id, w, h, hex)
+-- Styles added by patches or modified KOReader files (Wavy underline,
+-- Crosshatch, Outline thick…) are guessed from their id and name: an
+-- underline of the right kind (double, dashed, thick, fine), a strike, an
+-- outline, or else a tinted band for the fills.
+local function guessKind(id, name)
+    local key = (tostring(id or "") .. " " .. tostring(name or "")):lower()
+    if key:find("under") then return "underline", key end
+    if key:find("strike") then return "strike", key end
+    if key:find("outline") or key:find("frame") or key:find("box") then return "outline", key end
+    return "band", key
+end
+
+local function lineWidgets(layers, kind_key, x, y, len, line, tint)
+    if kind_key:find("thick") or kind_key:find("bold") then line = line * 2
+    elseif kind_key:find("fine") or kind_key:find("thin") then line = math.max(1, floor(line / 2)) end
+    local dashed = kind_key:find("dot") or kind_key:find("dash") or kind_key:find("wav")
+    local function one(ly)
+        if not dashed then
+            table.insert(layers, { widget = BoardUI.rect(len, line, tint), x = x, y = ly })
+            return
+        end
+        local seg = kind_key:find("dot") and line or px(5)
+        local step = seg + math.max(2, px(3))
+        local wave = kind_key:find("wav") and line or 0
+        local i, at = 0, 0
+        while at < len do
+            table.insert(layers, { widget = BoardUI.rect(math.min(seg, len - at), line, tint), x = x + at, y = ly - ((i % 2 == 1) and wave or 0) })
+            at, i = at + step, i + 1
+        end
+    end
+    one(y)
+    if kind_key:find("double") then one(y - line - math.max(2, px(2))) end
+    return line
+end
+
+local function styleSample(id, w, h, hex, name)
     local invert = id == "invert"
     local word = BoardUI.text("Abc", { s = 20, b = true, col = invert and INK.white or INK.black })
     local tw, th = word:getSize().w, word:getSize().h
@@ -140,28 +174,182 @@ local function styleSample(id, w, h, hex)
     local tint = colorOf(hex)
     local line = math.max(2, px(2.5))
     local layers = {}
+    local kind, key = "stock", ""
+    if not (invert or id == "lighten" or id == "underscore" or id == "strikeout") then
+        kind, key = guessKind(id, name)
+    end
     if invert then
         table.insert(layers, { widget = BoardUI.rect(tw + px(12), th, INK.black, px(3)), x = x - px(6), y = y })
-    elseif id == "lighten" then
+    elseif id == "lighten" or kind == "band" then
+        local light = key:find("hatch") or key:find("dot") or key:find("grid") or key:find("cross") or key:find("diag") or key:find("wav")
         table.insert(layers, { widget = BoardUI.rect(tw + px(10), th - px(2), tint, px(3)), x = x - px(5), y = y + px(1) })
+        if kind == "band" and light then
+            -- A pattern fill: the band, crossed by thin white lines.
+            local gap_ = px(5)
+            for ly = y + px(3), y + th - px(3), gap_ do
+                table.insert(layers, { widget = BoardUI.rect(tw + px(10), 1, INK.white), x = x - px(5), y = ly })
+            end
+        end
+    elseif kind == "outline" then
+        local b = key:find("thick") and math.max(2, px(3)) or math.max(1, px(1.5))
+        local ow, oh = tw + px(10), th
+        local ox, oy = x - px(5), y
+        table.insert(layers, { widget = BoardUI.rect(ow, b, tint), x = ox, y = oy })
+        table.insert(layers, { widget = BoardUI.rect(ow, b, tint), x = ox, y = oy + oh - b })
+        table.insert(layers, { widget = BoardUI.rect(b, oh, tint), x = ox, y = oy })
+        table.insert(layers, { widget = BoardUI.rect(b, oh, tint), x = ox + ow - b, y = oy })
     end
     table.insert(layers, { widget = word, x = x, y = y })
     if id == "underscore" then
         table.insert(layers, { widget = BoardUI.rect(tw + px(4), line, tint), x = x - px(2), y = y + th - line - px(1) })
     elseif id == "strikeout" then
         table.insert(layers, { widget = BoardUI.rect(tw + px(8), line, tint), x = x - px(4), y = y + floor(th / 2) })
+    elseif kind == "underline" then
+        lineWidgets(layers, key, x - px(2), y + th - line - px(1), tw + px(4), line, tint)
+    elseif kind == "strike" then
+        lineWidgets(layers, key, x - px(4), y + floor(th / 2), tw + px(8), line, tint)
     end
     return BoardUI.overlay(w, h, layers)
 end
 
 local function styleTile(style, tw, th, selected, hex)
     local border = selected and math.max(2, px(2.5)) or math.max(1, px(1))
-    local sample = styleSample(style[2], tw - 2 * border, px(42), hex)
+    local sample = styleSample(style[2], tw - 2 * border, px(42), hex, style[1])
     local name = BoardUI.text(style[1], { s = 12, b = selected, w = tw - px(8), align = "center", data = true })
     local inner = BoardUI.vstack({ w = tw - 2 * border, h = th - 2 * border, pad = { px(6), 0, px(4), 0 }, align = "center" },
         { sample, BoardUI.flex(px(2)), name })
     local box = BoardUI.box({ w = tw, h = th, radius = px(10), border = border, border_col = selected and INK.black or INK.g9, bg = INK.white }, inner)
     return BoardUI.hit(box, { kind = "style", id = style[2] })
+end
+
+-- The last slot of a style strip that does not hold every style: opens the
+-- full list (Highlight.openStylePicker).
+local function moreTile(tw, th, hidden, action, compact)
+    local border = math.max(1, px(1))
+    local glyph = BoardUI.icon("ellipsis", compact and px(20) or px(26), { sw = 3 })
+    local items
+    if compact then
+        items = { BoardUI.flex(0), glyph, BoardUI.flex(0) }
+    else
+        local name = BoardUI.text(_("More…"), { s = 12, b = true, w = tw - px(8), align = "center" })
+        local count = BoardUI.text("+" .. hidden, { s = 11, col = INK.g4, w = tw - px(8), align = "center" })
+        items = { BoardUI.flex(0), glyph, BoardUI.space(nil, px(2)), name, count, BoardUI.flex(0) }
+    end
+    local inner = BoardUI.vstack({ w = tw - 2 * border, h = th - 2 * border, align = "center" }, items)
+    local box = BoardUI.box({ w = tw, h = th, radius = px(10), border = border, border_col = INK.g6, bg = INK.white }, inner)
+    return BoardUI.hit(box, action)
+end
+Highlight.moreTile = moreTile
+
+-- Which styles a strip of `slots` shows, starting `offset` styles in. Every
+-- style fits: all of them, no More. Else slots - 1 styles and a More tile.
+-- `selected` (an index) is kept in view when the offset is nil.
+-- Returns first, last, offset, more (true when there is a More tile), step.
+function Highlight.styleWindow(count, slots, offset, selected)
+    slots = math.max(2, slots)
+    if count <= slots then return 1, count, 0, false, 0 end
+    local shown = slots - 1
+    local max_off = count - shown
+    if offset == nil then
+        offset = selected and (math.floor((selected - 1) / shown) * shown) or 0
+    end
+    offset = math.max(0, math.min(max_off, offset))
+    return offset + 1, offset + shown, offset, true, shown
+end
+
+-- Every style, in a grid of tiles, paged with swipes or ‹ › when they do not
+-- fit: what a strip's More tile opens.
+--   o.styles    KOReader's list ({ name, id } each)
+--   o.selected  the id marked, if any
+--   o.hex       the color the samples are drawn in
+--   o.title     the heading
+--   o.on_pick   called with the id tapped (the picker closes first)
+function Highlight.openStylePicker(o)
+    local styles = o.styles or {}
+    local page_index
+    local picker
+    picker = Panel:new{
+        build = function(p, sw, sh)
+            local w = math.min(px(520), sw - 2 * px(12))
+            local pad = px(16)
+            local iw = w - 2 * pad
+            local cols = 4
+            local gap = px(8)
+            local tile_w = floor((iw - (cols - 1) * gap) / cols)
+            local tile_h = px(78)
+            local head_h, pager_h = px(44), px(44)
+            local room = sh - 2 * px(24) - 2 * pad - head_h - px(10) - pager_h
+            local rows_fit = math.max(1, floor((room + gap) / (tile_h + gap)))
+            local per_page = rows_fit * cols
+            local pages = math.max(1, math.ceil(#styles / per_page))
+            if not page_index then
+                page_index = 1
+                for i, st in ipairs(styles) do
+                    if st[2] == o.selected then page_index = floor((i - 1) / per_page) + 1 end
+                end
+            end
+            page_index = math.max(1, math.min(pages, page_index))
+            p.pages = pages
+            local header = BoardUI.hstack({ w = iw, h = head_h }, {
+                BoardUI.text(o.title or _("Style"), { s = 20, b = true }), BoardUI.flex(0),
+                BoardUI.text(T(_("%1 styles"), #styles), { s = 13, col = INK.g4 }), BoardUI.space(px(8), 1),
+                MenuUI.iconButton("x", { kind = "close" }),
+            })
+            local items = { header, BoardUI.space(nil, px(10)) }
+            local first = (page_index - 1) * per_page + 1
+            local last = math.min(#styles, page_index * per_page)
+            local row = {}
+            for i = first, last do
+                local st = styles[i]
+                table.insert(row, styleTile(st, tile_w, tile_h, st[2] == o.selected, o.hex))
+                if #row == cols or i == last then
+                    table.insert(items, BoardUI.hstack({ w = iw, gap = gap }, row))
+                    if i ~= last then table.insert(items, BoardUI.space(nil, gap)) end
+                    row = {}
+                end
+            end
+            if pages > 1 then
+                local function arrow(name, delta, on)
+                    local glyph = BoardUI.icon(name, px(22), { sw = 2.5, col = on and "black" or "gb" })
+                    local cell = BoardUI.hstack({ w = px(44), h = pager_h }, { BoardUI.flex(0), glyph, BoardUI.flex(0) })
+                    return on and BoardUI.hit(cell, { kind = "page", delta = delta }) or cell
+                end
+                table.insert(items, BoardUI.hstack({ w = iw, h = pager_h }, {
+                    BoardUI.flex(0), arrow("chevron-left", -1, page_index > 1),
+                    BoardUI.text(T(_("%1 of %2"), page_index, pages), { s = 13, b = true }),
+                    arrow("chevron-right", 1, page_index < pages), BoardUI.flex(0),
+                }))
+            else
+                table.insert(items, BoardUI.space(nil, px(6)))
+            end
+            local content = BoardUI.vstack({ w = w, pad = pad }, items)
+            local border = math.max(1, px(1.5))
+            local ph = content:getSize().h + 2 * border
+            local widget = BoardUI.box({ w = w, h = ph, radius = px(16), bg = INK.white, border = border, border_col = INK.g6 }, content)
+            local x, y = floor((sw - w) / 2), floor((sh - ph) / 2)
+            p.panel_rect = Geom:new{ x = x, y = y, w = w, h = ph }
+            return BoardUI.overlay(sw, sh, { { widget = widget, x = x, y = y } })
+        end,
+        on_action = function(p, action)
+            if action.kind == "style" then
+                p:close()
+                if o.on_pick then o.on_pick(action.id) end
+            elseif action.kind == "page" then
+                page_index = page_index + (action.delta or 0)
+                p:refresh()
+            end
+        end,
+        on_gesture = function(p, ges)
+            if ges.ges ~= "swipe" or (p.pages or 1) < 2 then return end
+            local before = page_index
+            if ges.direction == "west" then page_index = math.min(p.pages, page_index + 1)
+            elseif ges.direction == "east" then page_index = math.max(1, page_index - 1) end
+            if page_index ~= before then p:refresh() end
+            return true
+        end,
+    }
+    picker:show()
+    return picker
 end
 
 local function colorCell(class, id, cw, chh, selected, muted)
@@ -199,6 +387,42 @@ local function sheetPosition(hl, index, ph)
     return floor((sh - ph) / 2)
 end
 
+-- Saves the selection as a highlight in the style and colour chosen for it.
+-- KOReader's saveHighlight(true) first stretches the selection to whole
+-- words and sentence ends, and does it by replacing the selection with the
+-- stretched one, which has no style or colour: whenever the stretch changed
+-- something (a selection starting or ending inside a word), the highlight
+-- was saved in the default colour (yellow), whatever was picked. Here the
+-- stretch is done first and keeps what was chosen; then the highlight is
+-- saved as it is.
+local KEEP = { "color", "drawer", "note", "datetime", "is_extended" }
+function Highlight.saveChosen(hl)
+    local sel = hl.selected_text
+    if not (sel and sel.pos0 and sel.pos1) then return hl:saveHighlight(true) end
+    local chosen = {}
+    for _i, k in ipairs(KEEP) do chosen[k] = sel[k] end
+    local stretched = false
+    if hl.ui.rolling then
+        local ok, ext = pcall(hl.ui.document.extendXPointersToSentenceSegment, hl.ui.document, sel.pos0, sel.pos1)
+        if ok and type(ext) == "table" and ext.pos0 and ext.pos1 then
+            for _i, k in ipairs(KEEP) do if ext[k] == nil then ext[k] = chosen[k] end end
+            hl.selected_text = ext
+            stretched = true
+        end
+    end
+    local index = hl:saveHighlight(false)
+    -- Whatever happened inside, the saved highlight carries the choice.
+    local item = index and hl.ui.annotation.annotations[index]
+    if item and ((chosen.color and item.color ~= chosen.color) or (chosen.drawer and item.drawer ~= chosen.drawer)) then
+        item.color = chosen.color or item.color
+        item.drawer = chosen.drawer or item.drawer
+        UIManager:setDirty(hl.dialog, "ui")
+    end
+    require("logger").dbg("Aleph: new highlight", chosen.drawer, chosen.color, stretched and "(stretched)" or "",
+        "saved as", item and item.drawer, item and item.color)
+    return index
+end
+
 -- opts.new: the highlight is being made (KOReader's "Highlight prompt" setting):
 -- the sheet edits the selection, and closing it makes the highlight, as
 -- KOReader's own prompts do. opts.only: "style" or "color" to show just that.
@@ -216,13 +440,14 @@ function Highlight.openSheet(hl, index, opts)
     local function finish()
         if finished then return end
         finished = true
-        local made = hl:saveHighlight(true)
+        local made = Highlight.saveChosen(hl)
         hl:clear()
         if opts.caller_callback then opts.caller_callback(made) end
     end
     local function change(field, value)
         if opts.new then item()[field] = value else applyChange(hl, index, field, value) end
     end
+    local style_offset, style_step = nil, 0
     local panel
     panel = Panel:new{
         build = function(p, sw, sh)
@@ -239,11 +464,22 @@ function Highlight.openSheet(hl, index, opts)
             })
             local function label(str) return BoardUI.text(str, { s = 13, b = true, col = INK.g4, w = iw }) end
             -- Styles.
+            -- Four slots. More styles than that (a patch or a modified
+            -- KOReader adds them): three at a time, swipe the sheet sideways
+            -- for the next ones, the fourth slot opens them all.
             local gap = px(8)
             local tile_w = floor((iw - 3 * gap) / 4)
             local tiles = {}
-            for _i, style in ipairs(styles) do
+            local selected_at
+            for i, style in ipairs(styles) do if style[2] == drawer then selected_at = i end end
+            local first, last, off, more, step = Highlight.styleWindow(#styles, 4, style_offset, selected_at)
+            style_offset, style_step = off, step
+            for i = first, last do
+                local style = styles[i]
                 table.insert(tiles, styleTile(style, tile_w, px(78), drawer == style[2], Palette.hex(color_id)))
+            end
+            if more then
+                table.insert(tiles, moreTile(tile_w, px(78), #styles - (last - first + 1), { kind = "style-more" }))
             end
             -- Colors, three to a row.
             local cols = 3
@@ -261,7 +497,14 @@ function Highlight.openSheet(hl, index, opts)
             if #row > 0 then table.insert(rows, BoardUI.hstack({ w = iw, gap = cgap }, row)) end
             local items = { header, BoardUI.space(nil, px(6)) }
             if show_style then
-                table.insert(items, label(_("Style")))
+                if style_step > 0 then
+                    table.insert(items, BoardUI.hstack({ w = iw }, {
+                        BoardUI.text(_("Style"), { s = 13, b = true, col = INK.g4 }), BoardUI.flex(px(8)),
+                        BoardUI.text(T(_("%1–%2 of %3 · swipe for more"), first, last, #styles), { s = 12, col = INK.g4 }),
+                    }))
+                else
+                    table.insert(items, label(_("Style")))
+                end
                 table.insert(items, BoardUI.space(nil, px(6)))
                 table.insert(items, BoardUI.hstack({ w = iw, gap = gap }, tiles))
             end
@@ -294,12 +537,35 @@ function Highlight.openSheet(hl, index, opts)
             if action.kind == "style" then
                 change("drawer", action.id)
                 p:refresh()
+            elseif action.kind == "style-more" then
+                local it = item()
+                Highlight.openStylePicker{
+                    styles = styles,
+                    selected = it and (it.drawer or hl.view.highlight.saved_drawer),
+                    hex = Palette.hex(it and it.color or hl.view.highlight.saved_color),
+                    title = _("Highlight style"),
+                    on_pick = function(id)
+                        change("drawer", id)
+                        style_offset = nil -- show the one picked
+                        p:refresh()
+                    end,
+                }
             elseif action.kind == "color" then
                 change("color", action.id)
                 p:refresh()
             elseif action.kind == "done" then
                 p:close()
             end
+        end,
+        on_gesture = function(p, ges)
+            if not show_style or style_step == 0 or ges.ges ~= "swipe" then return end
+            local max_off = #styles - style_step
+            local before = style_offset
+            if ges.direction == "west" then style_offset = math.min(max_off, style_offset + style_step)
+            elseif ges.direction == "east" then style_offset = math.max(0, style_offset - style_step)
+            else return end
+            if style_offset ~= before then p:refresh() end
+            return true
         end,
         on_close = function()
             if opts.new then finish() end
@@ -346,7 +612,7 @@ end
 -- The Pin button the pins add to KOReader's text menu, if they did.
 function Highlight.pinButton(hl)
     local buttons = hl._highlight_buttons
-    return type(buttons) == "table" and buttons["13_rb_pin"] or nil
+    return type(buttons) == "table" and buttons["13_aleph_pin"] or nil
 end
 
 -- "Pin" or "Unpin" for the page a highlight is on, as that button says.
@@ -486,7 +752,7 @@ local MENU_ICONS = {
     ["05_wikipedia"] = "wikipedia", ["06_dictionary"] = "book-open-text", ["07_translate"] = "arrow-left-right",
     ["08_share_text"] = "corner-up-right", ["09_view_html"] = "scroll-text", ["10_user_dict"] = "book-marked",
     ["11_follow_link"] = "arrow-up-right", ["12_search"] = "search", ["12_generate_qr_code"] = "layout-grid",
-    ["12_0_make_handmade_toc_item"] = "list-ordered", ["13_rb_pin"] = "pin",
+    ["12_0_make_handmade_toc_item"] = "list-ordered", ["13_aleph_pin"] = "pin", ["14_aleph_xray"] = "sparkles",
 }
 
 local function buttonEnabled(b)
@@ -599,8 +865,7 @@ end
 
 -- -------------------------------------------------------------- install
 wanted = function()
-    local stored = G_reader_settings:readSetting("aleph")
-    return not (type(stored) == "table" and stored.style_dialogs == false)
+    return Prefs.on("style_dialogs")
 end
 
 -- One button where there were Style and Color.
@@ -623,6 +888,7 @@ end
 Highlight.palette = Palette
 Highlight.colorOf = colorOf
 Highlight.styleSample = styleSample
+Highlight.styleTile = styleTile
 
 -- What the drag posts need from the rest of the reader (adapted from ZenOS):
 -- the page margins in scroll mode, a short pause on page taps after a drag
@@ -632,8 +898,8 @@ function Highlight.installHandles(class)
     local time = require("ui/time")
     local Viewport = require("aleph_viewport")
     local ReaderView = require("apps/reader/modules/readerview")
-    if not ReaderView._rb_viewport then
-        ReaderView._rb_viewport = true
+    if not ReaderView._aleph_viewport then
+        ReaderView._aleph_viewport = true
         local paint = ReaderView.paintTo
         ReaderView.paintTo = function(self, bb, x, y)
             paint(self, bb, x, y)
@@ -641,17 +907,17 @@ function Highlight.installHandles(class)
         end
     end
     local ReaderUI = require("apps/reader/readerui")
-    if not ReaderUI._rb_tap_guard then
-        ReaderUI._rb_tap_guard = true
+    if not ReaderUI._aleph_tap_guard then
+        ReaderUI._aleph_tap_guard = true
         local handle = ReaderUI.handleEvent
         ReaderUI.handleEvent = function(self, event)
             if event.handler == "onGesture" and wanted() then
                 local highlight = self.highlight
-                local deadline = highlight and highlight._rb_highlight_tap_until
+                local deadline = highlight and highlight._aleph_highlight_tap_until
                 if deadline then
                     local ges = event.args and event.args[1]
                     if time.now() >= deadline then
-                        highlight._rb_highlight_tap_until = nil
+                        highlight._aleph_highlight_tap_until = nil
                     elseif ges and (ges.ges == "tap" or ges.ges == "double_tap") then
                         return true
                     end
@@ -670,8 +936,8 @@ function Highlight.installHandles(class)
     for _i, method in ipairs({ "clear", "onClose", "onCloseDocument", "onSetDimensions", "onSuspend" }) do
         local original = class[method]
         class[method] = function(self, ...)
-            self._rb_highlight_viewport = nil
-            local controller = self._rb_highlight_handles
+            self._aleph_highlight_viewport = nil
+            local controller = self._aleph_highlight_handles
             if (method == "clear" or method == "onClose") and wanted()
                     and (self.hold_pos or self.highlight_dialog or controller) then
                 Handles.suppressReaderTaps(self)

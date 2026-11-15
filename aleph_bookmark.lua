@@ -102,16 +102,7 @@ function Details.install()
     local original_init = TextViewer.init
     function TextViewer:init(...)
         if depth == 0 or self.text_type ~= "bookmark" or not wanted() then return original_init(self, ...) end
-        local Font = require("ui/font")
-        local original_getFace = Font.getFace
-        local file = BoardMetrics.faceFile("sans")
-        Font.getFace = function(font, name, size, ...)
-            if name == "x_smallinfofont" or name == "smallinfont" then name = file end
-            return original_getFace(font, name, size, ...)
-        end
-        local ok, err = pcall(original_init, self, ...)
-        Font.getFace = original_getFace
-        if not ok then error(err, 0) end
+        require("aleph_override").fonts({ x_smallinfofont = true, smallinfont = true }, nil, original_init, self, ...)
         BoardMetrics.refresh()
         local styled, why = pcall(Details.restyle, self)
         if not styled then require("logger").warn("Aleph: details restyle failed:", why) end

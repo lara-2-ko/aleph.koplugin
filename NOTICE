@@ -32,3 +32,9 @@ too (readingboard.koplugin → aleph.koplugin, readingboard_*.lua →
 aleph_*.lua); aleph_migrate.lua carries settings, library index, cache,
 gestures and pins over from the old names. Notices in this folder that say
 Reading Board refer to the same fork.
+
+Literary clock: the quotes in aleph_literary_clock/en/ come from the
+Literature Clock collection (The Guardian's readers, JohannesNE, Carlos
+Bonadeo; converted by readinpixels' Literary Clock) and are shared under
+CC BY-NC-SA 2.5, not under this plugin's licence. See
+THIRD_PARTY_NOTICES.md and aleph_literary_clock/NOTICE.md.

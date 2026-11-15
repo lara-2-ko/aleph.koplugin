@@ -15,7 +15,7 @@ A reader who customizes a board gets their own pages stored for that screen
 layout; until then the starter pages are computed fresh, so new widgets and
 device differences (a frontlight or not) apply without a migration.
 
-Stored under catalog_board, keyed by column count plus "l" in landscape:
+Stored under board_layout (under another name before 1.1.46: aleph_migrate.lua moves it), keyed by column count plus "l" in landscape:
   { version = 1, preset = "reader", tiles = "outline", colour = "accents", started = true,
     custom = { ["4"] = { pages = { { items = {...} }, ... } }, ["4l"] = ... } }
 ]]
@@ -26,7 +26,7 @@ local BoardColour = require("aleph_board_colour")
 
 local BoardStore = {}
 
-BoardStore.SETTING_KEY = "catalog_board"
+BoardStore.SETTING_KEY = "board_layout"
 BoardStore.VERSION = 1
 BoardStore.PRESETS = { "reader", "stats", "library" }
 BoardStore.TILE_STYLES = { "outline", "soft", "ink" }
@@ -55,7 +55,7 @@ function BoardStore.pageNames(pages)
     return names
 end
 
--- Shelf sources a shelf widget can show. Catalog selectors carry params.
+-- Shelf sources a shelf widget can show. Selectors of a list carry params.
 BoardStore.SHELVES = {
     wtr = { source = "want-to-read" },
     upnext = { source = "up-next-in-series" },

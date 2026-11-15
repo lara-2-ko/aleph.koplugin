@@ -31,7 +31,7 @@ BoardEdit.LIBRARY = {
     { type = "goalpace", name = function() return _("Goal pace") end, desc = function() return _("Ahead or behind on your yearly goal") end, sizes = { "M", "S" }, tab = "stats", new = true },
     { type = "light", name = function() return _("Light") end, desc = function() return _("Brightness and warmth steppers") end, sizes = { "M", "S" }, tab = "device", new = true },
     { type = "word", name = function() return _("Word of the day") end, desc = function() return _("A word you looked up, in context") end, sizes = { "M", "L" }, tab = "reading", new = true },
-    { type = "toggles", name = function() return _("Quick settings") end, desc = function() return _("Wi-Fi, light, night mode, rotate, refresh") end, sizes = { "M", "S" }, tab = "device", new = true },
+    { type = "toggles", name = function() return _("Quick settings") end, desc = function() return _("Wi-Fi, light, night mode and more: you choose the buttons") end, sizes = { "M", "S" }, tab = "device", new = true },
     { type = "records", name = function() return _("Reading records") end, desc = function() return _("Your longest and average sessions") end, sizes = { "L", "M" }, tab = "stats", new = true },
     { type = "hours", name = function() return _("When you read") end, desc = function() return _("Your reading by hour of the day") end, sizes = { "M", "L" }, tab = "stats", new = true },
     { type = "shelf", name = function() return _("Finished this year") end, desc = function() return _("Covers of the books you finished") end, sizes = { "L", "XL" }, tab = "stats", new = true, props = { source = "finished" } },
@@ -45,9 +45,10 @@ BoardEdit.LIBRARY = {
     { type = "today", name = function() return _("Today") end, desc = function() return _("Minutes read today") end, sizes = { "S" }, tab = "stats" },
     { type = "calendar", name = function() return _("Reading calendar") end, desc = function() return _("This month, one square a day") end, sizes = { "M", "L" }, tab = "stats" },
     { type = "shelf", name = function() return _("Up next in series") end, desc = function() return _("The next book in each series you read") end, sizes = { "L", "XL" }, tab = "library", props = { source = "up-next-in-series" } },
-    { type = "shelf", name = function() return _("Discover") end, desc = function() return _("A shuffle of your library") end, sizes = { "XL", "L" }, tab = "library", props = { source = "random", shuffle = true } },
+    { type = "shelf", name = function() return _("Discover") end, desc = function() return _("Unread books to start, the next of each series") end, sizes = { "XL", "L" }, tab = "library", props = { source = "random", shuffle = true } },
     { type = "shelf", name = function() return _("Recently added") end, desc = function() return _("The newest books in your library") end, sizes = { "XL", "L" }, tab = "library", props = { source = "recently-added" } },
     { type = "link", name = function() return _("Library") end, desc = function() return _("All your books") end, sizes = { "S" }, tab = "library", props = { link = "library" } },
+    { type = "link", name = function() return _("Read") end, desc = function() return _("How much of your library you have read") end, sizes = { "S" }, tab = "library", props = { link = "read" }, new = true },
     { type = "link", name = function() return _("Series") end, desc = function() return _("Every series") end, sizes = { "S" }, tab = "library", props = { link = "series" } },
     { type = "link", name = function() return _("Authors") end, desc = function() return _("Every author") end, sizes = { "S" }, tab = "library", props = { link = "authors" } },
     { type = "link", name = function() return _("Collections") end, desc = function() return _("Your collections, and how many") end, sizes = { "S" }, tab = "library", props = { link = "collections" } },
@@ -76,6 +77,7 @@ BoardEdit.LIBRARY = {
     { type = "rings", name = function() return _("Tree rings") end, desc = function() return _("A ring for every month you read") end, sizes = { "L", "M" }, tab = "decor", new = true },
     { type = "odometer", name = function() return _("Pages turned") end, desc = function() return _("Every page, on a counter") end, sizes = { "M", "S" }, tab = "decor", new = true },
     { type = "glyph", name = function() return _("Glyph of the day") end, desc = function() return _("One letter from your fonts") end, sizes = { "S", "M", "L" }, tab = "decor", new = true },
+    { type = "litclock", name = function() return _("Literary clock") end, desc = function() return _("The time in a line from a book, each minute") end, sizes = { "L", "W", "XL", "M" }, tab = "decor", new = true },
     { type = "analog", name = function() return _("Analog clock") end, desc = function() return _("A clock face, each minute") end, sizes = { "S", "M" }, tab = "decor", new = true, chrome = "ink" },
     { type = "moon", name = function() return _("Moon phase") end, desc = function() return _("Tonight's moon") end, sizes = { "S", "M" }, tab = "decor", new = true, chrome = "ink" },
 }
@@ -261,6 +263,10 @@ function BoardEdit:boardEditRun(action)
             edit.changed = true
             full(T(_("Moved to %1."), BoardStore.pageNames(edit.pages)[target]))
         end
+    elseif kind == "edit-wallpaper" then
+        -- The wallpaper's own sheet (aleph_wallpaper.lua).
+        require("aleph_wallpaper").openSheet(self)
+        return
     elseif kind == "edit-add" then
         edit.sheet = true
         edit.sheet_page = 1
@@ -388,10 +394,10 @@ function BoardEdit:boardSetColour(colour)
     if self:dashboardMode() then self:updateItems(nil, true) end
 end
 
-function BoardEdit.install(Catalog)
+function BoardEdit.install(Host)
     for name, fn in pairs(BoardEdit) do
         if name ~= "install" and type(fn) == "function" and name:match("^board") then
-            Catalog[name] = fn
+            Host[name] = fn
         end
     end
 end

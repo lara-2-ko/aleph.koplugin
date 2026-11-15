@@ -79,7 +79,7 @@ function Prompt:_style()
             BoardUI.hstack({ gap = gap }, { cancel, ok }),
         })
     end)
-    self._rb_hits = hits
+    self._aleph_hits = hits
     group[#group] = row
     group._size, group._offsets = nil, nil
 end
@@ -96,8 +96,8 @@ end
 
 function Prompt:onTap(arg, ges)
     if ges and ges.pos then
-        for index = #(self._rb_hits or {}), 1, -1 do
-            local area = self._rb_hits[index]
+        for index = #(self._aleph_hits or {}), 1, -1 do
+            local area = self._aleph_hits[index]
             if area.dimen and ges.pos:intersectWith(area.dimen) then
                 self:_run(area.action.kind)
                 return true
@@ -115,6 +115,7 @@ function Input.prompt(o)
         title = o.title,
         input = tostring(o.text or ""),
         input_hint = o.hint,
+        input_type = o.input_type,
         ok_label = o.ok_label,
         on_ok = o.on_ok,
         enter_callback = function() dialog:_run("ok") end,

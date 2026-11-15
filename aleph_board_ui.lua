@@ -15,6 +15,7 @@ interface text that had to be shortened, or two labels pushed together. Book
 data (titles, authors, quotes) may be shortened; pass data = true for those.
 ]]
 
+local Prefs = require("aleph_prefs")
 local BD = require("ui/bidi")
 local CenterContainer = require("ui/widget/container/centercontainer")
 local Screen = require("device").screen
@@ -35,6 +36,7 @@ local WidgetContainer = require("ui/widget/container/widgetcontainer")
 
 local BoardIcons = require("aleph_board_icons")
 local BoardMetrics = require("aleph_board_metrics")
+local try = require("aleph_try").call
 
 local INK = BoardMetrics.INK
 local px = BoardMetrics.px
@@ -83,7 +85,7 @@ BoardUI.problem = problem
 
 -- Builds each candidate in turn and returns the first that reported no
 -- problem, or the last one.
-local DEBUG = os.getenv("BO_BOARD_DEBUG") ~= nil
+local DEBUG = os.getenv("ALEPH_BOARD_DEBUG") ~= nil
 
 -- Which candidate won, per widget, size and data. A widget's choice depends
 -- only on those, so a rebuild (a page flip, a tile refresh) builds the
@@ -121,7 +123,7 @@ function BoardUI.pick(variants)
             result, won = node, index
             break
         end
-        if DEBUG then require("logger").info("BOARDFIT", BoardUI.debug_widget or "?", "variant", index, "rejected:", check.last, check.detail) end
+        if DEBUG then require("logger").info("Aleph: BOARDFIT", BoardUI.debug_widget or "?", "variant", index, "rejected:", check.last, check.detail) end
         if node and node.free then node:free() end
     end
     if memo_key then pick_memo[memo_key] = won end
@@ -713,6 +715,21 @@ function BoardUI.refreshStatus(clock)
     return slot.dimen:copy()
 end
 
+-- The battery: an outline, its fill for `level` (0 to 100) and the nub.
+-- o: w, h (in dp; 21 by 11 unless given), col (black unless given). Drawn
+-- the same in Home's header and in a book's top and bottom lines.
+function BoardUI.battery(level, o)
+    o = o or {}
+    local bw, bh = px(o.w or 21), px(o.h or 11)
+    local b = math.max(1, px(1.25))
+    local pad = px(1.5)
+    local col = o.col or INK.black
+    local fill_w = math.max(1, math.floor((bw - 2 * b - 2 * pad) * (level or 0) / 100 + 0.5))
+    local body = BoardUI.box({ w = bw, h = bh, border = b, border_col = o.col, radius = px(2.5) },
+        BoardUI.hstack({ h = bh - 2 * b }, { BoardUI.space(pad, 1), BoardUI.rect(fill_w, bh - 2 * b - 2 * pad, col, px(1)) }))
+    return BoardUI.hstack({}, { body, BoardUI.rect(px(2), px(4.5), col) })
+end
+
 statusInner = function(d)
     local wifi_on = require("ui/network/manager"):isWifiOn() and require("ui/network/manager"):isConnected()
     local powerd = require("device"):getPowerDevice()
@@ -722,23 +739,16 @@ statusInner = function(d)
     table.insert(items, BoardUI.icon(wifi_on and "wifi" or "wifi-off", wifi_h, { col = wifi_on and "black" or "g4", sw = 2.25 }))
     if require("device"):hasBattery() then
         local capacity = powerd:getCapacity() or 0
-        local bw, bh = px(21), px(11)
-        local b = math.max(1, px(1.25))
-        local inner_pad = px(1.5)
-        local fill_w = math.max(1, math.floor((bw - 2 * b - 2 * inner_pad) * capacity / 100 + 0.5))
-        local body = BoardUI.box({ w = bw, h = bh, border = b, radius = px(2.5) },
-            BoardUI.hstack({ h = bh - 2 * b }, { BoardUI.space(inner_pad, 1), BoardUI.rect(fill_w, bh - 2 * b - 2 * inner_pad, INK.black, px(1)) }))
-        local nub = BoardUI.rect(px(2), px(4.5), INK.black)
         -- While a cable is plugged in and charging, a thin outlined bolt sits in
         -- front of the battery, as tall as the Wi-Fi icon so its top and bottom
         -- line up with it; it goes away again when charging stops.
         local charging = false
-        pcall(function() charging = powerd:isCharging() and true or false end)
+        try(function() charging = powerd:isCharging() and true or false end)
         local parts = {}
         if charging then
             table.insert(parts, BoardUI.hstack({ h = wifi_h }, { BoardUI.icon("zap", wifi_h, { sw = 1.1 }) }))
         end
-        table.insert(parts, BoardUI.hstack({}, { body, nub }))
+        table.insert(parts, BoardUI.battery(capacity))
         table.insert(parts, BoardUI.text(tostring(capacity) .. "%", { s = 12, col = INK.g4 }))
         table.insert(items, BoardUI.hstack({ gap = px(4) }, parts))
     end
@@ -768,25 +778,47 @@ local aspect_cache = {}
 -- The cover scaled for a w x h box: cropped to fill when its shape is within
 -- tol (12% unless given) of the box, fitted otherwise. One decode serves both
 -- the shape check and the scale.
+-- How covers of another shape than their box are drawn (Settings > Library
+-- folders > Covers): "fit" whole, at their own shape (a cover close to the
+-- box's shape still fills it); "fill" every box, trimming the edges; or
+-- "stretch" to the box, nothing trimmed. Fill and stretch make every cover
+-- the same size.
+local function coverShape()
+    local v = Prefs.get().cover_shape
+    return (v == "fill" or v == "stretch") and v or "fit"
+end
+BoardUI.coverShape = coverShape
+
+-- Cover files that could not be read when drawn. coverFailed(path) says so
+-- once (and forgets it), for whoever can make the cover again.
+local cover_failed = {}
+function BoardUI.coverFailed(path)
+    if not cover_failed[path] then return false end
+    cover_failed[path] = nil
+    return true
+end
+
 local function cachedCover(path, w, h, tol)
     tol = tol or 0.12
-    local key = path .. "|" .. w .. "x" .. h .. "|" .. tol
+    local shape = coverShape()
+    local key = path .. "|" .. w .. "x" .. h .. "|" .. tol .. "|" .. shape
     local hit = cover_cache[key]
     if hit then
         if cover_order[#cover_order] ~= key then touchCover(key) end
         return hit
     end
     local ok, native = pcall(RenderImage.renderImageFile, RenderImage, path, false)
-    if not ok or not native then return nil end
+    if not ok or not native then cover_failed[path] = true; return nil end
     local iw, ih = native:getWidth(), native:getHeight()
     aspect_cache[path] = iw / ih
     local box_aspect = w / h
-    local crop = math.abs(iw / ih - box_aspect) / box_aspect <= tol
+    local crop = shape ~= "fit" or math.abs(iw / ih - box_aspect) / box_aspect <= tol
     local scale = crop and math.max(w / iw, h / ih) or math.min(w / iw, h / ih)
     local sw, sh = math.max(1, math.floor(iw * scale + 0.5)), math.max(1, math.floor(ih * scale + 0.5))
+    if shape == "stretch" then sw, sh = w, h end
     local scaled = RenderImage:scaleBlitBuffer(native, sw, sh, true)
     local bpp = 4
-    pcall(function() bpp = math.max(1, scaled:getBpp() / 8) end)
+    try(function() bpp = math.max(1, scaled:getBpp() / 8) end)
     hit = { bb = scaled, w = sw, h = sh, crop = crop, bytes = sw * sh * bpp }
     cover_cache[key] = hit
     cover_bytes = cover_bytes + hit.bytes
@@ -802,6 +834,20 @@ local function cachedCover(path, w, h, tol)
         cover_cache[old] = nil
     end
     return hit
+end
+
+-- Keeps only the covers drawn last: at most max_count of them and
+-- max_bytes in all. For when the screen that drew them closes.
+function BoardUI.trimCoverCache(max_count, max_bytes)
+    while #cover_order > 0 and (#cover_order > max_count or cover_bytes > max_bytes) do
+        local old = table.remove(cover_order, 1)
+        local entry = cover_cache[old]
+        if entry then
+            cover_bytes = cover_bytes - (entry.bytes or 0)
+            if entry.bb then entry.bb:free() end
+        end
+        cover_cache[old] = nil
+    end
 end
 
 function BoardUI.clearCoverCache()

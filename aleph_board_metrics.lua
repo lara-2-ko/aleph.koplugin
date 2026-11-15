@@ -23,7 +23,7 @@ local Screen = Device.screen
 
 local BoardMetrics = {}
 
-BoardMetrics.UI_SCALES = { 1, 1.05, 1.1, 1.15, 1.2 }
+BoardMetrics.UI_SCALES = { 1, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.4, 1.5 }
 BoardMetrics.DEFAULT_UI_SCALE = 1.05
 
 local FACE_HEIGHT_EM = 1.362
@@ -73,12 +73,25 @@ end
 function BoardMetrics.normalizeUserScale(value)
     local numeric = tonumber(value)
     if not numeric then return BoardMetrics.DEFAULT_UI_SCALE end
-    local rounded = math.floor(numeric * 100 + 0.5) / 100
-    if rounded == 1.25 then return 1.2 end
+    -- The nearest size offered (a value saved by another version included).
+    local best, gap = BoardMetrics.DEFAULT_UI_SCALE, math.huge
     for _, scale in ipairs(BoardMetrics.UI_SCALES) do
-        if rounded == scale then return scale end
+        local d = math.abs(numeric - scale)
+        if d < gap - 1e-9 then best, gap = scale, d end
     end
-    return BoardMetrics.DEFAULT_UI_SCALE
+    return best
+end
+
+-- The size one step smaller (delta -1) or larger (+1) than `value`.
+function BoardMetrics.stepUserScale(value, delta)
+    local current = BoardMetrics.normalizeUserScale(value)
+    local list = BoardMetrics.UI_SCALES
+    for index, scale in ipairs(list) do
+        if scale == current then
+            return list[math.max(1, math.min(#list, index + (delta or 0)))]
+        end
+    end
+    return current
 end
 
 function BoardMetrics.setUserScale(value)

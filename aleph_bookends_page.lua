@@ -16,6 +16,7 @@ up to three, numbered on the chip), tap again to remove. In a book the page
 behind updates as you change things.
 ]]
 
+local Prefs = require("aleph_prefs")
 local Geom = require("ui/geometry")
 local UIManager = require("ui/uimanager")
 local T = require("ffi/util").template
@@ -27,6 +28,7 @@ local Bookends = require("aleph_bookends")
 local MenuPage = require("aleph_menu_page")
 local MenuUI = require("aleph_menu_ui")
 local SheetUI = require("aleph_sheet_ui")
+local try = require("aleph_try").call
 
 local INK = BoardMetrics.INK
 local px = BoardMetrics.px
@@ -59,7 +61,7 @@ local function sampleSlot(list, size, max_w, ink, bold)
     local parts = {}
     for _i, id in ipairs(list or {}) do
         local it = Bookends.ITEM_BY_ID[id]
-        local str = it.sample
+        local str = _(it.sample)
         if id == "clock" then str = require("datetime").secondsToHour(os.time(), G_reader_settings:isTrue("twelve_hour_clock")) end
         local sw = bold and 2.75 or 2.25
         if id == "wifi" then parts[#parts + 1] = icon("wifi", px(size + 2), { sw = sw, col = ink.hex })
@@ -192,6 +194,8 @@ local function body(page, w, compact)
                 h = note and 76 or 64, sublines = note and 2 or nil, toggle = on, action = { kind = "enabled", value = not on } }),
             MenuUI.row(iw, { icon = "eye-off", label = _("Hide KOReader's status bar"), sub = _("Its bar at the foot of the page, while the bottom line shows"), h = 64,
                 toggle = c.hide_stock == true, action = { kind = "stock" } }),
+            MenuUI.row(iw, { icon = "bluetooth", label = _("Page turner battery"), sub = _("At the end of the bottom right, while a Bluetooth page turner reports it"), h = 64,
+                toggle = c.page_turner ~= false, action = { kind = "page-turner" } }),
             MenuUI.row(iw, { icon = "rotate-ccw", label = _("Reset"), sub = _("Progress, clock and battery on top; time left at the foot"), h = 64, action = { kind = "reset" } }),
         })
     end
@@ -258,7 +262,7 @@ function Page.openPicker(page, edge, slot)
                 if at then
                     table.remove(list, at)
                 elseif #list >= Bookends.MAX_ITEMS then
-                    pcall(function() require("aleph_toast").show(_("Up to three in one place. Tap one to remove it first."), { icon = "info" }) end)
+                    try(function() require("aleph_toast").show(_("Up to three in one place. Tap one to remove it first."), { icon = "info" }) end)
                     return true
                 else
                     list[#list + 1] = action.id
@@ -285,7 +289,7 @@ function Page.pickInk(page)
         title = _("Text colour"), hex = c.ink == "custom" and c.ink_hex or "#335577",
         on_use = function(hex)
             if Bookends.tooLight(hex) then
-                pcall(function() require("aleph_toast").show(_("Too light to read on the page: pick a darker colour."), { icon = "triangle-alert" }) end)
+                try(function() require("aleph_toast").show(_("Too light to read on the page: pick a darker colour."), { icon = "triangle-alert" }) end)
                 return
             end
             local now = Bookends.config()
@@ -320,13 +324,14 @@ local function onAction(page, action)
         c.hide_stock = not c.hide_stock
         Bookends.save(c)
         if not c.hide_stock and page.ui and page.ui.view and page.ui.view.footer then
-            pcall(function() require("aleph_toast").show(_("KOReader's status bar comes back with its own toggle (tap the foot of the page)."), { icon = "info" }) end)
+            try(function() require("aleph_toast").show(_("KOReader's status bar comes back with its own toggle (tap the foot of the page)."), { icon = "info" }) end)
         end
+    elseif k == "page-turner" then
+        c.page_turner = c.page_turner == false
+        Bookends.save(c)
+        if c.page_turner then try(function() require("aleph_page_turner").ask(page.ui) end) end
     elseif k == "enabled" then
-        local stored = G_reader_settings:readSetting("aleph")
-        if type(stored) ~= "table" then stored = {} end
-        stored.bookends_enabled = action.value and nil or false
-        G_reader_settings:saveSetting("aleph", stored)
+        Prefs.set("bookends_enabled", action.value and nil or false)
     elseif k == "reset" then Bookends.reset()
     else return true end
     page:refresh()

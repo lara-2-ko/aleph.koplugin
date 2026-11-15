@@ -971,7 +971,7 @@ local SHELF_EMPTY = {
     ["pick-back-up"] = function() return _("Books you put down a while ago show up here.") end,
     ["finished"] = function() return _("Books you finish this year gather here.") end,
 }
--- Shelves with no catalog list to open: no See all.
+-- Shelves with no list to open: no See all.
 local SHELF_NO_LIST = {}
 BoardWidgets.shelfTitle = function(props)
     if props.title then return props.title end
@@ -1063,8 +1063,20 @@ local LINKS = {
     device = { "tablet", function() return _("On device") end, function(d) return d.counts.device end,
         function(n) return _.ngettext("book here", "books here", n) end },
     search = { "search", function() return _("Search") end, function() return nil end, function() return "" end },
+    -- How much of the library is finished: a percentage (BoardWidgets.readShare).
+    read = { "book-check", function() return _("Read") end, function(d) return d.counts.read end, function() return _("of your books") end },
 }
 BoardWidgets.LINKS = LINKS
+
+-- "37%": read of total, "<1%" for a start, 100% only when all are read.
+function BoardWidgets.readShare(read, total)
+    read, total = tonumber(read) or 0, tonumber(total) or 0
+    if total <= 0 then return "0%" end
+    local p = read / total * 100
+    if read > 0 and p < 0.5 then return "<1%" end
+    if read < total and p >= 99.5 then return "99%" end
+    return tostring(math.floor(p + 0.5)) .. "%"
+end
 
 local function fanWidth(cover_h, count)
     local cw = math.floor(cover_h * 2 / 3 + 0.5)
@@ -1232,7 +1244,13 @@ W.link = function(ctx, w, hh, props)
         })
     end
     local books = props.link == "series" and (d.shelves["up-next-in-series"] or {}) or (d.shelves["recently-added"] or d.shelves["random"] or {})
-    local count_col = vstack({}, { text(formatCount(n or 0), { s = val_s, b = true }), text(unit, { s = 11, col = INK.g4 }) })
+    local value = formatCount(n or 0)
+    if props.link == "read" then
+        -- The share of the library finished, with the finished books' covers.
+        value = BoardWidgets.readShare(n, d.counts.library)
+        books = d.shelves["read"] or d.shelves["finished"] or {}
+    end
+    local count_col = vstack({}, { text(value, { s = val_s, b = true }), text(unit, { s = 11, col = INK.g4 }) })
     local fan_room = iw - count_col:getSize().w - px(8)
     local fh = math.max(px(30), math.min(px(66), room - px(6), math.floor(fan_room / 2.2 * 1.5)))
     -- Rounding can make the fan a pixel wider than its room; past the
@@ -1449,19 +1467,31 @@ W.toggles = function(ctx, w, hh)
     local pad = px(10)
     local iw, ih = w - 2 * pad, hh - 2 * pad
     local small = w < px(200)
-    -- With KOSyncthing+ installed the last button starts Syncthing, lit while it runs.
+    -- The buttons are the reader's choice (Settings > Widget actions), or
+    -- Wi-Fi, Light, Night, Rotate and Sync / Refresh. Lit: Wi-Fi while on,
+    -- Night in night mode, Sync while Syncthing runs.
     local Integrations = require("aleph_integrations")
-    local sync_on = Integrations.syncthing() ~= nil
-    local sync_label = sync_on and _("Sync") or _("Refresh")
-    -- A row of five whose labels do not fit even at 10 is drawn as the grid.
+    local Actions = require("aleph_actions")
+    local has_light = d.light ~= nil
+    local buttons, custom = Actions.buttons(has_light)
+    local function lit(id)
+        if id == "aleph:wifi" then return d.online and true or false end
+        if id == "aleph:night" then return G_reader_settings:isTrue("night_mode") end
+        if id == "aleph:refresh" then return Integrations.syncthing() ~= nil and Integrations.syncthingRunning() or false end
+        return false
+    end
+    local all = {}
+    for _i, b in ipairs(buttons) do
+        all[#all + 1] = { Actions.buttonIcon(b), Actions.buttonLabel(b), lit(b.action), Actions.boardAction(b.action) or { kind = "noop" }, id = b.action }
+    end
+    -- A row whose labels do not fit even at 10 is drawn as the grid.
     local label_s
     if not small then
-        local names = { _("Wi-Fi"), _("Light"), _("Night"), _("Rotate"), sync_label }
-        local cw5 = math.floor(iw / (d.light ~= nil and 5 or 4))
+        local cw5 = math.floor(iw / math.max(1, #all))
         for _i, size in ipairs({ 12, 11, 10 }) do
             local widest = 0
-            for _j, name in ipairs(names) do
-                local t = text(name, { s = size, b = true })
+            for _j, it in ipairs(all) do
+                local t = text(it[2], { s = size, b = true })
                 widest = math.max(widest, t:getSize().w)
                 if t.free then t:free() end
             end
@@ -1469,26 +1499,27 @@ W.toggles = function(ctx, w, hh)
         end
         small = label_s == nil
     end
-    -- Light opens KOReader's brightness dialog. In the 2x2 grid it takes
-    -- Rotate's place, the least used of the five.
-    local has_light = d.light ~= nil
-    local items = { { "wifi", _("Wi-Fi"), d.online, "wifi" } }
-    if has_light then table.insert(items, { "sun", _("Light"), false, "frontlight" }) end
-    table.insert(items, { "moon", _("Night"), G_reader_settings:isTrue("night_mode"), "night" })
-    if not (has_light and small) then table.insert(items, { "rotate-cw-square", _("Rotate"), false, "rotate" }) end
-    table.insert(items, { "refresh-cw", sync_label, sync_on and Integrations.syncthingRunning() or false, "refresh" })
+    local items = {}
+    for _i, it in ipairs(all) do
+        -- In the 2x2 grid the default Light takes Rotate's place, the least
+        -- used of the five; a chosen set keeps its first four.
+        if not (small and not custom and has_light and it.id == "aleph:rotate") then items[#items + 1] = it end
+    end
+    if small then while #items > 4 do table.remove(items) end end
     local function circleBtn(size, it)
         local on = it[3]
         return BoardUI.hit(BoardUI.circle(size, { bg = on and BoardColour.ink(ctx, INK.black) or INK.white, border = on and 0 or math.max(1, px(1.5)) },
-            icon(it[1], math.floor(size * 0.46 + 0.5), { col = on and "white" or "black", sw = 2.25 })), { kind = it[4] })
+            icon(it[1], math.floor(size * 0.46 + 0.5), { col = on and "white" or "black", sw = 2.25 })), it[4])
     end
     if small then
         local bd = math.min(math.floor((iw - px(8)) / 2), math.floor((ih - px(8)) / 2))
+        local top, bottom = {}, {}
+        for i, it in ipairs(items) do table.insert(i <= 2 and top or bottom, circleBtn(bd, it)) end
         return vstack({ w = w, h = hh, align = "center" }, {
             flex(0),
-            hstack({ gap = px(8) }, { circleBtn(bd, items[1]), circleBtn(bd, items[2]) }),
-            space(nil, px(8)),
-            hstack({ gap = px(8) }, { circleBtn(bd, items[3]), circleBtn(bd, items[4]) }),
+            hstack({ gap = px(8) }, top),
+            #bottom > 0 and space(nil, px(8)) or false,
+            #bottom > 0 and hstack({ gap = px(8) }, bottom) or false,
             flex(0),
         })
     end
@@ -1771,7 +1802,7 @@ function BoardWidgets.tile(ctx, item, w, h)
         BoardUI.surface = surface
         BoardUI.pickScope(nil, ctx.d and ctx.d.fingerprint)
         content = ok and result or text(_("Could not draw this widget."), { s = 12, col = INK.g4, w = w - 2 * px(12) })
-        if not ok then require("logger").warn("BookOrbit: widget", item.type, "failed:", result) end
+        if not ok then require("logger").warn("Aleph: widget", item.type, "failed:", result) end
     end
     local layers = {
         { widget = BoardUI.box({ w = w, h = h, radius = ch.radius, bg = ch.bg }) },
@@ -1816,5 +1847,14 @@ end })
 BoardWidgets.SIG = setmetatable({}, { __index = function(_t, k)
     if DECOR_TYPES[k] then return decor().SIG[k] end
 end })
+
+-- The widgets that show the time to the minute: redrawn on their own each
+-- minute (aleph_browser.lua's clock tick, aleph_board_host.lua).
+BoardWidgets.MINUTE_TYPES = { clock = true, analog = true, litclock = true }
+
+-- ------------------------------------------------------------ literary clock
+-- The time told by a line from a book (aleph_literary_clock.lua), each minute.
+rawset(W, "litclock", function(ctx, w, h, props) return require("aleph_literary_clock").tile(ctx, w, h, props) end)
+rawset(BoardWidgets.SIG, "litclock", function(ctx) return require("aleph_literary_clock").sig(ctx) end)
 
 return BoardWidgets

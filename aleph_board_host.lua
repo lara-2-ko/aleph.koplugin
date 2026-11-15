@@ -1,5 +1,5 @@
 --[[--
-The widget dashboard, installed over the catalog's dashboard view.
+The widget dashboard, installed over the Home screen (aleph_browser.lua).
 
 Draws the board for the current page: a header (greeting, date, device
 status, search and menu), the packed grid of widget tiles, and a footer that
@@ -16,6 +16,7 @@ local Device = require("device")
 local Geom = require("ui/geometry")
 local GestureRange = require("ui/gesturerange")
 local InputContainer = require("ui/widget/container/inputcontainer")
+local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local NetworkMgr = require("ui/network/manager")
 local VerticalSpan = require("ui/widget/verticalspan")
 local T = require("ffi/util").template
@@ -28,13 +29,12 @@ local BoardMetrics = require("aleph_board_metrics")
 local BoardStore = require("aleph_board_store")
 local BoardUI = require("aleph_board_ui")
 local BoardWidgets = require("aleph_board_widgets")
-local CatalogWidgets = require("aleph_catalog_widgets")
 
 local INK = BoardMetrics.INK
 local px, lh1 = BoardMetrics.px, BoardMetrics.lh1
 local text, runs, vstack, hstack, flex, space, icon = BoardUI.text, BoardUI.runs, BoardUI.vstack, BoardUI.hstack, BoardUI.flex, BoardUI.space, BoardUI.icon
 
-local CatalogBoard = {}
+local BoardHost = {}
 
 -- --------------------------------------------------------------- tiles
 local BoardTile = InputContainer:extend{
@@ -91,6 +91,18 @@ function BoardTile:onHoldSelect(_, ges)
     return true
 end
 
+-- A clock widget's place on the board: it remembers where it was last
+-- painted on the screen, so the minute redraw can put a new tile there and
+-- refresh only that rectangle (boardRefreshMinuteTiles).
+local TileSlot = WidgetContainer:extend{}
+function TileSlot:getSize() return self[1]:getSize() end
+function TileSlot:paintTo(bb, x, y)
+    local size = self[1]:getSize()
+    self.dimen = Geom:new{ x = x, y = y, w = size.w, h = size.h }
+    self.on_screen = rawequal(bb, Device.screen.bb)
+    self[1]:paintTo(bb, x, y)
+end
+
 -- A zero-height stand-in for KOReader's title bar while the board is shown:
 -- the board draws its own header.
 local TitleBarStub = VerticalSpan:extend{ width = 0 }
@@ -101,40 +113,40 @@ function TitleBarStub:setLeftIcon() end
 function TitleBarStub:generateVerticalLayout() return {} end
 function TitleBarStub:generateHorizontalLayout() return {} end
 
-function CatalogBoard:boardTitleBar()
+function BoardHost:boardTitleBar()
     return TitleBarStub:new{}
 end
 
 -- -------------------------------------------------------------- context
-function CatalogBoard:boardHasLight()
+function BoardHost:boardHasLight()
     return Device:hasFrontlight()
 end
 
-function CatalogBoard:boardLandscape()
+function BoardHost:boardLandscape()
     local m = BoardMetrics.get()
     return m.w > m.h
 end
 
-function CatalogBoard:boardPages(cols)
+function BoardHost:boardPages(cols)
     return BoardStore.pages(self.settings, cols, self:boardHasLight(), self:boardLandscape())
 end
 
 -- The names of the pages on screen, in order: a Stats or Library starter puts
 -- a different page first.
-function CatalogBoard:boardPageNames(cols)
+function BoardHost:boardPageNames(cols)
     if self.board_edit then return BoardStore.pageNames(self.board_edit.pages) end
     return BoardStore.pageNames(self:boardPages(cols))
 end
 
 -- The page shown, kept on the dashboard context so going into a book and
 -- back returns to the same page.
-function CatalogBoard:boardPage()
+function BoardHost:boardPage()
     local context = self.current_context or {}
     local page = tonumber(context.board_page) or 1
     return math.max(1, math.min(BoardStore.PAGE_COUNT, page))
 end
 
-function CatalogBoard:boardHeader(d, w, mode, page_name)
+function BoardHost:boardHeader(d, w, mode, page_name)
     local box = px(44)
     local tap_pad = math.floor((box - px(24)) / 2)
     local function iconButton(name, action, nudge)
@@ -188,7 +200,7 @@ function CatalogBoard:boardHeader(d, w, mode, page_name)
     })
 end
 
-function CatalogBoard:boardFooter(w, page, mode)
+function BoardHost:boardFooter(w, page, mode)
     local fh = px(40)
     local names = self:boardPageNames(self._board_geometry and self._board_geometry.cols or BoardLayout.columnsFor(BoardMetrics.layoutW()))
     local function chev(name, enabled, delta)
@@ -203,10 +215,15 @@ function CatalogBoard:boardFooter(w, page, mode)
     if mode == "edit" then
         local add_inner = hstack({ h = px(38), gap = px(8) }, { space(px(6), 1), icon("plus", px(17), { col = "white", sw = 2.75 }), text(_("Add widget"), { s = 14, b = true, col = INK.white }), space(px(10), 1) })
         local add = BoardUI.hit(BoardUI.box({ w = add_inner:getSize().w, h = px(38), radius = px(19), bg = INK.black }, add_inner), { kind = "edit-add" })
+        -- Beside it, the wallpaper (aleph_wallpaper.lua).
+        local wall_inner = hstack({ h = px(38), gap = px(8) }, { space(px(6), 1), icon("plus", px(17), { sw = 2.75 }), text(_("Add wallpaper"), { s = 14, b = true }), space(px(10), 1) })
+        local border = math.max(1, px(1.5))
+        local wall = BoardUI.hit(BoardUI.box({ w = wall_inner:getSize().w + 2 * border, h = px(38), radius = px(19), bg = INK.white, border = border, border_col = INK.black },
+            hstack({ w = wall_inner:getSize().w, h = px(38) - 2 * border }, { wall_inner })), { kind = "edit-wallpaper" })
         local side = px(120)
         return hstack({ w = w, h = fh }, {
             hstack({ w = side, gap = px(8) }, { dots, text(names[page], { s = 13, b = true }), flex(0) }),
-            flex(0), add, flex(0),
+            flex(0), add, space(px(10), 1), wall, flex(0),
             BoardUI.hit(hstack({ w = side, gap = px(4) }, { flex(0), icon("layout-grid", px(16), { sw = 2.25 }), text(_("Pages"), { s = 13, b = true }) }), { kind = "edit-pages" }),
         })
     end
@@ -222,10 +239,10 @@ end
 
 -- Default tap action for each widget type. Widgets that draw their own
 -- buttons (Resume, steppers, covers) route those taps themselves.
-function CatalogBoard:boardItemAction(item, d)
+function BoardHost:boardItemAction(item, d)
     local t = item.type
     local lead = d.continue_reading[1]
-    local tap_resumes = self.settings.catalog_dashboard_tap_resumes ~= false
+    local tap_resumes = self.settings.board_tap_resumes ~= false
     if t == "hero" or t == "forecast" then
         if lead then return { kind = "book", book = lead, resume = tap_resumes, list = { label = _("Continue reading"), books = d.continue_reading } } end
         return { kind = "books", params = { sort = "title" }, title = _("All books") }
@@ -271,7 +288,7 @@ function CatalogBoard:boardItemAction(item, d)
     return nil
 end
 
-function CatalogBoard:boardBuildTile(ctx, item, w, h, edit)
+function BoardHost:boardBuildTile(ctx, item, w, h, edit)
     local frame, hits = BoardUI.collectHits(function() return BoardWidgets.tile(ctx, item, w, h) end)
     return BoardTile:new{
         dimen = Geom:new{ w = w, h = h },
@@ -279,13 +296,13 @@ function CatalogBoard:boardBuildTile(ctx, item, w, h, edit)
         menu = self,
         -- In edit mode a tap selects the widget, whatever is drawn under it.
         hits = not edit and hits or nil,
-        CatalogWidgets.focusable(frame),
+        frame,
     }
 end
 
 -- A tappable region that is not a widget tile: the header, the footer, the
 -- edit bar, a sheet.
-function CatalogBoard:boardRegion(build, action)
+function BoardHost:boardRegion(build, action)
     local widget, hits = BoardUI.collectHits(build)
     local size = widget:getSize()
     return BoardTile:new{
@@ -293,7 +310,7 @@ function CatalogBoard:boardRegion(build, action)
         item = { action = action },
         menu = self,
         hits = hits,
-        CatalogWidgets.focusable(widget),
+        widget,
     }
 end
 
@@ -306,7 +323,7 @@ local function sizeLabel(code)
     return type(l) == "function" and l() or l
 end
 
-function CatalogBoard:boardEditBar(item, index, g)
+function BoardHost:boardEditBar(item, index, g)
     local bar_h = px(52)
     local function button(name, label, action)
         local inner = vstack({ align = "center" }, {
@@ -359,7 +376,7 @@ function CatalogBoard:boardEditBar(item, index, g)
 end
 
 -- ------------------------------------------------------------ the sheet
-function CatalogBoard:boardPreview(ctx, entry, box_w, box_h, g)
+function BoardHost:boardPreview(ctx, entry, box_w, box_h, g)
     -- Previews are drawn at the narrowest real column (132dp, a 6" panel),
     -- so a preview never shows a widget smaller than any board does.
     local unit = px(132)
@@ -376,7 +393,7 @@ function CatalogBoard:boardPreview(ctx, entry, box_w, box_h, g)
     return BoardUI.box({ w = box_w, h = box_h, radius = px(12), bg = INK.ge }, hstack({ w = box_w, h = box_h }, { flex(0), shot, flex(0) }))
 end
 
-function CatalogBoard:boardSheet(ctx, g, screen_w, screen_h)
+function BoardHost:boardSheet(ctx, g, screen_w, screen_h)
     local edit = self.board_edit
     local sheet_h = math.floor(screen_h * 0.7 + 0.5)
     local mx = g.mx
@@ -515,7 +532,7 @@ function CatalogBoard:boardSheet(ctx, g, screen_w, screen_h)
 end
 
 -- ----------------------------------------------------------- first run
-function CatalogBoard:boardBuildScreen(ctx, g, page, screen_w, screen_h, opts)
+function BoardHost:boardBuildScreen(ctx, g, page, screen_w, screen_h, opts)
     opts = opts or {}
     local d = ctx.d
     local edit = not opts.snapshot and self.board_edit or nil
@@ -537,6 +554,8 @@ function CatalogBoard:boardBuildScreen(ctx, g, page, screen_w, screen_h, opts)
     local layers = {}
     local rows = {}
     local selected
+    local Wallpaper = require("aleph_wallpaper")
+    local wall = Wallpaper.config(self.settings)
     for index, item in ipairs(packed.placed) do
         local tw = BoardLayout.spanWidth(g, item.x, item.cw)
         local th = item.rh * packed.row_h + (item.rh - 1) * g.gap
@@ -544,8 +563,18 @@ function CatalogBoard:boardBuildScreen(ctx, g, page, screen_w, screen_h, opts)
         local placed = {}
         for k, v in pairs(item) do placed[k] = v end
         placed.index = index
-        placed.action = edit and { kind = "edit-select", index = index } or self:boardItemAction(item, d)
+        -- A tap opens the widget's usual page, or what was chosen for it
+        -- (Settings > Widget actions).
+        placed.action = edit and { kind = "edit-select", index = index }
+            or require("aleph_actions").tapFor(item, self:boardItemAction(item, d))
         local tile = self:boardBuildTile(ctx, placed, tw, th, edit ~= nil)
+        local slot
+        if not edit and not opts.snapshot and BoardWidgets.MINUTE_TYPES[item.type] then
+            slot = TileSlot:new{ tile }
+            tile = slot
+        end
+        -- Over a wallpaper, at the widget opacity chosen (aleph_wallpaper.lua).
+        if wall and wall.widgets < 0.999 then tile = Wallpaper.Veil:new{ op = wall.widgets, tile } end
         if edit and edit.selected == index then
             -- The selection ring: white, then black, outside the tile.
             local r = px(12)
@@ -553,7 +582,7 @@ function CatalogBoard:boardBuildScreen(ctx, g, page, screen_w, screen_h, opts)
             table.insert(layers, { widget = BoardUI.rect(tw + 2 * px(3), th + 2 * px(3), INK.white, r + px(3)), x = x - px(3), y = y - px(3) })
             selected = { item = placed, index = index, x = x, y = y, w = tw, h = th }
         end
-        table.insert(tiles, { tile = tile, item = placed, x = x, y = y, w = tw, h = th })
+        table.insert(tiles, { tile = tile, item = placed, x = x, y = y, w = tw, h = th, slot = slot })
         table.insert(layers, { widget = tile, x = x, y = y })
         rows[item.y + 1] = rows[item.y + 1] or {}
         table.insert(rows[item.y + 1], tile)
@@ -588,6 +617,12 @@ function CatalogBoard:boardBuildScreen(ctx, g, page, screen_w, screen_h, opts)
         flex(g.footer_gap),
         footer,
     })
+    if wall then
+        board = BoardUI.overlay(screen_w, screen_h, {
+            { widget = Wallpaper.Wall:new{ w = screen_w, h = screen_h, conf = wall } },
+            { widget = board },
+        })
+    end
     if not opts.snapshot then
         self._board_tiles = tiles
         self._board_header = header
@@ -596,14 +631,43 @@ function CatalogBoard:boardBuildScreen(ctx, g, page, screen_w, screen_h, opts)
     return board, rows, packed
 end
 
-function CatalogBoard:boardAdjustLight(what, delta)
+-- The clock widgets drawn again for a new minute, in place: each gets a new
+-- tile in its slot. Returns the rectangles to refresh (none when the page
+-- has no clock widget), or nil when it cannot be done in place (a clock not
+-- on the screen yet): then the page is built again.
+function BoardHost:boardRefreshMinuteTiles(now)
+    local ctx = self._board_ctx
+    local rects = {}
+    local entries = {}
+    for _i, entry in ipairs(self._board_tiles or {}) do
+        if BoardWidgets.MINUTE_TYPES[entry.item.type] then
+            local slot = entry.slot
+            if not (slot and slot.on_screen and slot.dimen and slot[1]) then return nil end
+            entries[#entries + 1] = entry
+        end
+    end
+    if #entries == 0 then return rects end
+    if not (ctx and ctx.d) then return nil end
+    BoardData.tickTime(ctx.d, now)
+    for _i, entry in ipairs(entries) do
+        local slot = entry.slot
+        local fresh = self:boardBuildTile(ctx, entry.item, entry.w, entry.h, false)
+        local old = slot[1]
+        slot[1] = fresh
+        if old and old.free then old:free() end
+        rects[#rects + 1] = slot.dimen:copy()
+    end
+    return rects
+end
+
+function BoardHost:boardAdjustLight(what, delta)
     if not BoardData.adjustLight(what, delta) then return end
     for _i, entry in ipairs(self._board_tiles or {}) do
         if entry.item.type == "light" then self:boardRefreshTile(entry) end
     end
 end
 
-function CatalogBoard:boardToggleWifi()
+function BoardHost:boardToggleWifi()
     if NetworkMgr:isWifiOn() then
         NetworkMgr:toggleWifiOff(function() self:updateItems(nil, true) end)
     else
@@ -615,10 +679,11 @@ end
 -- The shelves and names the board's pages show, so a refresh fetches only
 -- what some widget will draw.
 
-function CatalogBoard.install(Catalog)
- BoardEdit.install(Catalog)
- for name, fn in pairs(CatalogBoard) do
-  if name ~= "install" and type(fn) == "function" then Catalog[name] = fn end
- end
+function BoardHost.install(Host)
+    BoardEdit.install(Host)
+    for name, fn in pairs(BoardHost) do
+        if name ~= "install" and type(fn) == "function" then Host[name] = fn end
+    end
 end
-return CatalogBoard
+
+return BoardHost

@@ -18,6 +18,7 @@ builder). Only its look changes, in place, after KOReader has built it:
 If anything fails while restyling, the pop-up is left as KOReader built it.
 ]]
 
+local Prefs = require("aleph_prefs")
 local Device = require("device")
 local Geom = require("ui/geometry")
 local Widget = require("ui/widget/widget")
@@ -297,8 +298,7 @@ local function installFootnotes()
     Footnote._aleph_hooked = true
     local original_init = Footnote.init
     function Footnote:init(...)
-        local stored = G_reader_settings:readSetting("aleph")
-        if type(stored) == "table" and stored.style_dialogs == false then return original_init(self, ...) end
+        if not Prefs.styleDialogs() then return original_init(self, ...) end
         BoardMetrics.refresh()
         return withSettings({
             footnote_popup_absolute_font_size = BoardMetrics.fontSize(14),
@@ -309,26 +309,19 @@ end
 
 function Dict.install()
     installFootnotes()
+    local POPUP_FONTS = { cfont = true, tfont = true, smalltfont = true, x_smalltfont = true }
     local class = require("ui/widget/dictquicklookup")
     if class._aleph_hooked then return end
     class._aleph_hooked = true
     local original_init = class.init
     function class:init()
         if not wanted() then return original_init(self) end
-        local Font = require("ui/font")
-        local original_getFace = Font.getFace
-        local file = BoardMetrics.faceFile("sans")
-        -- While the pop-up is built, KOReader's content and title fonts are the board's.
-        Font.getFace = function(font, name, size, ...)
-            if name == "cfont" or name == "tfont" or name == "smalltfont" or name == "x_smalltfont" then name = file end
-            return original_getFace(font, name, size, ...)
-        end
         BoardMetrics.refresh()
-        -- The definition is set in the board's body size, not KOReader's
-        -- (saved) dictionary font size, which is left as the reader set it.
-        local ok, err = pcall(withSettings, { dict_font_size = BoardMetrics.fontSize(15) }, original_init, self)
-        Font.getFace = original_getFace
-        if not ok then error(err, 0) end
+        -- While the pop-up is built, KOReader's content and title fonts are
+        -- the board's (aleph_override.lua). The definition is set in the
+        -- board's body size, not KOReader's (saved) dictionary font size,
+        -- which is left as the reader set it.
+        require("aleph_override").fonts(POPUP_FONTS, nil, withSettings, { dict_font_size = BoardMetrics.fontSize(15) }, original_init, self)
         local styled, why = pcall(Dict.restyle, self)
         if not styled then require("logger").warn("Aleph: dictionary restyle failed:", why) end
     end

@@ -14,6 +14,7 @@ scrolls. Every tappable part is a BoardUI hit area, handled by the Browser.
 local UI = require("aleph_board_ui")
 local Metrics = require("aleph_board_metrics")
 local _ = require("gettext")
+local try = require("aleph_try").call
 
 local INK = Metrics.INK
 local px, lh = Metrics.px, Metrics.lh
@@ -111,15 +112,32 @@ local function pill(o)
         bg = solid and INK.black or INK.white }, content)
 end
 
--- Five stars, each its own tap target: tapping a star gives that rating,
--- tapping the current rating again clears it.
+-- Five stars, each two tap targets: the left half of a star gives a half
+-- star, the right half the whole star (the left half of the first star gives
+-- half a star); tapping the current rating again clears it.
 local function starsRow(book, size, gap)
     local items = {}
+    local rating = tonumber(book.rating) or 0
+    local half_w = math.floor(size / 2)
     for i = 1, 5 do
-        local on = i <= (book.rating or 0)
-        local star = icon("star", size, { sw = 1.75, col = on and "black" or "g8", fill = on })
-        items[#items + 1] = UI.hit(hstack({ w = size + gap, h = px(40) }, { star, flex(0) }),
-            { kind = "rate", book = book, rating = i })
+        local star
+        if i <= rating then
+            star = icon("star", size, { sw = 1.75, col = "black", fill = true })
+        elseif i - 0.5 <= rating then
+            -- Half: the outline, its left half filled.
+            star = UI.overlay(size, size, {
+                { widget = icon("star", size, { sw = 1.75, col = "g8" }) },
+                { widget = icon("star-half", size, { sw = 1.75, col = "black", fill = true }) },
+            })
+        else
+            star = icon("star", size, { sw = 1.75, col = "g8" })
+        end
+        local cell = hstack({ w = size + gap, h = px(40) }, { star, flex(0) })
+        items[#items + 1] = UI.overlay(size + gap, px(40), {
+            { widget = cell },
+            { widget = UI.hit(UI.space(half_w, px(40)), { kind = "rate", book = book, rating = i - 0.5 }), x = 0 },
+            { widget = UI.hit(UI.space(size + gap - half_w, px(40)), { kind = "rate", book = book, rating = i }), x = half_w },
+        })
     end
     return hstack({}, items)
 end
@@ -148,26 +166,40 @@ end
 -- ended, or that it is not started.
 local function standing(b, w)
     local pct = math.floor((b.progressPercentage or 0) + 0.5)
+    -- Another e-reader further on (Syncery's files): said under it.
+    local remote, info
+    try(function() remote, info = require("aleph_remote_progress").note(b) end)
+    local function remoteLine()
+        if not remote then return nil end
+        local line = remote
+        if info and info.other_copy then line = line .. " · " .. _("another copy of the file") end
+        return text(line, { s = 12, b = true, col = INK.g2, w = w, lines = 2, data = true })
+    end
     local function two(a, c)
         local items = { text(a, { s = 14, b = true, w = w }) }
         if c then items[#items + 1] = text(c, { s = 12, col = INK.g3, w = w }) end
+        local r = remoteLine()
+        if r then items[#items + 1] = r end
         return vstack({ w = w }, items)
     end
     if b.readStatus == "read" then
         local done = type(b.finishedOn) == "string" and b.finishedOn:sub(1, 10) or nil
         return two(_("Finished"), done)
     end
-    if pct <= 0 then return two(_("Not started"), nil) end
+    if pct <= 0 then return two(remote and _("Not started here") or _("Not started"), nil) end
     local big = text(pct .. "%", { s = 26, b = true })
     local rw = math.max(px(40), w - wOf(big) - px(12))
     local first = b.readStatus == "on_hold" and _("On hold") or _("In progress")
     local last = shortDate(b.last_open)
     local items = { text(first, { s = 14, b = true, w = rw }) }
     if last then items[#items + 1] = text(_("Last read") .. " " .. last, { s = 12, col = INK.g3, w = rw }) end
+    local r = remoteLine()
     return vstack({ w = w }, {
         hstack({ w = w, gap = px(12) }, { big, vstack({ w = rw }, items) }),
         space(nil, px(8)),
         UI.bar(w, px(6), pct, { track = INK.gd, fill = INK.black, r = px(3) }),
+        r and space(nil, px(6)) or false,
+        r or false,
     })
 end
 
@@ -243,14 +275,19 @@ end
 
 -- ------------------------------------------------------------------ facts
 function Detail.facts(b, w)
-    local cw = math.floor(w / 3)
     local pad = px(12)
     local size = b.size and string.format("%.1f MB", b.size / 1048576) or nil
     local cells = {
         { os.date("%b %Y", b.added or os.time()), _("Added") },
-        { (b.props and b.props.language and b.props.language ~= "") and b.props.language or "—", _("Language") },
-        { (b.format and b.format ~= "" and b.format or "—") .. (size and (" · " .. size) or ""), _("On this device") },
+        { (b.props and require("aleph_language").name(b.props.language)) or "—", _("Language") },
     }
+    -- The page count: Calibre's when it has one, otherwise KOReader's.
+    local ok, pages = pcall(function() return require("aleph_pages").of(b) end)
+    if ok and pages then
+        cells[#cells + 1] = { tostring(pages.pages), pages.calibre and _("Pages") or _("Pages in KOReader") }
+    end
+    cells[#cells + 1] = { (b.format and b.format ~= "" and b.format or "—") .. (size and (" · " .. size) or ""), _("On this device") }
+    local cw = math.floor(w / #cells)
     local cell_h = lh(16) + lh(13) + px(4)
     local parts = {}
     for i, c in ipairs(cells) do
@@ -413,7 +450,7 @@ function Detail.build(br, m)
         local lines = clamp(math.floor((avail - g) / line_h), 1, 7)
         local more_h = lh(14) + px(2)
         local cut = false
-        pcall(function() cut = require("aleph_text_pages").linesNeeded(desc_text, { s = 14 }, w) > lines end)
+        try(function() cut = require("aleph_text_pages").linesNeeded(desc_text, { s = 14 }, w) > lines end)
         local show_more = cut and avail - g >= lines * line_h + more_h
         if cut and not show_more and lines > 1 then lines, show_more = lines - 1, true end
         local about = text(desc_text, { s = 14, w = w, lines = lines, data = true })

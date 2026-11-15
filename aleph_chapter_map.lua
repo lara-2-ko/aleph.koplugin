@@ -14,6 +14,7 @@ the contents that reads like chapters, without entries too short to matter.
 
 -- KOReader modules are loaded when first used, so the board's data module
 -- (which reads chapter maps) loads without them in specs.
+local try = require("aleph_try").call
 local function lfs() return require("libs/libkoreader-lfs") end
 local function logger() return require("logger") end
 
@@ -45,7 +46,7 @@ end
 -- has none.
 function ChapterMap.capture(ui)
     if not ui or not ui.document or not ui.toc then return nil end
-    pcall(ui.toc.fillToc, ui.toc)
+    try(ui.toc.fillToc, ui.toc)
     local toc = ui.toc.toc
     if type(toc) ~= "table" or #toc == 0 then return nil end
     local ok, pages = pcall(ui.document.getPageCount, ui.document)
@@ -86,7 +87,7 @@ function ChapterMap.save(md5, map)
     f:close()
     os.rename(path .. ".tmp", path)
     memo[md5] = map
-    pcall(prune)
+    try(prune)
     return true
 end
 
@@ -96,13 +97,13 @@ function ChapterMap.remember(ui, md5)
     if not validMd5(md5) then return end
     local ok, map = pcall(ChapterMap.capture, ui)
     if not ok then
-        logger().dbg("BookOrbit: chapters not captured:", map)
+        logger().dbg("Aleph: chapters not captured:", map)
         return
     end
     if not map then return end
     require("ui/uimanager"):nextTick(function()
         local saved, err = pcall(ChapterMap.save, md5, map)
-        if not saved then logger().warn("BookOrbit: chapters not saved:", err) end
+        if not saved then logger().warn("Aleph: chapters not saved:", err) end
     end)
 end
 

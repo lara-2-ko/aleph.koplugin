@@ -5,7 +5,9 @@ removing author portraits): a rounded panel with the board's font and sizes, a
 title, the explanation, and Cancel / action pills. Tapping outside cancels.
 
   Confirm.show{ title, text, ok_label, cancel_label, on_ok, on_cancel }
-  (on_cancel: run by the cancel pill only, not by a tap outside)
+  (on_cancel: run by the cancel pill only, not by a tap outside;
+  lines: the most lines the text may take, 14 by default;
+  extra_label, on_extra: a third choice, a full-width pill above the two)
 ]]
 
 local Geom = require("ui/geometry")
@@ -34,8 +36,10 @@ function Confirm.show(o)
             local items = {
                 BoardUI.text(o.title or "", { s = 19, b = true, w = iw, data = true }),
                 BoardUI.space(nil, px(10)),
-                BoardUI.text(o.text or "", { s = 15, col = INK.g2, w = iw, lines = 14, data = true }),
+                BoardUI.text(o.text or "", { s = 15, col = INK.g2, w = iw, lines = o.lines or 14, data = true }),
                 BoardUI.space(nil, px(18)),
+                o.extra_label and MenuUI.pill(o.extra_label, { kind = "outline", w = iw, h = 48, s = 16, action = { kind = "extra" } }) or false,
+                o.extra_label and BoardUI.space(nil, px(10)) or false,
                 BoardUI.hstack({ w = iw, gap = gap }, {
                     MenuUI.pill(o.cancel_label or _("Cancel"), { kind = "outline", w = half, h = 48, s = 16, action = { kind = o.on_cancel and "cancel" or "close" } }),
                     MenuUI.pill(o.ok_label or _("OK"), { kind = "dark", w = half, h = 48, s = 16, action = { kind = "ok" } }),
@@ -56,6 +60,9 @@ function Confirm.show(o)
             elseif action.kind == "cancel" then
                 p:close()
                 o.on_cancel()
+            elseif action.kind == "extra" then
+                p:close()
+                if o.on_extra then o.on_extra() end
             end
         end,
     }

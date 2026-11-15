@@ -17,9 +17,10 @@ local util = require("util")
 local T = require("ffi/util").template
 local _ = require("gettext")
 
-local BookOrbitStatsReader = require("aleph_stats_reader")
-local CatalogUtil = require("aleph_catalog_util")
+local StatsReader = require("aleph_stats_reader")
+local BoardUtil = require("aleph_board_util")
 local ChapterMap = require("aleph_chapter_map")
+local try = require("aleph_try").call
 
 local BoardData = {}
 
@@ -97,7 +98,7 @@ end
 function BoardData.relativeDay(iso, now)
     if type(iso) ~= "string" then return nil end
     local t = datetime.stringISO8601ToSeconds and datetime.stringISO8601ToSeconds(iso)
-    if not t then return CatalogUtil.formatRelativeTime(iso, now) end
+    if not t then return BoardUtil.formatRelativeTime(iso, now) end
     now = now or os.time()
     local delta = now - t
     if delta < 60 then return _("just now") end
@@ -150,7 +151,7 @@ function BoardData.localDaily(now)
         return local_cache.daily
     end
     local since = dayStart(now) - (BoardData.HEATMAP_DAYS + 7) * DAY
-    local daily = BookOrbitStatsReader.getDailySeconds(since) or {}
+    local daily = StatsReader.getDailySeconds(since) or {}
     local_cache = { at = now, day = today, daily = daily }
     return daily
 end
@@ -199,7 +200,7 @@ function BoardData.forecast(book, md5, now)
     local key = md5 .. ":" .. dateKey(now)
     local pace = pace_cache[key]
     if pace == nil then
-        pace = BookOrbitStatsReader.getBookPace(md5, 14) or false
+        pace = StatsReader.getBookPace(md5, 14) or false
         pace_cache[key] = pace
     end
     if not pace or not pace.seconds_per_page or not pace.total_pages or pace.total_pages <= 0 then return nil end
@@ -237,7 +238,7 @@ function BoardData.hours(now)
     now = now or os.time()
     local cache = habits(now)
     if cache.hours == nil then
-        cache.hours = BookOrbitStatsReader.getHourMinutes(dayStart(now) - 90 * DAY) or false
+        cache.hours = StatsReader.getHourMinutes(dayStart(now) - 90 * DAY) or false
     end
     return cache.hours or nil
 end
@@ -246,7 +247,7 @@ function BoardData.records(now)
     now = now or os.time()
     local cache = habits(now)
     if cache.records == nil then
-        local r = BookOrbitStatsReader.getSessionRecords(dayStart(now) - 365 * DAY)
+        local r = StatsReader.getSessionRecords(dayStart(now) - 365 * DAY)
         cache.records = r and {
             sessions = r.sessions,
             longest_min = math.floor(r.longest_seconds / 60 + 0.5),
@@ -273,7 +274,7 @@ function BoardData.wordOfTheDay(now)
     if ok_sq and require("libs/libkoreader-lfs").attributes(path, "mode") == "file" then
         local ok, conn = pcall(SQ3.open, path, "ro")
         if ok and conn then
-            pcall(function()
+            try(function()
                 local count = tonumber(conn:rowexec("SELECT COUNT(*) FROM vocabulary;")) or 0
                 if count > 0 then
                     -- Counted in local days, so the word changes at the
@@ -385,7 +386,7 @@ function BoardData.pageTurns(now)
     now = now or os.time()
     local today = dateKey(now)
     if turns_cache.day == today and now - turns_cache.at < LOCAL_TTL then return turns_cache.value end
-    local r = BookOrbitStatsReader.getPageTurns(dayStart(now))
+    local r = StatsReader.getPageTurns(dayStart(now))
     local value = nil
     if r then
         value = { total = r.total or 0, today = r.today or 0 }
@@ -613,14 +614,14 @@ local function hasSidecar(path)
 end
 BoardData._hasSidecar = hasSidecar
 
-function BoardData.unopened(catalog, now)
+function BoardData.unopened(host, now)
     now = now or os.time()
-    local key = tostring(catalog and catalog.on_device_generation) .. "|" .. dateKey(now)
+    local key = tostring(host and host.on_device_generation) .. "|" .. dateKey(now)
     if unopened_cache.key == key then return unopened_cache.list end
     local lfs = require("libs/libkoreader-lfs")
     local opened = openedFiles()
     local list, scanned = {}, 0
-    for book_id, path in pairs(catalog and catalog.on_device or {}) do
+    for book_id, path in pairs(host and host.on_device or {}) do
         scanned = scanned + 1
         if scanned > BoardData.UNOPENED_SCAN_MAX then break end
         if type(path) == "string" and not opened[path] then
@@ -643,8 +644,8 @@ end
 -- The Gathering dust widget's book: one unopened book a day, walking the
 -- whole list before any repeats; skip steps past books the reader asked to
 -- see past today. A book opened since the list was made is passed over.
-function BoardData.dust(catalog, books, now, skip)
-    local list = BoardData.unopened(catalog, now)
+function BoardData.dust(host, books, now, skip)
+    local list = BoardData.unopened(host, now)
     local by_id = {}
     for _i, b in ipairs(books or {}) do
         if type(b) == "table" and b.id then by_id[b.id] = b end
@@ -671,7 +672,8 @@ function BoardData.dust(catalog, books, now, skip)
 end
 
 -- ------------------------------------------------------------------ build
--- catalog: the BookOrbitCatalog (for on-device state, covers and settings).
+-- host: the screen asking (aleph_browser.lua), for on-device state, covers
+-- and settings.
 -- context: the dashboard context (body, stale flags).
 -- Board books work out "last read" when it is read (see decorate).
 local decorate_now = os.time()
@@ -679,24 +681,24 @@ local DECORATED = { __index = function(t, k)
     if k == "last_read" then return BoardData.relativeDay(rawget(t, "lastReadAt"), decorate_now) end
 end }
 
-function BoardData.build(catalog, context, now)
+-- The time fields of a board's data moved to `now`, for the minute redraw
+-- of the clock widgets without building the rest again.
+function BoardData.tickTime(d, now)
     now = now or os.time()
-    context = context or {}
-    local body = context.dashboard or {}
-    local d = {}
     d.now = now
-    d.loading = context.loading == true
-    d.unavailable = context.unavailable == true
-    d.online = NetworkMgr:isConnected()
-    d.stale = context.stale == true
-    d.display_name = body.displayName or body.username or (catalog.settings and catalog.settings.username)
-    d.greeting = BoardData.greeting(d.display_name, now)
-    d.date_long = BoardData.longDate(now)
     d.clock = datetime.secondsToHour(now, G_reader_settings:isTrue("twelve_hour_clock"))
     d.weekday = BoardData.longWeekday(now)
     d.day_month = T(_("%1 %2"), tonumber(os.date("%d", now)), BoardData.longMonth(now))
-    d.updated = BoardData.relativeDay(body.generatedAt, now)
+    d.date_long = BoardData.longDate(now)
+    return d
+end
 
+-- The parts of BoardData.build, each with one job. host is the screen
+-- asking (aleph_browser.lua), body the library's dashboard, d the board's
+-- data being filled.
+
+-- Board books: decorate(book) for one, decorateAll(list) for a list.
+local function boardBooks(host, body, now)
     -- A board book: the library's entry plus what the board shows of it.
     -- Kept between builds for the same dashboard (a copy per book per
     -- refresh was the dearest part of a redraw: the Discover shelf holds the
@@ -710,8 +712,8 @@ function BoardData.build(catalog, context, now)
     decorate_now = now
     local function decorate(book)
         if type(book) ~= "table" then return nil end
-        local on_device = catalog:isOnDevice(book) == true
-        local path, state = catalog:thumbnailDisplay(book)
+        local on_device = host:isOnDevice(book) == true
+        local path, state = host:thumbnailDisplay(book)
         local b = memo[book]
         if b and rawget(b, "cover_path") == path and b.cover_state == state and b.on_device == on_device then
             return b
@@ -725,54 +727,35 @@ function BoardData.build(catalog, context, now)
         memo[book] = b
         return b
     end
+    -- A whole list of board books is kept too, for as long as the host
+    -- says nothing it was made from has changed (its boardEpoch: a cover
+    -- arrived, the library's entries changed). Several shelves hold the
+    -- whole library, and every redraw (every tap on Home) went through each
+    -- of them book by book. A host without boardEpoch keeps nothing.
+    local epoch = host.boardEpoch and host:boardEpoch() or nil
+    local kept = rawget(body, "_board_lists")
+    if not kept or kept.epoch ~= epoch or epoch == nil then
+        kept = { epoch = epoch, by = setmetatable({}, { __mode = "k" }) }
+        rawset(body, "_board_lists", kept)
+    end
     local function decorateAll(list)
+        if type(list) ~= "table" then return {} end
+        local hit = epoch ~= nil and kept.by[list] or nil
+        if hit and hit.count == #list then return hit.out end
         local out = {}
-        for _i, book in ipairs(type(list) == "table" and list or {}) do
+        for _i, book in ipairs(list) do
             local b = decorate(book)
             if b then table.insert(out, b) end
         end
+        if epoch ~= nil then kept.by[list] = { count = #list, out = out } end
         return out
     end
+    return decorate, decorateAll
+end
 
-    d.continue_reading = decorateAll(body.continueReading)
-    local shelves = type(body.boardShelves) == "table" and body.boardShelves or {}
-    d.shelves = {}
-    for source, books in pairs(shelves) do d.shelves[source] = decorateAll(books) end
-    d.shelves["random"] = d.shelves["random"] or decorateAll(body.discover)
-    d.shelves["in-progress"] = d.shelves["in-progress"] or decorateAll(body.continueReading)
-    -- A server too old to send the list shows the shelf's empty hint.
-    d.shelves["finished"] = decorateAll(body.finishedThisYear)
-
-    local counts = type(body.browseCounts) == "table" and body.browseCounts or {}
-    d.counts = {
-        library = tonumber(body.totalBooks or body.bookCount),
-        series = tonumber(counts.series),
-        authors = tonumber(counts.authors),
-        collections = tonumber(counts.collections),
-        scopes = tonumber(counts.smartScopes),
-        libraries = tonumber(counts.libraries),
-        in_progress = tonumber(counts.inProgress),
-        device = catalog:onDeviceCount(),
-    }
-    d.names = type(body.boardNames) == "table" and body.boardNames or {}
-    d.recent_searches = catalog.settings and catalog.settings.catalog_recent_searches or {}
-
-    local goal = type(body.readingGoal) == "table" and body.readingGoal or {}
-    d.goal = {
-        books = tonumber(goal.goalBooks),
-        done = tonumber(goal.completedBooks) or 0,
-        year = tonumber(goal.year) or tonumber(os.date("%Y", now)),
-    }
-    d.day_of_year = tonumber(os.date("%j", now)) or 1
-
-    local streak = type(body.readingStreak) == "table" and body.readingStreak or {}
-    d.streak = {
-        current = CatalogUtil.readingStreakDays(body, 0),
-        longest = tonumber(streak.longestStreak) or 0,
-        last_seven = type(streak.lastSevenDays) == "table" and streak.lastSevenDays or {},
-    }
-    d.highlight = type(body.highlightOfTheDay) == "table" and body.highlightOfTheDay or nil
-
+-- This device's reading by day: the year's heatmap, the last seven days
+-- and the streak's week.
+local function readingWeek(d, body, now)
     d.heatmap, d.heatmap_start, d.today_start = BoardData.yearMinutes(now, body.readingYear)
     local week = {}
     local today_index = nil
@@ -795,29 +778,9 @@ function BoardData.build(catalog, context, now)
     if d.streak.current == 0 and d.today_min > 0 then d.streak.current = 1 end
     d.streak_week = {}
     for i = 1, 7 do d.streak_week[i] = (week[i] or 0) > 0 or d.streak.last_seven[i] == true end
+end
 
-    local year_ago = type(body.yearAgo) == "table" and body.yearAgo or nil
-    if year_ago and type(year_ago.book) == "table" then
-        d.year_ago = {
-            book = decorate(year_ago.book),
-            minutes = tonumber(year_ago.minutes) or 0,
-            days = tonumber(year_ago.days) or 0,
-            stopped_at = tonumber(year_ago.endProgress) and math.floor(tonumber(year_ago.endProgress) + 0.5) or nil,
-            when = BoardData.partOfMonth(year_ago.firstDay),
-        }
-    end
-
-    d.word = BoardData.wordOfTheDay(now)
-    d.light = BoardData.light()
-    d.storage = BoardData.storage(catalog.getCurrentDownloadDir and catalog:getCurrentDownloadDir() or nil, now)
-
-    local lead = d.continue_reading[1]
-    local lead_md5 = nil
-    if lead and lead.on_device and catalog.boardBookMd5 then
-        lead_md5 = catalog:boardBookMd5(lead)
-        d.forecast = BoardData.forecast(lead, lead_md5, now)
-        if d.forecast then lead.minutes_left = d.forecast.minutes_left end
-    end
+local function setFingerprint(d, body, now)
     -- Everything a widget's layout choice can depend on. Widgets remember
     -- their choice per fingerprint (see BoardUI.pick).
     local covers = {}
@@ -830,6 +793,9 @@ function BoardData.build(catalog, context, now)
         table.concat(covers, ","), tostring(G_reader_settings:isTrue("night_mode")),
         table.concat(d.recent_searches or {}, ","), d.loading and "l" or "",
     }, "|")
+end
+
+local function lazyFields(d, host, body, now, lead, lead_md5)
     -- Hours, records and the decor widgets' data cost a pass over the
     -- device's statistics or its files, so they are read only by a widget
     -- that draws them.
@@ -861,9 +827,9 @@ function BoardData.build(catalog, context, now)
             })
         end,
         dust = function()
-            local state = catalog.settings and catalog.settings.catalog_board_dust
+            local state = host.settings and host.settings.board_dust
             local skip = type(state) == "table" and state.day == dateKey(now) and tonumber(state.skip) or 0
-            return BoardData.dust(catalog, d.shelves["unopened"], now, skip)
+            return BoardData.dust(host, d.shelves["unopened"], now, skip)
         end,
         -- The day a book was finished, never when it was last opened: a
         -- reread opens a finished book. A server too old to send the day
@@ -876,12 +842,101 @@ function BoardData.build(catalog, context, now)
             return false
         end,
     }
+    return lazy
+end
+
+function BoardData.build(host, context, now)
+    now = now or os.time()
+    context = context or {}
+    local body = context.dashboard or {}
+    local d = {}
+    d.now = now
+    d.loading = context.loading == true
+    d.unavailable = context.unavailable == true
+    d.online = NetworkMgr:isConnected()
+    d.stale = context.stale == true
+    d.display_name = body.displayName or body.username or (host.settings and host.settings.username)
+    d.greeting = BoardData.greeting(d.display_name, now)
+    d.date_long = BoardData.longDate(now)
+    d.clock = datetime.secondsToHour(now, G_reader_settings:isTrue("twelve_hour_clock"))
+    d.weekday = BoardData.longWeekday(now)
+    d.day_month = T(_("%1 %2"), tonumber(os.date("%d", now)), BoardData.longMonth(now))
+    d.updated = BoardData.relativeDay(body.generatedAt, now)
+
+    local decorate, decorateAll = boardBooks(host, body, now)
+
+    d.continue_reading = decorateAll(body.continueReading)
+    local shelves = type(body.boardShelves) == "table" and body.boardShelves or {}
+    d.shelves = {}
+    for source, books in pairs(shelves) do d.shelves[source] = decorateAll(books) end
+    d.shelves["random"] = d.shelves["random"] or decorateAll(body.discover)
+    d.shelves["in-progress"] = d.shelves["in-progress"] or decorateAll(body.continueReading)
+    -- A server too old to send the list shows the shelf's empty hint.
+    d.shelves["finished"] = decorateAll(body.finishedThisYear)
+
+    local counts = type(body.browseCounts) == "table" and body.browseCounts or {}
+    d.counts = {
+        library = tonumber(body.totalBooks or body.bookCount),
+        series = tonumber(counts.series),
+        authors = tonumber(counts.authors),
+        collections = tonumber(counts.collections),
+        scopes = tonumber(counts.smartScopes),
+        libraries = tonumber(counts.libraries),
+        in_progress = tonumber(counts.inProgress),
+        read = tonumber(counts.read),
+        device = host:onDeviceCount(),
+    }
+    d.names = type(body.boardNames) == "table" and body.boardNames or {}
+    d.recent_searches = host.settings and host.settings.recent_searches or {}
+
+    local goal = type(body.readingGoal) == "table" and body.readingGoal or {}
+    d.goal = {
+        books = tonumber(goal.goalBooks),
+        done = tonumber(goal.completedBooks) or 0,
+        year = tonumber(goal.year) or tonumber(os.date("%Y", now)),
+    }
+    d.day_of_year = tonumber(os.date("%j", now)) or 1
+
+    local streak = type(body.readingStreak) == "table" and body.readingStreak or {}
+    d.streak = {
+        current = BoardUtil.readingStreakDays(body, 0),
+        longest = tonumber(streak.longestStreak) or 0,
+        last_seven = type(streak.lastSevenDays) == "table" and streak.lastSevenDays or {},
+    }
+    d.highlight = type(body.highlightOfTheDay) == "table" and body.highlightOfTheDay or nil
+
+    readingWeek(d, body, now)
+
+    local year_ago = type(body.yearAgo) == "table" and body.yearAgo or nil
+    if year_ago and type(year_ago.book) == "table" then
+        d.year_ago = {
+            book = decorate(year_ago.book),
+            minutes = tonumber(year_ago.minutes) or 0,
+            days = tonumber(year_ago.days) or 0,
+            stopped_at = tonumber(year_ago.endProgress) and math.floor(tonumber(year_ago.endProgress) + 0.5) or nil,
+            when = BoardData.partOfMonth(year_ago.firstDay),
+        }
+    end
+
+    d.word = BoardData.wordOfTheDay(now)
+    d.light = BoardData.light()
+    d.storage = BoardData.storage(host.getCurrentDownloadDir and host:getCurrentDownloadDir() or nil, now)
+
+    local lead = d.continue_reading[1]
+    local lead_md5 = nil
+    if lead and lead.on_device and host.boardBookMd5 then
+        lead_md5 = host:boardBookMd5(lead)
+        d.forecast = BoardData.forecast(lead, lead_md5, now)
+        if d.forecast then lead.minutes_left = d.forecast.minutes_left end
+    end
+    setFingerprint(d, body, now)
+    local lazy = lazyFields(d, host, body, now, lead, lead_md5)
     return setmetatable(d, { __index = function(t, k)
         local fn = lazy[k]
         if fn then
             local ok, v = pcall(fn)
             if not ok then
-                require("logger").warn("BookOrbit: board data", k, "failed:", v)
+                require("logger").warn("Aleph: board data", k, "failed:", v)
                 v = nil
             end
             v = v or false

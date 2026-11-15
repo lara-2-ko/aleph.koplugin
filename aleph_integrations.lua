@@ -4,6 +4,7 @@ local logger = require("logger")
 local _ = require("gettext")
 
 local Plugins = require("aleph_plugins")
+local try = require("aleph_try").call
 
 local Integrations = {}
 
@@ -93,7 +94,7 @@ local function syncthingProcess()
     local now = os.time()
     if now - scan.at < 3 then return scan.found end
     local found = false
-    pcall(function()
+    try(function()
         local lfs = require("libs/libkoreader-lfs")
         for entry in lfs.dir("/proc") do
             if entry:match("^%d+$") then

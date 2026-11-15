@@ -17,7 +17,7 @@ local Handles = {}
 Handles.__index = Handles
 
 function Handles.suppressReaderTaps(highlight)
-    highlight._rb_highlight_tap_until = time.now() + time.ms(600)
+    highlight._aleph_highlight_tap_until = time.now() + time.ms(600)
 end
 
 local function samePosition(a, b)
@@ -315,7 +315,7 @@ function Handles:finish()
         if h.selected_text then h.selected_text = util.tableDeepCopy(self.item) end
         h.ui:handleEvent(Event:new("AnnotationsModified", { self.item, self.before }))
     elseif not self.index then
-        draft._rb_resized = changed or draft._rb_resized
+        draft._aleph_resized = changed or draft._aleph_resized
         h.selected_text = draft
         self.item = draft
         h.is_word_selection = false
@@ -377,18 +377,18 @@ function Handles:close()
     if self.original_draw then h.view.drawSavedHighlight = self.original_draw end
     if self.index then h.view:resetHighlightBoxesCache() end
     if h.highlight_dialog == self.dialog then h.highlight_dialog = nil end
-    if h._rb_highlight_handles == self then h._rb_highlight_handles = nil end
+    if h._aleph_highlight_handles == self then h._aleph_highlight_handles = nil end
     self.dragging, self.draft = false, nil
     UIManager:setDirty(h.dialog, "ui")
 end
 
 function Handles.attach(highlight, dialog, index, reopen)
     if not Handles.available(highlight, index) then return end
-    if highlight._rb_highlight_handles then highlight._rb_highlight_handles:close() end
+    if highlight._aleph_highlight_handles then highlight._aleph_highlight_handles:close() end
     local self = setmetatable({ highlight = highlight, dialog = dialog, index = index, reopen = reopen,
         item = index and highlight.ui.annotation.annotations[index] or highlight.selected_text }, Handles)
     if next(self:geometry()) == nil then return end
-    highlight._rb_highlight_handles = self
+    highlight._aleph_highlight_handles = self
     if index then
         self.original_draw = highlight.view.drawSavedHighlight
         highlight.view.drawSavedHighlight = function(view, ...)

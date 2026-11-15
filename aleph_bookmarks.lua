@@ -13,7 +13,10 @@ ones than long ones.
                 the edited-text filter); the title with the count, sort, close
   sort          cycles Page order → Newest first → Oldest first (remembered)
   filters       All / Highlights / Bookmarks / Notes, then the styles and the
-                colors (tap one again to show all); counts follow the filters
+                colors (tap one again to show all); counts follow the filters.
+                A highlight colour also shows the bookmarks of that colour;
+                on the Bookmarks tab the colours are the bookmarks' own
+                (aleph_bookmark_colors.lua) and the styles are hidden
   tap an item   a sheet with the whole passage (paged when long) and note,
                 Go to in book, and Edit (KOReader's details: edit, note,
                 style, delete)
@@ -24,6 +27,7 @@ In page order the list opens on the page of the item nearest your reading
 position. If anything fails, KOReader's own list opens instead.
 ]]
 
+local Prefs = require("aleph_prefs")
 local Blitbuffer = require("ffi/blitbuffer")
 local Device = require("device")
 local Event = require("ui/event")
@@ -39,6 +43,7 @@ local MenuPage = require("aleph_menu_page")
 local MenuUI = require("aleph_menu_ui")
 local SheetUI = require("aleph_sheet_ui")
 local TextPages = require("aleph_text_pages")
+local try = require("aleph_try").call
 
 local Screen = Device.screen
 local INK = BoardMetrics.INK
@@ -62,9 +67,7 @@ local function hOf(widget) return widget:getSize().h end
 local function wOf(widget) return widget:getSize().w end
 
 local function settings()
-    local stored = G_reader_settings:readSetting("aleph")
-    if type(stored) ~= "table" then stored = {} end
-    return stored
+    return Prefs.get()
 end
 
 local function saveSort(sort)
@@ -99,7 +102,7 @@ end
 
 local function pageOf(bm, item)
     local label
-    pcall(function() label = bm:getBookmarkPageString(item.page) end)
+    try(function() label = bm:getBookmarkPageString(item.page) end)
     if label == nil or label == "" then label = item.pageno or (type(item.page) == "number" and item.page) or nil end
     return label and tostring(label) or ""
 end
@@ -120,12 +123,56 @@ function Bookmarks.entries(ui)
         out[#out + 1] = {
             index = index, item = item, kind = kind,
             text = trimmed(item.text), note = trimmed(item.note), chapter = trimmed(item.chapter),
-            drawer = item.drawer, color = item.color,
+            drawer = item.drawer, color = item.color, bookmark_color = item.aleph_color,
             page = pageOf(bm, item), pageno = numericPage(item),
             datetime = item.datetime, day = Bookmarks.day(item.datetime),
         }
     end
     return out
+end
+
+-- Bookmark colours (aleph_bookmark_colors.lua) beside the highlight
+-- colours of the same name: Aqua is Cyan; Pink has none.
+local BM_TO_HL = { red = "red", orange = "orange", yellow = "yellow", green = "green", aqua = "cyan", blue = "blue", purple = "purple" }
+local HL_TO_BM = {}
+for bm_id, hl_id in pairs(BM_TO_HL) do HL_TO_BM[hl_id] = bm_id end
+Bookmarks.BM_TO_HL, Bookmarks.HL_TO_BM = BM_TO_HL, HL_TO_BM
+
+local function bookmarkColor(e)
+    local BC = require("aleph_bookmark_colors")
+    return BC.known(e.bookmark_color) and e.bookmark_color or BC.DEFAULT
+end
+Bookmarks.bookmarkColor = bookmarkColor
+
+-- Whether the style and colour filters let an entry through. A highlight
+-- colour also shows the bookmarks of that colour; a bookmark colour (chosen
+-- on the Bookmarks tab) shows only bookmarks.
+local function looksOk(e, state)
+    if e.kind == "bookmark" then
+        if state.drawer then return false end
+        if state.bm_color then return bookmarkColor(e) == state.bm_color end
+        if state.color then return BM_TO_HL[bookmarkColor(e)] == state.color end
+        return true
+    end
+    if state.bm_color then return false end
+    if state.drawer and e.drawer ~= state.drawer then return false end
+    if state.color and e.color ~= state.color then return false end
+    return true
+end
+Bookmarks.looksOk = looksOk
+
+-- The tab changes: on the Bookmarks tab the colours are the bookmarks' own
+-- (and styles do not apply); elsewhere they are the highlights'. A colour
+-- chosen carries across where the other set has the same one.
+function Bookmarks.setKind(state, kind)
+    if kind == "bookmark" and state.kind ~= "bookmark" then
+        if state.color then state.bm_color = HL_TO_BM[state.color] end
+        state.color, state.drawer = nil, nil
+    elseif kind ~= "bookmark" and state.kind == "bookmark" then
+        if state.bm_color then state.color = BM_TO_HL[state.bm_color] end
+        state.bm_color = nil
+    end
+    state.kind = kind
 end
 
 -- The entries the filters let through, in the chosen order.
@@ -134,8 +181,7 @@ function Bookmarks.view(entries, state)
     for _i, e in ipairs(entries) do
         local ok = true
         if state.kind and e.kind ~= state.kind then ok = false end
-        if state.drawer and (e.kind == "bookmark" or e.drawer ~= state.drawer) then ok = false end
-        if state.color and (e.kind == "bookmark" or e.color ~= state.color) then ok = false end
+        if not looksOk(e, state) then ok = false end
         if ok and state.search then
             local needle = state.search:lower()
             local hay = ((e.text or "") .. "\n" .. (e.note or "") .. "\n" .. (e.chapter or "")):lower()
@@ -160,8 +206,7 @@ function Bookmarks.counts(entries, state)
     local counts = { all = 0, highlight = 0, bookmark = 0, note = 0 }
     for _i, e in ipairs(entries) do
         local ok = true
-        if state.drawer and (e.kind == "bookmark" or e.drawer ~= state.drawer) then ok = false end
-        if state.color and (e.kind == "bookmark" or e.color ~= state.color) then ok = false end
+        if not looksOk(e, state) then ok = false end
         if ok then
             counts.all = counts.all + 1
             counts[e.kind] = (counts[e.kind] or 0) + 1
@@ -198,7 +243,9 @@ local function quoteBlock(e, w, max_lines)
     local filled = e.drawer == "lighten" or e.drawer == "invert" or e.drawer == nil
     if e.kind == "bookmark" then
         local label = e.chapter and T(_("in %1"), e.chapter) or _("Page bookmark")
-        return hstack({ w = w, gap = px(8) }, { icon("bookmark", px(18), { sw = 2.25 }), text(label, { s = QUOTE_SIZE, b = true, w = w - px(26), data = true }) })
+        -- In the bookmark's colour (aleph_bookmark_colors.lua).
+        local hex = require("aleph_bookmark_colors").hex(bookmarkColor(e))
+        return hstack({ w = w, gap = px(8) }, { icon("bookmark", px(18), { sw = 2.25, col = hex, fill = hex and true or nil }), text(label, { s = QUOTE_SIZE, b = true, w = w - px(26), data = true }) })
     end
     local str = e.text or ""
     if filled then
@@ -274,24 +321,68 @@ local function chipRow(page, w)
     return hstack({ w = w, gap = gap }, cells)
 end
 
+-- On the Bookmarks tab: the bookmarks' colours alone.
+local function bookmarkLookRows(page, w)
+    local cells = {}
+    local colors = require("aleph_bookmark_colors").COLORS
+    local cgap = px(8)
+    local d = math.min(px(36), floor((w - (#colors - 1) * cgap) / math.max(1, #colors)))
+    for _i, c in ipairs(colors) do
+        local on = page.state.bm_color == c.id
+        local ring = on and math.max(3, px(3)) or math.max(1, px(1.25))
+        local dot = BoardUI.circle(d, { bg = HL().colorOf(c.hex), border = ring, border_col = INK.black }, BoardUI.space(1, 1))
+        cells[#cells + 1] = BoardUI.hit(dot, { kind = "bm-color", value = c.id })
+    end
+    local rows = {
+        hstack({ w = w }, { flex(0), hstack({ gap = cgap, valign = "center" }, cells), flex(0) }),
+    }
+    if page.state.search then
+        local label = text(T(_("Search: “%1”"), page.state.search), { s = 13, b = true, data = true })
+        local chip_w = wOf(label) + px(18) + px(16) + px(8) + px(14)
+        local chip = BoardUI.box({ w = math.min(w, chip_w), h = px(34), radius = px(17), bg = INK.ge },
+            hstack({ w = math.min(w, chip_w), h = px(34) }, { space(px(14), 1), icon("search", px(16), { sw = 2.25 }), space(px(8), 1), label, flex(0), icon("x", px(16), { sw = 2.5 }), space(px(10), 1) }))
+        rows[#rows + 1] = space(nil, px(10))
+        rows[#rows + 1] = hstack({ w = w }, { flex(0), BoardUI.hit(chip, { kind = "clear-search" }), flex(0) })
+    end
+    return vstack({ w = w }, rows)
+end
+
 local function lookRows(page, w)
+    if page.state.kind == "bookmark" then return bookmarkLookRows(page, w) end
     local ui = page.ui
     local styles, colors = {}, {}
-    pcall(function() styles = ui.highlight:getHighlightStyles() end)
-    pcall(function() colors = ui.highlight.highlight_colors end)
+    try(function() styles = ui.highlight:getHighlightStyles() end)
+    try(function() colors = ui.highlight.highlight_colors end)
     local sample_color = HL().palette.hex(page.state.color or "yellow")
+    -- As many style chips as fit the width; when a patch or a modified
+    -- KOReader adds more styles than that, the strip scrolls (swipe it
+    -- sideways) and its last chip opens them all.
     local sgap = px(10)
-    local sw_ = math.min(px(64), floor((w - (#styles - 1) * sgap) / math.max(1, #styles)))
     local sh_ = px(40)
+    local slots = math.max(2, floor((w + sgap) / (px(58) + sgap)))
+    local selected_at
+    for i, style in ipairs(styles) do if style[2] == page.state.drawer then selected_at = i end end
+    local first, last, off, more, step = HL().styleWindow(#styles, slots, page.state.style_offset, selected_at)
+    page.state.style_offset, page.style_step = off, step
+    local sw_
+    if more then
+        sw_ = math.min(px(64), floor((w - (slots - 1) * sgap) / slots))
+    else
+        sw_ = math.min(px(64), floor((w - (#styles - 1) * sgap) / math.max(1, #styles)))
+    end
     local style_cells = {}
-    for _i, style in ipairs(styles) do
+    for i = first, last do
+        local style = styles[i]
         local id = style[2]
         local on = page.state.drawer == id
         local ring = on and math.max(2, px(2.5)) or math.max(1, px(1.25))
-        local sample = HL().styleSample(id, sw_ - 2 * ring - px(6), sh_ - 2 * ring - px(6), sample_color)
+        local sample = HL().styleSample(id, sw_ - 2 * ring - px(6), sh_ - 2 * ring - px(6), sample_color, style[1])
         local box = BoardUI.box({ w = sw_, h = sh_, radius = px(10), border = ring, border_col = on and INK.black or INK.g6, bg = INK.white },
             hstack({ w = sw_ - 2 * ring, h = sh_ - 2 * ring }, { flex(0), sample, flex(0) }))
         style_cells[#style_cells + 1] = BoardUI.hit(box, { kind = "drawer", value = id })
+    end
+    if more then
+        style_cells[#style_cells + 1] = HL().moreTile(sw_, sh_, #styles - (last - first + 1), { kind = "drawer-more" }, true)
     end
     local cgap = px(8)
     local d = math.min(px(36), floor((w - (#colors - 1) * cgap) / math.max(1, #colors)))
@@ -413,7 +504,7 @@ function Bookmarks.goTo(ui, e)
     local item = e.item
     local ok = pcall(function() ui.bookmark:gotoBookmark(item.page, item.pos0) end)
     if ok then return end
-    pcall(function() ui.link:addCurrentLocationToStack() end)
+    try(function() ui.link:addCurrentLocationToStack() end)
     if type(item.page) == "string" then
         ui:handleEvent(Event:new("GotoXPointer", item.page, item.pos0 or item.page))
     elseif item.page then
@@ -522,7 +613,7 @@ end
 local function nearest(page)
     if page.state.sort ~= "page" then return nil end
     local current
-    pcall(function() current = page.ui:getCurrentPage() end)
+    try(function() current = page.ui:getCurrentPage() end)
     if not current then pcall(function() current = page.ui.document:getCurrentPage() end) end
     if not current then return nil end
     local best
@@ -670,13 +761,30 @@ function Bookmarks.open(bm, native, opts)
                 local e = p.list[action.at]
                 if e then Bookmarks.openSheet(p, e) end
             elseif k == "type" then
-                p.state.kind = action.value or nil
+                Bookmarks.setKind(p.state, action.value or nil)
                 refilter(p); p:refresh()
             elseif k == "drawer" then
                 p.state.drawer = p.state.drawer ~= action.value and action.value or nil
                 refilter(p); p:refresh()
+            elseif k == "drawer-more" then
+                local styles = {}
+                try(function() styles = ui.highlight:getHighlightStyles() end)
+                HL().openStylePicker{
+                    styles = styles,
+                    selected = p.state.drawer,
+                    hex = HL().palette.hex(p.state.color or "yellow"),
+                    title = _("Show one style"),
+                    on_pick = function(id)
+                        p.state.drawer = p.state.drawer ~= id and id or nil
+                        p.state.style_offset = nil -- bring the one picked into view
+                        refilter(p); p:refresh()
+                    end,
+                }
             elseif k == "color" then
                 p.state.color = p.state.color ~= action.value and action.value or nil
+                refilter(p); p:refresh()
+            elseif k == "bm-color" then
+                p.state.bm_color = p.state.bm_color ~= action.value and action.value or nil
                 refilter(p); p:refresh()
             elseif k == "sort" then
                 local nxt = SORTS[1]
@@ -706,6 +814,23 @@ function Bookmarks.open(bm, native, opts)
             end
         end,
         on_swipe = function(p, ges)
+            -- A sideways swipe on the style strip scrolls it; anywhere
+            -- else it turns the page.
+            if (p.style_step or 0) > 0 and ges.pos and (ges.direction == "west" or ges.direction == "east") then
+                for _i, area in ipairs(p.hits or {}) do
+                    local a, d = area.action, area.dimen
+                    if a and (a.kind == "drawer" or a.kind == "drawer-more") and d
+                            and ges.pos.y >= d.y - px(10) and ges.pos.y <= d.y + d.h + px(10) then
+                        local count = 0
+                        try(function() count = #ui.highlight:getHighlightStyles() end)
+                        local off = p.state.style_offset or 0
+                        local max_off = math.max(0, count - p.style_step)
+                        local nxt = ges.direction == "west" and math.min(max_off, off + p.style_step) or math.max(0, off - p.style_step)
+                        if nxt ~= off then p.state.style_offset = nxt; p:refresh() end
+                        return true
+                    end
+                end
+            end
             if ges.direction == "west" then turn(p, 1) return true end
             if ges.direction == "east" then turn(p, -1) return true end
             return false
@@ -735,7 +860,7 @@ function Bookmarks.install()
     if ReaderBookmark._aleph_list then return end
     ReaderBookmark._aleph_list = true
     local original = ReaderBookmark.onShowBookmark
-    ReaderBookmark._rb_native_show = original
+    ReaderBookmark._aleph_native_show = original
     ReaderBookmark.onShowBookmark = function(self, ...)
         if not wanted() or nativeState(self) then return original(self, ...) end
         local args = { n = select("#", ...), ... }

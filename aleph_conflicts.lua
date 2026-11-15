@@ -18,7 +18,9 @@ Project: Title, Bookshelf and the menu restyling plugins are not warned about:
 they do not build a home screen over Aleph's (see the README).
 ]]
 
+local Prefs = require("aleph_prefs")
 local _ = require("gettext")
+local try = require("aleph_try").call
 
 local Conflicts = { shown = false }
 
@@ -36,7 +38,7 @@ local function running(ui, plugin)
         if type(ui and rawget(ui, name)) == "table" then return true end
     end
     local found = false
-    pcall(function()
+    try(function()
         local loader = require("pluginloader")
         for _i, name in ipairs(plugin.names) do
             if loader:getPluginInstance(name) then found = true end
@@ -50,8 +52,7 @@ Conflicts.running = running
 function Conflicts.zenosRunning(ui) return running(ui, Conflicts.PLUGINS[1]) end
 
 local function stored()
-    local s = G_reader_settings:readSetting("aleph")
-    return type(s) == "table" and s or nil
+    return Prefs.get()
 end
 
 local function dismissed(id)
@@ -115,8 +116,7 @@ end
 -- "Don't show again": for the plugins this warning named (all known ones
 -- when none is given).
 function Conflicts.dismiss(list)
-    local s = G_reader_settings:readSetting("aleph")
-    if type(s) ~= "table" then s = {} end
+    local s = Prefs.table()
     s.conflict_warnings_off = type(s.conflict_warnings_off) == "table" and s.conflict_warnings_off or {}
     for _i, p in ipairs(list or Conflicts.PLUGINS) do s.conflict_warnings_off[p.id] = true end
     G_reader_settings:saveSetting("aleph", s)
