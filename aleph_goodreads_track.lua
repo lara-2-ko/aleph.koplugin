@@ -148,7 +148,7 @@ function Track.work(Api, settings, plan)
             r.failed = "state"
             go = false
         else
-            r.remote = { shelf = st.shelf or false, status = st.status == nil and false or st.status,
+            r.remote = { shelf = st.shelf or false, status = st.status or false,
                 review_id = st.review_id or false, rating = tonumber(st.rating) or 0 }
             on_shelf = st.shelf == "currently-reading"
             if st.shelf and st.shelf ~= "currently-reading" and not plan.take_over then
@@ -281,7 +281,7 @@ local function askTakeOver(p, plan, shelf)
     if asked[file] then return end
     asked[file] = true
     p.state.status_mismatch_shown = true
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     local T = require("ffi/util").template
     local label = shelf
     try(function() label = api():shelfLabel(shelf) or shelf end)
@@ -329,7 +329,7 @@ local function finish(p, plan, r, why)
         -- Nothing more is asked until the sign-in changes; said once.
         try(function() auth_stop = live.settings:getCookie() or "" end)
         try(function()
-            local _ = require("gettext")
+            local _ = require("aleph_gettext")
             require("aleph_toast").show(_("Goodreads no longer accepts the sign-in. Renew it in Aleph's Settings > Library > Goodreads sign-in."), { icon = "info", timeout = 6 })
         end)
     elseif outcome == "ok" then

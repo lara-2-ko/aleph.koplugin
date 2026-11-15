@@ -19,7 +19,7 @@ the board's icons. If the sheet cannot be built, KOReader's dialog is shown.
 ]]
 
 local UIManager = require("ui/uimanager")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")

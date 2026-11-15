@@ -674,7 +674,7 @@ function XR.attach(ui)
     if type(Prefs.get().xray_ai_key) == "string" or Prefs.get().xray_ai_provider == "custom" then
         try(function() require("aleph_xr_story").noteOpened(ui) end)
     end
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     if ui.highlight and ui.highlight.addToHighlightDialog then
         ui.highlight:addToHighlightDialog("14_aleph_xray", function(this)
             return {

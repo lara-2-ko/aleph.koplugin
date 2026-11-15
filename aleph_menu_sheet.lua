@@ -10,7 +10,7 @@ Built from the local library, so opening it never waits.
 ]]
 
 local datetime = require("datetime")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 local T = require("ffi/util").template
 
 local BoardMetrics = require("aleph_board_metrics")

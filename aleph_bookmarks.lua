@@ -35,7 +35,7 @@ local TextBoxWidget = require("ui/widget/textboxwidget")
 local UIManager = require("ui/uimanager")
 local datetime = require("datetime")
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
@@ -88,8 +88,8 @@ function Bookmarks.day(stamp)
     local y, m, d = tostring(stamp or ""):match("^(%d%d%d%d)%-(%d%d)%-(%d%d)")
     if not y then return nil end
     local t = os.time{ year = tonumber(y), month = tonumber(m), day = tonumber(d), hour = 12 }
-    local fmt = (y == os.date("%Y")) and "%d %b" or "%d %b %Y"
-    return (os.date(fmt, t):gsub("^0", ""))
+    local Dates = require("aleph_dates")
+    return y == os.date("%Y") and Dates.dayMonth(t) or Dates.dayMonthYearShort(t)
 end
 
 local function kindOf(bm, item)
@@ -496,7 +496,7 @@ local function build(page, sw, sh)
         vstack({ w = w, h = body_h + px(4) }, { body, flex(0) }),
         page.count > 1 and pager(page, w) or space(nil, px(44)),
     }
-    return vstack({ w = sw, h = sh, pad = { top, mx, bottom, mx } }, items)
+    return vstack({ w = sw, h = sh, pad = { top, mx, bottom, mx }, top = true }, items)
 end
 
 -- ----------------------------------------------------------------- jumps

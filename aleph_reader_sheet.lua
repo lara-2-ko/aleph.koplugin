@@ -9,9 +9,10 @@ view above it, dimmed.
 
   head        cover (opens the book's page), title, author, a chip with the progress, close
   card        This book: 18%, page 214 of 542 · Chapter: its title, pages left
+              (a tap on the chapter line opens the table of contents)
   tabs        This book | Also reading
   This book   Style & format (KOReader's own bottom menu: fonts, margins,
-              spacing, contrast…), Contents, Bookmarks, Pages (the page
+              spacing, contrast…), Search, Bookmarks, Pages (the page
               browser); Bookmark this page; Book details (its Aleph
               page, with the highlight and bookmark counts); Aleph
               Home; with BT Manager - HID Passthrough or Syncery installed, a
@@ -32,7 +33,7 @@ local Event = require("ui/event")
 local Geom = require("ui/geometry")
 local UIManager = require("ui/uimanager")
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
@@ -274,7 +275,8 @@ local function where(page, w)
                 or (d.chapter_left == 1 and T(_("%1 · 1 page left"), d.chapter) or T(_("%1 · %2 pages left"), d.chapter, d.chapter_left))
         end
         rows[#rows + 1] = BoardUI.rect(pw, MenuUI.hair(), INK.gb)
-        rows[#rows + 1] = line("list-ordered", _("Chapter"), value)
+        -- A tap on the chapter line opens the table of contents.
+        rows[#rows + 1] = BoardUI.hit(line("list-ordered", _("Chapter"), value), { kind = "toc" })
     end
     return MenuUI.card(w, rows, { vpad = 4 })
 end
@@ -283,7 +285,7 @@ end
 local function tiles(page, w)
     local items = {
         { "type", _("Style"), { kind = "style" } },
-        { "list-ordered", _("Contents"), { kind = "toc" } },
+        { "search", _("Search"), { kind = "search" } },
         { "bookmark", _("Bookmarks"), { kind = "bookmarks" } },
         { "book-open", _("Pages"), { kind = "pages" } },
     }
@@ -503,6 +505,9 @@ local function onAction(page, action)
         handOff(page, function() Sheet.nativeMenu(ui) end)
     elseif k == "toc" then
         handOff(page, function() ui.toc:onShowToc() end)
+    elseif k == "search" then
+        -- The search box (Aleph's, with Search like a Kindle on).
+        handOff(page, function() ui.search:onShowFulltextSearchInput() end)
     elseif k == "bookmarks" then
         handOff(page, function() ui.bookmark:onShowBookmark() end)
     elseif k == "pages" then

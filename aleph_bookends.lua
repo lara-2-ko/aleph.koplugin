@@ -42,7 +42,7 @@ local Device = require("device")
 local Geom = require("ui/geometry")
 local UIManager = require("ui/uimanager")
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
@@ -285,7 +285,7 @@ function Bookends.value(id, s, ui)
     elseif id == "clock" then
         return { text = require("datetime").secondsToHour(os.time(), G_reader_settings:isTrue("twelve_hour_clock")) }
     elseif id == "date" then
-        return { text = (os.date("%a %d %b"):gsub(" 0", " ")) }
+        return { text = require("aleph_dates").weekdayDayMonth(os.time()) }
     elseif id == "battery" then
         local ok, cap = pcall(function() return Device:hasBattery() and Device:getPowerDevice():getCapacity() end)
         if ok and cap then

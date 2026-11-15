@@ -1,6 +1,6 @@
 -- Modified for Aleph, 2026-11-07. Unofficial local-only fork. See NOTICE.
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 local BoardUtil = {}
 local function parseIsoTimestamp(value)
     if type(value) ~= "string" then return nil end

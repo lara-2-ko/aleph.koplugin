@@ -19,7 +19,7 @@ local TextBoxWidget = require("ui/widget/textboxwidget")
 local UIManager = require("ui/uimanager")
 local datetime = require("datetime")
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
@@ -123,7 +123,7 @@ local function buildPage(page, sw, sh)
     else
         table.insert(items, space(nil, px(40)))
     end
-    return vstack({ w = sw, h = sh, pad = { top, mx, bottom, mx } }, items)
+    return vstack({ w = sw, h = sh, pad = { top, mx, bottom, mx }, top = true }, items)
 end
 
 function TextPages.turn(page, delta)
@@ -213,7 +213,7 @@ function TextPages.highlightView(hl)
     if stamp then
         local y, m, d = stamp:match("^(%d%d%d%d)%-(%d%d)%-(%d%d)")
         if y then
-            when = os.date("%b %d, %Y", os.time{ year = tonumber(y), month = tonumber(m), day = tonumber(d), hour = 12 }):gsub(" 0", " ")
+            when = require("aleph_dates").monthDayYear(os.time{ year = tonumber(y), month = tonumber(m), day = tonumber(d), hour = 12 })
         end
     end
     return {

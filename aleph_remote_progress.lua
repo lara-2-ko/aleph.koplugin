@@ -193,7 +193,7 @@ function Remote.note(book)
     local pct = math.floor(r.pct + 0.5)
     if pct >= 100 then pct = 99 end
     local T = require("ffi/util").template
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     return T(_("%1% on %2"), pct, r.label), r
 end
 

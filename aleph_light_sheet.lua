@@ -9,7 +9,7 @@ local Store = require("aleph_board_store")
 local Widgets = require("aleph_board_widgets")
 local MenuUI = require("aleph_menu_ui")
 local MenuPage = require("aleph_menu_page")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 local px = Metrics.px
 local LightSheet = {}
 

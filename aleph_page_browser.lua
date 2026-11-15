@@ -33,7 +33,7 @@ local Event = require("ui/event")
 local Geom = require("ui/geometry")
 local UIManager = require("ui/uimanager")
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
@@ -345,7 +345,7 @@ local function build(page, sw, sh)
     local rule_bottom = BoardUI.rect(sw, math.max(1, px(1)), INK.gc)
     page.carousel_top = top + hOf(header) + px(10) + math.max(1, px(1)) + px(12)
     local mid_h = sh - top - hOf(header) - px(10) - hOf(rule_top) - px(12) - px(12) - hOf(rule_bottom) - px(8) - hOf(footer) - px(10)
-    return vstack({ w = sw, h = sh }, {
+    return vstack({ w = sw, h = sh, top = true }, {
         space(nil, top),
         hstack({ w = sw }, { space(mx, 1), header, space(mx, 1) }),
         space(nil, px(10)),

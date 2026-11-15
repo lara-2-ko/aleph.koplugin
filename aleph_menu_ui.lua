@@ -81,7 +81,11 @@ function MenuUI.group(w, rows, o)
             table.insert(children, r)
         end
     end
-    return MenuUI.card(w, children, o)
+    local card = MenuUI.card(w, children, o)
+    -- Kept so a page in pages can cut a group too tall for one page into
+    -- groups of fewer rows (Settings.split).
+    card._group = { w = w, rows = rows, o = o }
+    return card
 end
 
 function MenuUI.label(w, str, right)
@@ -93,7 +97,55 @@ end
 -- A section: its label, then the body.
 function MenuUI.section(w, title, body)
     if not title then return body end
-    return vstack({ w = w }, { MenuUI.label(w, title), space(nil, px(8)), body })
+    local v = vstack({ w = w }, { MenuUI.label(w, title), space(nil, px(8)), body })
+    v._section = { w = w, title = title, body = body }
+    return v
+end
+
+-- A group too tall for `room`, as groups of fewer rows that each fit, the
+-- first under the section's title when it had one. Rows taller than room
+-- on their own stay alone (nothing smaller can be made of them).
+function MenuUI.splitGroup(item, room)
+    local sec = item._section
+    local grp = sec and sec.body and sec.body._group or item._group
+    if not grp then return { item } end
+    local rows = {}
+    for _i, r in ipairs(grp.rows) do if r then rows[#rows + 1] = r end end
+    local out, chunk = {}, {}
+    local function head() return sec and #out == 0 end
+    local function room_now()
+        if head() then
+            local label = MenuUI.label(sec.w, sec.title)
+            return room - label:getSize().h - px(8), label
+        end
+        return room
+    end
+    local function flush()
+        if #chunk == 0 then return end
+        local g = MenuUI.group(grp.w, chunk, grp.o)
+        if head() then
+            local _r, label = room_now()
+            out[#out + 1] = label
+            out[#out + 1] = space(nil, px(8))
+        elseif #out > 0 then
+            out[#out + 1] = space(nil, px(8))
+        end
+        out[#out + 1] = g
+        chunk = {}
+    end
+    for _i, r in ipairs(rows) do
+        chunk[#chunk + 1] = r
+        if #chunk > 1 then
+            local fits = MenuUI.group(grp.w, chunk, grp.o):getSize().h <= (room_now())
+            if not fits then
+                table.remove(chunk)
+                flush()
+                chunk[1] = r
+            end
+        end
+    end
+    flush()
+    return out
 end
 
 -- ------------------------------------------------------------- controls
@@ -297,7 +349,7 @@ end
 
 -- ------------------------------------------------------------------ text
 -- "2 min ago", "3 h ago", "yesterday", "Oct 9". A timestamp of 0 is never.
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 local T = require("ffi/util").template
 
 function MenuUI.ago(ts, now)
@@ -311,7 +363,7 @@ function MenuUI.ago(ts, now)
         return T(_("%1 h ago"), math.floor(delta / 3600))
     end
     if os.date("%Y%m%d", ts) == os.date("%Y%m%d", now - 86400) then return _("yesterday") end
-    return os.date("%b %d", ts):gsub(" 0", " ")
+    return (require("aleph_dates").monthDay(ts))
 end
 
 -- ---------------------------------------------------------- illustrations

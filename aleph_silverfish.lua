@@ -109,7 +109,7 @@ function Card.openPopup(module, on_open)
     local BoardUI = require("aleph_board_ui")
     local BoardMetrics = require("aleph_board_metrics")
     local TextPages = require("aleph_text_pages")
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     local INK, px = BoardMetrics.INK, BoardMetrics.px
     local said = speech.text or "…"
     local pets = {}

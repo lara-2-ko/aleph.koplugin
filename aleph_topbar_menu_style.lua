@@ -9,7 +9,7 @@ local Size = require("ui/size")
 local Style = require("aleph_topbar_style")
 local TextWidget = require("ui/widget/textwidget")
 local Widget = require("ui/widget/widget")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local floor = math.floor
 local MenuStyle = {}

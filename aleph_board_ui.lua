@@ -391,6 +391,14 @@ end
 
 -- Children top to bottom in a w x h box. Flex spacers share what is left.
 -- o: w, h, align ("left", "center", "right"), pad (number or {t, r, b, l}), strict_padding.
+-- A container that paints its content from its top-left corner, whatever
+-- the content's height.
+local TopLeft = LeftContainer:extend{}
+function TopLeft:paintTo(bb, x, y)
+    self.dimen.x, self.dimen.y = x, y
+    self[1]:paintTo(bb, x, y)
+end
+
 function BoardUI.vstack(o, items)
     local pt, pr, pb, pl = 0, 0, 0, 0
     if type(o.pad) == "number" then pt, pr, pb, pl = o.pad, o.pad, o.pad, o.pad
@@ -447,6 +455,14 @@ function BoardUI.vstack(o, items)
     end
     local box_h = o.h or (used + pb)
     if used < box_h then table.insert(group, VerticalSpan:new{ width = box_h - used }) end
+    if o.top and used > box_h then
+        -- Taller than its box: from the top (a container centres what
+        -- overflows, which would push a page's header off the screen).
+        return TopLeft:new{
+            dimen = Geom:new{ w = box_w, h = box_h },
+            HorizontalGroup:new{ align = "top", HorizontalSpan:new{ width = pl }, group },
+        }
+    end
     return LeftContainer:new{
         dimen = Geom:new{ w = box_w, h = box_h },
         HorizontalGroup:new{ align = "top", HorizontalSpan:new{ width = pl }, group },

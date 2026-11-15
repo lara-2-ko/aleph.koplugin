@@ -22,7 +22,7 @@ local Device = require("device")
 local Geom = require("ui/geometry")
 local Widget = require("ui/widget/widget")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 local try = require("aleph_try").call
 
 local Screen = Device.screen

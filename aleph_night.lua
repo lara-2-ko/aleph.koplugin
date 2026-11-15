@@ -286,7 +286,7 @@ end
 
 -- "On · 15% · warmth 70 · bolder text" for the settings row.
 function Night.summary()
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     local T = require("ffi/util").template
     local c = Night.config()
     local auto = c.auto and c.from ~= c.to and T(_("night mode %1–%2"), Night.timeLabel(c.from), Night.timeLabel(c.to)) or nil

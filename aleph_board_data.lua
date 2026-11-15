@@ -15,7 +15,7 @@ local NetworkMgr = require("ui/network/manager")
 local datetime = require("datetime")
 local util = require("util")
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local StatsReader = require("aleph_stats_reader")
 local BoardUtil = require("aleph_board_util")
@@ -42,28 +42,14 @@ local function dateKey(t)
 end
 
 -- ---------------------------------------------------------------- words
-function BoardData.longWeekday(t)
-    local short = os.date("%a", t)
-    return datetime.shortDayOfWeekToLongTranslation[short] or short
-end
-
-function BoardData.shortWeekday(t)
-    local short = os.date("%a", t)
-    return datetime.shortDayOfWeekTranslation[short] or short
-end
-
-function BoardData.longMonth(t)
-    local long = os.date("%B", t)
-    return datetime.longMonthTranslation[long] or long
-end
-
-function BoardData.shortMonth(t)
-    local short = os.date("%b", t)
-    return datetime.shortMonthTranslation[short] or short
-end
+local Dates = require("aleph_dates")
+BoardData.longWeekday = Dates.longWeekday
+BoardData.shortWeekday = Dates.shortWeekday
+BoardData.longMonth = Dates.longMonth
+BoardData.shortMonth = Dates.shortMonth
 
 function BoardData.longDate(t)
-    return T(_("%1, %2 %3"), BoardData.longWeekday(t), tonumber(os.date("%d", t)), BoardData.longMonth(t))
+    return T(_.pgettext("Date: long weekday, day, long month", "%1, %2 %3"), BoardData.longWeekday(t), tonumber(os.date("%d", t)), BoardData.longMonth(t))
 end
 
 function BoardData.greeting(name, t)
@@ -107,7 +93,7 @@ function BoardData.relativeDay(iso, now)
     local days = math.floor((dayStart(now) - dayStart(t)) / DAY + 0.5)
     if days <= 1 then return _("yesterday") end
     if days < 7 then return BoardData.longWeekday(t) end
-    return T(_("%1 %2"), BoardData.shortMonth(t), tonumber(os.date("%d", t)))
+    return Dates.monthDay(t)
 end
 
 -- "Late September 2025" for a YYYY-MM-DD date.
@@ -128,7 +114,7 @@ function BoardData.monthYear(iso)
     if type(iso) ~= "string" then return nil end
     local t = datetime.stringISO8601ToSeconds and datetime.stringISO8601ToSeconds(iso)
     if not t then return nil end
-    return T(_("%1 %2"), BoardData.shortMonth(t), tonumber(os.date("%Y", t)))
+    return Dates.monthYear(t)
 end
 
 -- Rounded, except that a started book never reads 0% and an unfinished one
@@ -220,7 +206,7 @@ function BoardData.forecast(book, md5, now)
         finish = finish,
         day = days_out == 0 and _("Today") or (days_out == 1 and _("Tomorrow") or BoardData.longWeekday(finish)),
         short = BoardData.shortWeekday(finish),
-        date = T(_("%1 %2"), tonumber(os.date("%d", finish)), BoardData.shortMonth(finish)),
+        date = Dates.dayMonth(finish),
     }
 end
 
@@ -390,7 +376,7 @@ function BoardData.pageTurns(now)
     local value = nil
     if r then
         value = { total = r.total or 0, today = r.today or 0 }
-        if r.first then value.since = T(_("%1 %2"), BoardData.shortMonth(r.first), tonumber(os.date("%Y", r.first))) end
+        if r.first then value.since = Dates.monthYear(r.first) end
     end
     turns_cache = { at = now, day = today, value = value }
     return value
@@ -688,7 +674,7 @@ function BoardData.tickTime(d, now)
     d.now = now
     d.clock = datetime.secondsToHour(now, G_reader_settings:isTrue("twelve_hour_clock"))
     d.weekday = BoardData.longWeekday(now)
-    d.day_month = T(_("%1 %2"), tonumber(os.date("%d", now)), BoardData.longMonth(now))
+    d.day_month = Dates.dayLongMonth(now)
     d.date_long = BoardData.longDate(now)
     return d
 end
@@ -860,7 +846,7 @@ function BoardData.build(host, context, now)
     d.date_long = BoardData.longDate(now)
     d.clock = datetime.secondsToHour(now, G_reader_settings:isTrue("twelve_hour_clock"))
     d.weekday = BoardData.longWeekday(now)
-    d.day_month = T(_("%1 %2"), tonumber(os.date("%d", now)), BoardData.longMonth(now))
+    d.day_month = Dates.dayLongMonth(now)
     d.updated = BoardData.relativeDay(body.generatedAt, now)
 
     local decorate, decorateAll = boardBooks(host, body, now)

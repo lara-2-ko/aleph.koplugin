@@ -13,7 +13,7 @@ scrolls. Every tappable part is a BoardUI hit area, handled by the Browser.
 
 local UI = require("aleph_board_ui")
 local Metrics = require("aleph_board_metrics")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 local try = require("aleph_try").call
 
 local INK = Metrics.INK
@@ -86,7 +86,7 @@ end
 
 local function shortDate(t)
     if not t or t <= 0 then return nil end
-    return os.date("%b %d", t)
+    return require("aleph_dates").monthDay(t)
 end
 
 -- ----------------------------------------------------------------- pieces
@@ -251,7 +251,7 @@ local function columnItems(br, b, tw)
     local full = pill({ kind = "outline", icon = "info", label = _("Details"), h = h, s = 14, icon_size = 18 })
     local det = (tw - wOf(full) - gap < px(120)) and pill({ kind = "outline", icon = "info", h = h, icon_size = 18 }) or full
     local pct = b.progressPercentage or 0
-    local verb = b.readStatus == "read" and _("Read again") or (pct > 0 and _("Resume") or _("Read"))
+    local verb = b.readStatus == "read" and _("Read again") or (pct > 0 and _("Resume") or _.pgettext("Open the book", "Read"))
     local primary = UI.hit(pill({ kind = "solid", icon = "play", label = verb, w = tw - wOf(det) - gap, h = h, s = 14 }),
         { kind = "open", book = b })
     items[#items + 1] = hstack({ w = tw, gap = gap }, { primary, UI.hit(det, { kind = "info", book = b }) })
@@ -278,7 +278,7 @@ function Detail.facts(b, w)
     local pad = px(12)
     local size = b.size and string.format("%.1f MB", b.size / 1048576) or nil
     local cells = {
-        { os.date("%b %Y", b.added or os.time()), _("Added") },
+        { require("aleph_dates").monthYear(b.added or os.time()), _("Added") },
         { (b.props and require("aleph_language").name(b.props.language)) or "—", _("Language") },
     }
     -- The page count: Calibre's when it has one, otherwise KOReader's.

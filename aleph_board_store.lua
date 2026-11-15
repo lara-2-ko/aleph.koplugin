@@ -20,7 +20,7 @@ Stored under board_layout (under another name before 1.1.46: aleph_migrate.lua m
     custom = { ["4"] = { pages = { { items = {...} }, ... } }, ["4l"] = ... } }
 ]]
 
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardColour = require("aleph_board_colour")
 

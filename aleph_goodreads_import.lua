@@ -483,7 +483,7 @@ end
 
 -- ------------------------------------------------------------ the screens
 local function why(err)
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     if err == "not-goodreads" then return _("This file is not Goodreads' library export: its first row should have columns such as Title, Author and Exclusive Shelf.") end
     if err == "xlsx" then return _("This Excel workbook could not be read. Use the CSV file Goodreads exported, or save the workbook as CSV.") end
     if err == "utf16" then return _("This file was saved as Unicode text. Use the CSV file Goodreads exported, or save it as CSV UTF-8.") end
@@ -502,7 +502,7 @@ end
 
 local function chooseFile(browser, start)
     local UIManager = require("ui/uimanager")
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     local dir = (start and start:match("^(.*)/[^/]*$")) or (G_reader_settings and G_reader_settings:readSetting("home_dir")) or "/"
     UIManager:show(require("ui/widget/pathchooser"):new{
         select_directory = false, select_file = true, path = dir,
@@ -514,18 +514,17 @@ end
 Import.chooseFile = chooseFile
 
 -- "12 Mar 2024" for 2024-03-12.
-local MONTHS = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" }
 function Import.day(iso)
-    local y, m, d = tostring(iso or ""):match("^(%d%d%d%d)-(%d%d)-(%d%d)")
-    if not y then return tostring(iso or "") end
-    local _ = require("gettext")
-    return string.format("%d %s %s", tonumber(d), _(MONTHS[tonumber(m)] or "?"), y)
+    local Dates = require("aleph_dates")
+    local t = Dates.fromISO(iso)
+    if not t then return tostring(iso or "") end
+    return Dates.dayMonthYearShort(t)
 end
 
 -- The books finished on another day here than on Goodreads: for each, keep
 -- this device's day or take Goodreads'. on_done() when closed.
 function Import.chooseDates(plan, on_done)
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     local T = require("ffi/util").template
     local Device = require("device")
     local UIManager = require("ui/uimanager")
@@ -586,7 +585,7 @@ function Import.chooseDates(plan, on_done)
             local shown = {}
             for i = (page.index - 1) * per + 1, math.min(#rows, page.index * per) do shown[#shown + 1] = rows[i] end
             local pager = page.count > 1 and require("aleph_text_pages").pager(w, page.index, page.count) or space(nil, px(40))
-            return vstack({ w = sw, h = sh, pad = { px(6), mx, px(8), mx } }, {
+            return vstack({ w = sw, h = sh, pad = { px(6), mx, px(8), mx }, top = true }, {
                 header, space(nil, px(8)), bulk, space(nil, px(12)),
                 vstack({ w = w, h = avail }, { MenuUI.group(w, shown, { inset = 0 }), flex(0) }),
                 space(nil, px(8)), pager, space(nil, px(10)), done,
@@ -620,7 +619,7 @@ end
 -- Reads `path`, shows what would change, imports on OK. `plan` (optional):
 -- one already made, back from choosing finished dates.
 function Import.review(browser, path, plan)
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     local T = require("ffi/util").template
     local lib = browser.local_library
     if not plan then
@@ -682,7 +681,7 @@ end
 
 -- From Settings: the newest export found, or how to get one.
 function Import.start(browser)
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     local files = Import.findFiles(browser.settings)
     if files[1] then return Import.review(browser, files[1].path) end
     confirm{

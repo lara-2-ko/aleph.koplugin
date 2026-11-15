@@ -12,7 +12,7 @@ kept.
 local Blitbuffer = require("ffi/blitbuffer")
 local Geom = require("ui/geometry")
 local Widget = require("ui/widget/widget")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")

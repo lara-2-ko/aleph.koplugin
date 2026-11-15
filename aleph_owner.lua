@@ -8,7 +8,7 @@ Kept in Aleph's settings (key "owner": { name, email, phone }), on this
 device only; nothing is sent anywhere.
 ]]
 
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local Owner = {}
 
@@ -90,7 +90,7 @@ function Owner.open(browser)
                 rows[#rows + 1] = MenuUI.row(iw, { icon = f.icon, label = f.label(), sub = o[f.key] or _("Not set"), sub_data = o[f.key] ~= nil,
                     chevron = true, action = { kind = "owner-edit", key = f.key } })
             end
-            return vstack({ w = sw, h = sh, pad = { px(6), mx, px(12), mx } }, {
+            return vstack({ w = sw, h = sh, pad = { px(6), mx, px(12), mx }, top = true }, {
                 header, space(nil, px(8)),
                 MenuUI.card(w, card_items, { strong = true }),
                 space(nil, px(16)),

@@ -20,7 +20,7 @@ local Prefs = require("aleph_prefs")
 local Geom = require("ui/geometry")
 local UIManager = require("ui/uimanager")
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
@@ -216,9 +216,24 @@ local function build(page, sw, sh)
         items = body(page, w, true)
     end
     local all = { header, space(nil, px(8)) }
-    for _i, it in ipairs(items) do all[#all + 1] = it end
+    local room = sh - px(6) - px(12) - hOf(header) - px(8)
+    local total = 0
+    for _i, it in ipairs(items) do total = total + hOf(it) end
+    if total > room then
+        -- Still too tall (a large interface size): in pages, turned with the
+        -- arrows at the foot or the page keys.
+        local pages = require("aleph_settings_page").split(items, room - px(48))
+        page.sub_count = #pages
+        page.sub_at = math.max(1, math.min(#pages, page.sub_at or 1))
+        for _i, it in ipairs(pages[page.sub_at]) do all[#all + 1] = it end
+        all[#all + 1] = flex(px(8))
+        all[#all + 1] = require("aleph_text_pages").pager(w, page.sub_at, #pages)
+    else
+        page.sub_count, page.sub_at = 1, 1
+        for _i, it in ipairs(items) do all[#all + 1] = it end
+    end
     page.panel_rect = Geom:new{ x = 0, y = 0, w = sw, h = sh }
-    return vstack({ w = sw, h = sh, pad = { px(6), mx, px(12), mx } }, all)
+    return vstack({ w = sw, h = sh, pad = { px(6), mx, px(12), mx }, top = true }, all)
 end
 
 -- ---------------------------------------------------------------- picker
@@ -308,7 +323,13 @@ end
 local function onAction(page, action)
     local c = Bookends.config()
     local k = action.kind
-    if k == "tab" then page.tab = action.tab
+    if k == "tab" then page.tab = action.tab; page.sub_at = 1
+    elseif k == "page" then
+        local to = (page.sub_at or 1) + (action.delta or 0)
+        if to < 1 or to > (page.sub_count or 1) then return true end
+        page.sub_at = to
+        page:refresh()
+        return true
     elseif k == "edge" then c[action.edge] = not c[action.edge]; Bookends.save(c)
     elseif k == "slot" then Page.openPicker(page, action.edge, action.slot); return true
     elseif k == "line" then c.line = action.value; Bookends.save(c)
@@ -331,7 +352,10 @@ local function onAction(page, action)
         Bookends.save(c)
         if c.page_turner then try(function() require("aleph_page_turner").ask(page.ui) end) end
     elseif k == "enabled" then
-        Prefs.set("bookends_enabled", action.value and nil or false)
+        -- On is the default, kept as no setting at all; off is false.
+        -- ("action.value and nil or false" was always false: margins once
+        -- turned off could not be turned on again. Issue #3.)
+        if action.value then Prefs.set("bookends_enabled", nil) else Prefs.set("bookends_enabled", false) end
     elseif k == "reset" then Bookends.reset()
     else return true end
     page:refresh()
@@ -349,10 +373,11 @@ function Page.open(ui)
             local order = { "top", "bottom", "look" }
             local at = 1
             for i, t in ipairs(order) do if t == (p.tab or "top") then at = i end end
-            if ges.direction == "west" and at < 3 then p.tab = order[at + 1]; p:refresh(); return true end
-            if ges.direction == "east" and at > 1 then p.tab = order[at - 1]; p:refresh(); return true end
+            if ges.direction == "west" and at < 3 then p.tab = order[at + 1]; p.sub_at = 1; p:refresh(); return true end
+            if ges.direction == "east" and at > 1 then p.tab = order[at - 1]; p.sub_at = 1; p:refresh(); return true end
             return false
         end,
+        on_page_key = function(p, delta) onAction(p, { kind = "page", delta = delta }) end,
         ui = ui and ui.document and ui or nil,
         tab = "top",
     }

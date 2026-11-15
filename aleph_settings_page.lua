@@ -13,7 +13,7 @@ Profile group for the user's name and yearly goal added. The shortcut picker
 local Device = require("device")
 local Geom = require("ui/geometry")
 local UIManager = require("ui/uimanager")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 local T = require("ffi/util").template
 
 local BoardMetrics = require("aleph_board_metrics")
@@ -392,6 +392,9 @@ local function readerBody(page, w, compact)
             MenuUI.row(iw, { icon = "bookmark", label = _("Choose a colour when bookmarking"),
                 sub = _("The list of colours drops from the ribbon; off: the colour used last"), h = 64,
                 toggle = settings.bookmark_color_ask ~= false, action = { kind = "bookmark-color-ask", value = settings.bookmark_color_ask == false } }),
+            MenuUI.row(iw, { icon = "search", label = _("Search like a Kindle"),
+                sub = _("Every result on a page, then ‹ › through them and back to your page; off: KOReader's search"), h = 64,
+                toggle = settings.kindle_search ~= false, action = { kind = "kindle-search", value = settings.kindle_search == false } }),
         }, { inset = 0 }),
     }
 end
@@ -715,7 +718,7 @@ local function xrayBody(page, w)
     local config = AI.config()
     local labels, at = {}, 1
     for i, p in ipairs(AI.PROVIDERS) do
-        labels[i] = p.label
+        labels[i] = _(p.label)
         if p.id == config.provider then at = i end
     end
     local key_sub = config.key ~= "" and T(_("Saved · ends in %1"), config.key:sub(-4)) or _("Not set")
@@ -805,6 +808,16 @@ end
 -- A page's items in pages of at most `room` high, kept whole (a group is
 -- never cut in two); a page does not start with a gap.
 function Settings.split(body, room)
+    -- A group taller than a page is first cut into smaller groups.
+    local flat = {}
+    for _i, item in ipairs(body) do
+        if item and not item._flex and item:getSize().h > room and (item._group or item._section) then
+            for _j, part in ipairs(MenuUI.splitGroup(item, room)) do flat[#flat + 1] = part end
+        elseif item then
+            flat[#flat + 1] = item
+        end
+    end
+    body = flat
     local pages, cur, h = {}, {}, 0
     for _i, item in ipairs(body) do
         if item then
@@ -840,29 +853,36 @@ local function build(page, sw, sh)
     local w = sw - 2 * mx
     local avail = sh - top - bottom
     local view = page.stack[#page.stack]
-    local items
+    local items, header, body, footer
     if view == "root" then
-        local header = MenuUI.pageHeader(w, _("Settings"), { sub = _("Aleph") })
-        local footer = text(T(_("Aleph %1"), VERSION), { s = 13, col = INK.g4, w = w, align = "center" })
-        items = { header, space(nil, px(8)) }
-        for _i, item in ipairs(settingsList(page, w)) do table.insert(items, item) end
-        table.insert(items, flex(px(8)))
-        table.insert(items, footer)
+        header = MenuUI.pageHeader(w, _("Settings"), { sub = _("Aleph") })
+        footer = text(T(_("Aleph %1"), VERSION), { s = 13, col = INK.g4, w = w, align = "center" })
+        body = settingsList(page, w)
     elseif view == "shortcut" then
-        local header = MenuUI.pageHeader(w, _("Shortcut"), { sub = _("Choose where to open Aleph") })
-        items = { header, space(nil, px(8)) }
-        for _i, item in ipairs(shortcutBody(page, w, avail - header:getSize().h - px(8))) do table.insert(items, item) end
+        header = MenuUI.pageHeader(w, _("Shortcut"), { sub = _("Choose where to open Aleph") })
+        body = shortcutBody(page, w, avail - header:getSize().h - px(8))
     else
-        local header = MenuUI.pageHeader(w, titleOf(view), { sub = _("Settings") })
-        local body = bodyFor(page, view, w, false)
+        header = MenuUI.pageHeader(w, titleOf(view), { sub = _("Settings") })
+        body = bodyFor(page, view, w, false)
         -- A page too tall for the screen drops its notes and tightens up.
         if header:getSize().h + px(8) + heightOf(body) > avail then
             for _i, item in ipairs(body) do if item and item.free then item:free() end end
             body = bodyFor(page, view, w, true)
         end
+    end
+    do
         items = { header, space(nil, px(8)) }
         local room = avail - header:getSize().h - px(8)
-        if heightOf(body) > room then
+        -- The version under the list, when there is room for it.
+        if footer and heightOf(body) + px(8) + footer:getSize().h <= room then
+            for _i, item in ipairs(body) do table.insert(items, item) end
+            table.insert(items, flex(px(8)))
+            table.insert(items, footer)
+            body = nil
+        end
+        if not body then
+            page.sub_count, page.sub_key = 1, nil
+        elseif heightOf(body) > room then
             -- Still too tall (a large interface size, a long page): in pages,
             -- turned with the arrows at the foot or a swipe.
             local pager_h = px(40) + px(8)
@@ -880,7 +900,9 @@ local function build(page, sw, sh)
         end
     end
     page.panel_rect = Geom:new{ x = 0, y = 0, w = sw, h = sh }
-    return vstack({ w = sw, h = sh, pad = { top, mx, bottom, mx } }, items)
+    -- Kept at the top even if something is still taller than the screen,
+    -- so the header and its back arrow never leave it.
+    return vstack({ w = sw, h = sh, pad = { top, mx, bottom, mx }, top = true }, items)
 end
 
 -- ---------------------------------------------------------------- actions
@@ -1080,6 +1102,11 @@ end
 
 ACTIONS["reader-sheet"] = function(page, action, browser, settings)
     browser:persistSetting("reader_sheet", action.value)
+    page:refresh()
+end
+
+ACTIONS["kindle-search"] = function(page, action, browser, settings)
+    browser:persistSetting("kindle_search", action.value)
     page:refresh()
 end
 

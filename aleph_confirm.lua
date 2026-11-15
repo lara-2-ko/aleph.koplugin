@@ -11,7 +11,7 @@ title, the explanation, and Cancel / action pills. Tapping outside cancels.
 ]]
 
 local Geom = require("ui/geometry")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")

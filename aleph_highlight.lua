@@ -24,7 +24,7 @@ local Event = require("ui/event")
 local Geom = require("ui/geometry")
 local UIManager = require("ui/uimanager")
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
@@ -872,7 +872,8 @@ end
 local function mergeButtons(buttons)
     local row = buttons and buttons[1]
     if not row then return end
-    local C_ = _.pgettext
+    -- KOReader's own words, as on its buttons.
+    local C_ = require("gettext").pgettext
     local style_text, color_text = C_("Highlight", "Style"), C_("Highlight", "Color")
     local style_at, color_at
     for i, button in ipairs(row) do

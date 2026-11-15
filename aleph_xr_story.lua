@@ -628,7 +628,7 @@ function Story.offer(ui)
     if not Story.shouldOffer(ui) then return false end
     local st = ui._aleph_xr
     st.offered = true
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     local T = require("ffi/util").template
     local away = Story.away(ui) or 0
     local story = Story.read(ui)

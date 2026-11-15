@@ -203,7 +203,7 @@ function Migrate.warnOldFolder(ui)
     local UIManager = require("ui/uimanager")
     UIManager:scheduleIn(1, function()
         UIManager:show(require("ui/widget/infomessage"):new{
-            text = require("gettext")("Aleph is now in aleph.koplugin. Please delete the old readingboard.koplugin folder from koreader/plugins and restart KOReader: with both installed, screens are hooked twice."),
+            text = require("aleph_gettext")("Aleph is now in aleph.koplugin. Please delete the old readingboard.koplugin folder from koreader/plugins and restart KOReader: with both installed, screens are hooked twice."),
         })
     end)
 end

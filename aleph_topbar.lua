@@ -17,7 +17,7 @@ local Style = require("aleph_topbar_style")
 local TouchMenu = require("ui/widget/touchmenu")
 local UIManager = require("ui/uimanager")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local Screen = Device.screen
 -- Its settings (G_reader_settings "aleph_topbar"; "quicktopbar" before 1.1.46,

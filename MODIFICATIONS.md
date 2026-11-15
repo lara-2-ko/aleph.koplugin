@@ -1,5 +1,138 @@
 # Aleph (formerly Reading Board) — modifications, 2026-11-07 to 2026-11-15
 
+## 2026-11-15 — 1.2.7 (release)
+
+Released as 1.2.7: everything from 1.2.1 to 1.2.7 below, since the 1.2.0
+release.
+
+- **X-Ray Story: one row of buttons under a chapter's summary**
+  (aleph_xr_page.lua): ‹ · The story · Go to chapter · ›, instead of two
+  rows (Previous chapter / Next chapter, then The story / Go to chapter).
+  The arrows are round buttons with a chevron only; an arrow with no
+  summary that way is drawn faint and does nothing. On a narrow screen the
+  two middle buttons drop their icons to keep their words. The summary
+  shows up to 14 lines again. Swipes and the page keys still go to the
+  summary before or after.
+
+## 2026-11-15 — 1.2.6 (testing)
+
+- **Settings at a large interface size** (GitHub issue #4, a Kobo Libra
+  Colour at 1.2x and up): the Settings list itself, and Shortcut, had no
+  pages; taller than the screen, the page was centred by KOReader's
+  container (LeftContainer centres what overflows), so its top, with the
+  back arrow, went off the screen and Settings could not be left.
+  - Every Settings view now comes in pages when too tall (aleph_settings_page.lua),
+    the list included; the version line under it shows when there is room.
+  - A group of rows taller than a page is cut into smaller groups
+    (MenuUI.splitGroup; MenuUI.group and MenuUI.section keep their rows for
+    it), so a page can always be made to fit.
+  - BoardUI.vstack takes `top = true`: content taller than its box is drawn
+    from the top. Every full page (Settings, Book margins, Widget actions,
+    Top menu, Goodreads import, Bookmarks, Owner information, search results,
+    the page browser, long texts) uses it, so a header and its back arrow
+    stay on screen whatever the size.
+  - Book margins (aleph_bookends_page.lua) comes in pages too when too tall,
+    with the arrows at its foot and the page keys (swipes still change tab).
+
+## 2026-11-15 — 1.2.5 (testing)
+
+- **Book margins could not be turned on again once off** (GitHub issue #3,
+  reported by tomdolhs, who also found the line): aleph_bookends_page.lua
+  stored `action.value and nil or false`, which in Lua is always false. On
+  is now kept as no setting (the default) and off as false.
+- The same slip in two other places, found by looking for it:
+  - **Tapping a book's current rating did not clear it** (aleph_browser.lua,
+    rateBook), as the README says it does.
+  - **Tapping the selected widget in Customize Home did not unselect it**
+    (aleph_board_edit.lua).
+  - Goodreads tracking in the background passed a missing Goodreads status
+    as nothing instead of "none" (aleph_goodreads_track.lua); the same
+    result either way, now written plainly.
+
+## 2026-11-15 — 1.2.4 (testing)
+
+- **Reader menu** (aleph_reader_sheet.lua): the Contents tile is now
+  **Search**, which opens the book's search (Aleph's prompt and results
+  page with Search like a Kindle on, KOReader's search box with it off). The
+  table of contents opens from a tap on the card's Chapter line (the
+  chapter and its pages left).
+
+## 2026-11-15 — 1.2.3 (testing)
+
+- **X-Ray Story: the chapter before and after** (aleph_xr_page.lua). A
+  chapter's summary has "‹ Previous chapter" and "Next chapter ›" under it,
+  to the summaries just before and after it in the book (only those that
+  exist: the first has no Previous, the last read no Next). A sideways
+  swipe and the page keys do the same. The summary shows up to 12 lines
+  (14 before) to leave room for them. Translated into Portuguese and
+  Spanish.
+
+## 2026-11-15 — 1.2.2 (testing)
+
+- **Search like a Kindle** (new aleph_search.lua; main.lua; Settings >
+  Reader > Search like a Kindle, on unless turned off). KOReader's search
+  goes from match to match, or lists them in a plain menu. Now:
+  - Aleph's prompt ("Search this book") replaces KOReader's box, from the
+    page browser's search, a gesture or the top menu; selected text's
+    Search does the same. Both find every match (KOReader's findAllText,
+    case ignored), in KOReader's background process that a tap cancels.
+  - The results come on a page of their own: "46 results", tabs
+    Annotations (highlights and notes holding the words) and Text, each
+    match with two lines around it, the word in bold, its chapter and page.
+    Swipes, ‹ › and the page keys turn its pages. Holding the search button
+    opens KOReader's own search box with its options.
+  - A result opens the book there with the match highlighted, and a bar at
+    the foot of the page: the page, ‹ Result 3 of 46 ›, ×. Holding an arrow
+    goes to the first or last result. The page still turns under it (taps
+    and keys go on to the book); "Result 3 of 46" brings the list back at
+    that result, whose back arrow returns to the bar.
+  - × closes the bar. When the page is not the one being read before the
+    search, a strip offers "Go to most recent page" with "From page 53 to
+    11"; once there it turns into "Return to page 53". Its chevron, a tap
+    on the page or a page turn put it away. The first result opened is also
+    put on KOReader's own Go back list.
+  - Off, or if the page cannot be shown, KOReader's own search is used.
+  - New icon (Lucide, ISC): arrow-left.
+- Bookmarks page: the day of each bookmark ("13 Sep") in the reader's
+  language too (aleph_dates.lua).
+- The new texts are in the Portuguese and Spanish catalogues.
+
+## 2026-11-15 — 1.2.1 (testing)
+
+- **Aleph in Brazilian Portuguese and Spanish** (new aleph_gettext.lua,
+  l10n/pt_BR/aleph.po, l10n/es/aleph.po, l10n/aleph.pot). KOReader's gettext
+  only translates the texts KOReader itself has, so with KOReader set to
+  another language Aleph showed half its screens in English. Aleph now has a
+  catalogue of its own for every one of its texts (1,302), in KOReader's .po
+  format. Every file requires aleph_gettext instead of gettext (_meta.lua
+  excepted: it is read before the plugin's folder is on the path). For each
+  text KOReader's translation is used first when it has one, so Aleph's
+  words match the rest of KOReader and the texts Aleph looks for on
+  KOReader's buttons keep matching; the catalogue fills in the rest.
+  The language is KOReader's (Settings > Language); pt_PT takes pt_BR and
+  es_* takes es. Plural forms (ngettext) and contexts (pgettext) are read.
+  The catalogue is read once, when the first text is asked for.
+- The two places that compare Aleph's words with the text on KOReader's own
+  buttons (aleph_bookmark.lua, the highlight menu in aleph_highlight.lua)
+  ask KOReader's gettext directly.
+- **Dates in the reader's language** (new aleph_dates.lua): os.date wrote
+  month and day names in English (the bottom line's date, a book's Added
+  and last-read dates, highlight dates, Goodreads import days, finished
+  dates). Names now come from KOReader's translated tables and the order
+  from the catalogue ("15 de nov." / "15 nov"). BoardData's weekday and
+  month helpers use the same module.
+- "Read" has three meanings in Aleph; the button that opens a book, the
+  library's Sort by and the Read widget now each have a context of their
+  own, so they can be translated apart.
+- Texts made from tables (the book margins' samples, page-count bands,
+  Goodreads statuses, the X-Ray provider "Other") are in the catalogue too;
+  the provider names in Settings > X-Ray are now translated where shown.
+- Not translated on purpose: the legal notices in About, the requests sent
+  to an AI provider (they ask for answers in the book's language), and the
+  Literary clock's quotes.
+- Adding a language: copy l10n/aleph.pot to l10n/<KOReader's code>/aleph.po
+  and fill in the msgstr lines.
+
 ## 2026-11-15 — 1.2.0 (release)
 
 1.1.60, released as 1.2.0: everything from 1.1.1 to 1.1.60 below, since the

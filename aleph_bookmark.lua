@@ -23,6 +23,7 @@ local Details = {}
 local depth = 0
 
 local function iconFor(text, arrows)
+    -- KOReader's own words, as on its buttons.
     local _ = require("gettext")
     if text == arrows.first then return "chevrons-left", true end
     if text == arrows.prev then return "chevron-left", true end

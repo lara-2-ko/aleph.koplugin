@@ -18,7 +18,7 @@ local try = require("aleph_try").call
 local CoverJob = require("aleph_cover_job")
 local KeyNav = require("aleph_keynav")
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 local px = Metrics.px
 local function stack(o, items)
     if o.gap then
@@ -342,7 +342,7 @@ end
 -- status, a Sort / Filter / Collection toolbar with the List / Grid switch, the
 -- books, an A-Z thumb index and a pager that opens Jump.
 local SORTS = { "title", "author", "series", "recently_added", "last_read" }
-local SORT_LABELS = { _("Title"), _("Author"), _("Series"), _("Added"), _("Read") }
+local SORT_LABELS = { _("Title"), _("Author"), _("Series"), _("Added"), _.pgettext("Sort by", "Read") }
 local TIME_SORTS = { recently_added = true, last_read = true }
 local STATUSES = { "all", "unread", "reading", "read", "on_hold" }
 local STATUS_LABELS = { _("All"), _("Unread"), _("Reading"), _("Finished"), _("On hold") }
@@ -400,7 +400,7 @@ function Browser:libraryGroupOf(params)
     end
     if sort == "series" then return function(b) return ListData.letterOf(b.series or b.title) end, true, false end
     if sort == "recently_added" then
-        return function(b) return os.date("%b", b.added or 0) end, false, false, 52
+        return function(b) return require("aleph_dates").shortMonth(b.added or 0) end, false, false, 52
     elseif sort == "last_read" or sort == "recently_read" then
         local now = os.time()
         return function(b)
@@ -408,8 +408,8 @@ function Browser:libraryGroupOf(params)
             local days = math.floor((os.time{ year = os.date("%Y", now), month = os.date("%m", now), day = os.date("%d", now), hour = 12 }
                 - os.time{ year = os.date("%Y", b.last_open), month = os.date("%m", b.last_open), day = os.date("%d", b.last_open), hour = 12 }) / 86400 + 0.5)
             if days < 1 then return _("Today") end
-            if days < 7 then return os.date("%a", b.last_open) end
-            return os.date("%b", b.last_open)
+            if days < 7 then return require("aleph_dates").shortWeekday(b.last_open) end
+            return require("aleph_dates").shortMonth(b.last_open)
         end, false, false, 52, true
     elseif sort == "progress" then return function() return "" end, false, false, 0 end
     return function(b) return ListData.letterOf(b.title) end, true, true
@@ -740,7 +740,7 @@ function Browser:buildDetailSimple(m)
                 UI.text(table.concat(b.authors, ", "), { s = 15, w = tw, data = true }),
                 UI.text(math.floor(b.progressPercentage) .. "% · " .. b.readStatus, { s = 16, b = true, w = tw }),
                 UI.text(b.rating and (b.rating .. " / 5") or _("Not rated"), { s = 13 }),
-                self:button(_("Read"), { kind = "open", book = b }, math.min(tw, px(200)), true) }) }),
+                self:button(_.pgettext("Open the book", "Read"), { kind = "open", book = b }, math.min(tw, px(200)), true) }) }),
         UI.text((require("aleph_language").name(b.props.language) or "") .. "  ·  " .. b.format .. "  ·  " .. string.format("%.1f MB", b.size / 1048576), { s = 13, w = w }),
         UI.text(description, { s = 15, w = w, lines = math.max(2, math.min(7, math.floor((m.h - ch - px(280)) / Metrics.lh(15)))), data = true }),
         UI.hstack({ w = w, gap = px(10) }, { self:button(_("Book information"), { kind = "info", book = b }, math.floor((w - px(10)) / 2)),
@@ -844,7 +844,7 @@ function Browser:showRemovedBook(id)
     if not book then return end
     local by = book.authors and book.authors[1] and (" · " .. book.authors[1]) or ""
     local y, m, d = book.finishedOn:match("(%d+)-(%d+)-(%d+)")
-    local when = y and os.date("%d %B %Y", os.time{ year = tonumber(y), month = tonumber(m), day = tonumber(d), hour = 12 }):gsub("^0", "") or book.finishedOn
+    local when = y and require("aleph_dates").dayMonthYear(os.time{ year = tonumber(y), month = tonumber(m), day = tonumber(d), hour = 12 }) or book.finishedOn
     require("aleph_confirm").show{
         title = book.title .. by,
         text = book.source == "goodreads"
@@ -1021,7 +1021,8 @@ function Browser:afterBookChange()
     self:refreshData()
 end
 function Browser:rateBook(b, rating)
-    local new = (b.rating == rating) and nil or rating
+    local new = rating
+    if b.rating == rating then new = nil end
     local ok, err = pcall(self.local_library.setRating, self.local_library, b, new)
     if not ok then return self:message(_("Could not save the rating.") .. "\n" .. tostring(err)) end
     self:afterBookChange()

@@ -21,7 +21,7 @@ text menu (on the name selected), and from a tap on an underlined name.
 
 local UIManager = require("ui/uimanager")
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
@@ -288,7 +288,17 @@ local function storyBody(sheet, w, max_body)
     return items
 end
 
--- One chapter's summary, whole.
+-- The chapters summarised just before and after chapter i, in book order.
+local function neighbours(ui, i)
+    local before, after
+    for _j, c in ipairs(require("aleph_xr_story").told(ui)) do
+        if c.i < i and (not before or c.i > before) then before = c.i end
+        if c.i > i and (not after or c.i < after) then after = c.i end
+    end
+    return before, after
+end
+
+-- One chapter's summary, whole, with the summaries before and after it.
 local function chapterBody(sheet, w)
     local ui = sheet.ui
     local Story = require("aleph_xr_story")
@@ -297,14 +307,33 @@ local function chapterBody(sheet, w)
         if c.i == sheet.chapter then found = c end
     end
     if not found then return { SheetUI.titleRow(w, _("X-Ray"), nil) } end
+    local before, after = neighbours(ui, found.i)
+    -- One row: ‹ The story · Go to chapter ›. The arrows are round
+    -- buttons with only a chevron; one with nowhere to go is drawn faint
+    -- and does nothing.
+    local gap = px(10)
+    local h = px(44)
+    local function arrow(name, to)
+        local b = math.max(1, px(1.5))
+        local body = hstack({ w = h - 2 * b, h = h - 2 * b }, { flex(0), BoardUI.icon(name, px(20), { sw = 2.5, col = to and "black" or "gb" }), flex(0) })
+        local circle = BoardUI.box({ w = h, h = h, radius = math.floor(h / 2), border = b, border_col = to and INK.black or INK.gb, bg = INK.white }, body)
+        return to and BoardUI.hit(circle, { kind = "chapter", i = to }) or circle
+    end
+    local mid = w - 2 * h - 3 * gap
+    local half = math.floor((mid - gap) / 2)
+    -- Narrow: the words keep the room, the icons go.
+    local icons = half >= px(170)
+    local row = hstack({ w = w, gap = gap }, {
+        arrow("chevron-left", before),
+        MenuUI.pill(_("The story"), { icon = icons and "list" or nil, kind = "outline", w = half, pad_x = 12, action = { kind = "tab", view = "story" } }),
+        MenuUI.pill(_("Go to chapter"), { icon = icons and "book-open" or nil, kind = "outline", w = mid - half, pad_x = 12, action = { kind = "chapter-go", page = found.page } }),
+        arrow("chevron-right", after),
+    })
     return {
         SheetUI.titleRow(w, found.title ~= "" and found.title or T(_("Chapter %1"), found.i),
             found.done and _("What happened") or _("What happened, as far as you read")),
         text(found.summary, { s = 15, w = w, lines = 14, data = true }),
-        SheetUI.pillRow(w, {
-            { label = _("The story"), icon = "list", kind = "outline", action = { kind = "tab", view = "story" } },
-            { label = _("Go to chapter"), icon = "book-open", kind = "outline", action = { kind = "chapter-go", page = found.page } },
-        }),
+        row,
     }
 end
 
@@ -527,6 +556,11 @@ local function openSheet(ui, view, entry)
             elseif page.view == "story" then
                 local to = (page.spage or 1) + delta
                 if to >= 1 and to <= (page.spages or 1) then page.spage = to; page:refresh() end
+            elseif page.view == "chapter" then
+                -- The summary before or after this one.
+                local before, after = neighbours(page.ui, page.chapter or 0)
+                local to = delta < 0 and before or after
+                if to then page.chapter = to; page:refresh() end
             elseif page.view ~= "list" then
                 return
             else

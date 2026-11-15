@@ -13,7 +13,7 @@ height before it is kept, so a page can never hold more than fits.
 ]]
 
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardLayout = require("aleph_board_layout")
 local BoardMetrics = require("aleph_board_metrics")
@@ -48,7 +48,7 @@ BoardEdit.LIBRARY = {
     { type = "shelf", name = function() return _("Discover") end, desc = function() return _("Unread books to start, the next of each series") end, sizes = { "XL", "L" }, tab = "library", props = { source = "random", shuffle = true } },
     { type = "shelf", name = function() return _("Recently added") end, desc = function() return _("The newest books in your library") end, sizes = { "XL", "L" }, tab = "library", props = { source = "recently-added" } },
     { type = "link", name = function() return _("Library") end, desc = function() return _("All your books") end, sizes = { "S" }, tab = "library", props = { link = "library" } },
-    { type = "link", name = function() return _("Read") end, desc = function() return _("How much of your library you have read") end, sizes = { "S" }, tab = "library", props = { link = "read" }, new = true },
+    { type = "link", name = function() return _.pgettext("Widget", "Read") end, desc = function() return _("How much of your library you have read") end, sizes = { "S" }, tab = "library", props = { link = "read" }, new = true },
     { type = "link", name = function() return _("Series") end, desc = function() return _("Every series") end, sizes = { "S" }, tab = "library", props = { link = "series" } },
     { type = "link", name = function() return _("Authors") end, desc = function() return _("Every author") end, sizes = { "S" }, tab = "library", props = { link = "authors" } },
     { type = "link", name = function() return _("Collections") end, desc = function() return _("Your collections, and how many") end, sizes = { "S" }, tab = "library", props = { link = "collections" } },
@@ -219,7 +219,7 @@ function BoardEdit:boardEditRun(action)
     if kind == "edit-done" then
         return self:boardExitEdit()
     elseif kind == "edit-select" then
-        edit.selected = edit.selected == action.index and nil or action.index
+        if edit.selected == action.index then edit.selected = nil else edit.selected = action.index end
     elseif kind == "edit-move" then
         local i = edit.selected
         local j = i and i + action.delta

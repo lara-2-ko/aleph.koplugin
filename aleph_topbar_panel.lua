@@ -11,7 +11,7 @@ local UIManager = require("ui/uimanager")
 local lfs = require("libs/libkoreader-lfs")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local datetime = require("datetime")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 local try = require("aleph_try").call
 
 local Screen = Device.screen

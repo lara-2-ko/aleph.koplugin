@@ -20,7 +20,7 @@ local TextWidget = require("ui/widget/textwidget")
 local Widget = require("ui/widget/widget")
 local bit = require("bit")
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardArt = require("aleph_board_art")
 local BoardColour = require("aleph_board_colour")

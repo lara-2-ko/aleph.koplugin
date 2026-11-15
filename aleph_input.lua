@@ -13,7 +13,7 @@ buttons.
 local InputDialog = require("ui/widget/inputdialog")
 local InputText = require("ui/widget/inputtext")
 local UIManager = require("ui/uimanager")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")

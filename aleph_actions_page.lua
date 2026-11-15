@@ -17,7 +17,7 @@ Choosing an icon opens a grid of Aleph's icons, with a search.
 local Device = require("device")
 local UIManager = require("ui/uimanager")
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local Actions = require("aleph_actions")
 local BoardMetrics = require("aleph_board_metrics")
@@ -132,7 +132,7 @@ function Page.pickAction(o)
             local items = top
             items[#items + 1] = vstack({ w = w, h = avail + px(24) }, { body, flex(0) })
             items[#items + 1] = pager(w, page)
-            return vstack({ w = sw, h = sh, pad = { px(6), mx, px(8), mx } }, items)
+            return vstack({ w = sw, h = sh, pad = { px(6), mx, px(8), mx }, top = true }, items)
         end,
         on_action = function(page, action)
             local k = action.kind
@@ -225,7 +225,7 @@ function Page.pickIcon(title, current, on_select)
             items[#items + 1] = vstack({ w = w, h = avail }, { vstack({ w = w }, grid), flex(0) })
             items[#items + 1] = space(nil, px(8))
             items[#items + 1] = pager(w, page)
-            return vstack({ w = sw, h = sh, pad = { px(6), mx, px(8), mx } }, items)
+            return vstack({ w = sw, h = sh, pad = { px(6), mx, px(8), mx }, top = true }, items)
         end,
         on_action = function(page, action)
             local k = action.kind
@@ -409,7 +409,7 @@ function Page.open(browser)
             local items = { header, space(nil, px(8)), tabs, space(nil, px(12)) }
             items[#items + 1] = vstack({ w = w, h = avail }, { vstack({ w = w }, body), flex(0) })
             items[#items + 1] = pager(w, p)
-            return vstack({ w = sw, h = sh, pad = { px(6), mx, px(8), mx } }, items)
+            return vstack({ w = sw, h = sh, pad = { px(6), mx, px(8), mx }, top = true }, items)
         end,
         on_action = function(p, action)
             local k = action.kind

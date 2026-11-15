@@ -8,7 +8,7 @@ nothing here builds a widget or reads the screen.
 ]]
 
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardData = require("aleph_board_data")
 

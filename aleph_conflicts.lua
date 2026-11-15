@@ -19,7 +19,7 @@ they do not build a home screen over Aleph's (see the README).
 ]]
 
 local Prefs = require("aleph_prefs")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 local try = require("aleph_try").call
 
 local Conflicts = { shown = false }

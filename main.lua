@@ -1,5 +1,5 @@
 local Prefs = require("aleph_prefs")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local UIManager = require("ui/uimanager")
 local Dispatcher = require("dispatcher")
@@ -164,6 +164,9 @@ function Board:init()
         step("details", function() require("aleph_bookmark").install() end)
         step("page browser", function() require("aleph_page_browser").install() end)
         step("reader menu", function() require("aleph_reader_sheet").install() end)
+        -- Search as on a Kindle: every result on a page, then a bar to go
+        -- through them, and a way back (Settings > Reader).
+        step("search", function() require("aleph_search").install() end)
         -- Coloured bookmarks: the ribbon and the list of colours.
         step("bookmark colours", function()
             local ui = self.ui
@@ -319,6 +322,8 @@ function Board:onCloseDocument()
     try(function() require("aleph_bookends").detach(self.ui) end)
     try(function() require("aleph_page_turner").detach(self.ui) end)
     try(function() require("aleph_pins").detach(self.ui) end)
+    local Search = package.loaded["aleph_search"]
+    if Search then try(Search.detach, self.ui) end
     -- X-Ray, when it was loaded for this book.
     local XR = package.loaded["aleph_xr"]
     if XR then try(XR.detach, self.ui) end

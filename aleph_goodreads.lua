@@ -24,7 +24,7 @@ The answer:   {"ok": true} or {"ok": false, "error": "code" | "cookie" | ...}
               GET / answers {"aleph": "goodreads-cookie"} (the extension's test)
 ]]
 
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 local logger = require("logger")
 local try = require("aleph_try").call
 

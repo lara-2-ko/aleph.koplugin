@@ -20,7 +20,7 @@ local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local NetworkMgr = require("ui/network/manager")
 local VerticalSpan = require("ui/widget/verticalspan")
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardData = require("aleph_board_data")
 local BoardEdit = require("aleph_board_edit")

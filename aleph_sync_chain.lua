@@ -145,7 +145,7 @@ end
 -- ui: the reader or the file browser; o.on_done(ok) after it finishes.
 function Chain.run(ui, o)
     o = o or {}
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     local T = require("ffi/util").template
     local UIManager = require("ui/uimanager")
     local logger = require("logger")
@@ -348,7 +348,7 @@ end
 
 -- The panel: the steps with a mark each, and Stop / Close.
 function Chain.panel(steps, state)
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     local Geom = require("ui/geometry")
     local BoardMetrics = require("aleph_board_metrics")
     local BoardUI = require("aleph_board_ui")

@@ -1,7 +1,7 @@
 -- Silverfish integration for Aleph.
 local UIManager = require("ui/uimanager")
 local logger = require("logger")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local Plugins = require("aleph_plugins")
 local try = require("aleph_try").call

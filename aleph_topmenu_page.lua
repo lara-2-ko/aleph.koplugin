@@ -16,7 +16,7 @@ so nothing is lost from before.
 
 local Device = require("device")
 local UIManager = require("ui/uimanager")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 local T = require("ffi/util").template
 
 local BoardMetrics = require("aleph_board_metrics")
@@ -175,7 +175,7 @@ function TopMenu.pickIcon(root, title, value, default, on_select)
             items_[#items_ + 1] = vstack({ w = w, h = avail }, { vstack({ w = w }, grid), flex(0) })
             items_[#items_ + 1] = space(nil, px(8))
             items_[#items_ + 1] = pager(w, page)
-            return vstack({ w = sw, h = sh, pad = { top, mx, bottom, mx } }, items_)
+            return vstack({ w = sw, h = sh, pad = { top, mx, bottom, mx }, top = true }, items_)
         end,
         on_action = function(page, action)
             if action.kind == "pick" then
@@ -265,7 +265,7 @@ function TopMenu.openApps(ui, root, on_close)
             end
             local body = #rows > 0 and MenuUI.group(w, rows)
                 or MenuUI.card(w, { space(nil, px(12)), text(_("Turn on the Controls and Apps tabs first."), { s = 14, w = iw }), space(nil, px(12)) })
-            return vstack({ w = sw, h = sh, pad = { top, mx, bottom, mx } }, {
+            return vstack({ w = sw, h = sh, pad = { top, mx, bottom, mx }, top = true }, {
                 header, space(nil, px(8)), modes, space(nil, px(10)), note, space(nil, px(10)),
                 vstack({ w = w, h = avail }, { body, flex(0) }),
                 space(nil, px(8)), pager(w, page),

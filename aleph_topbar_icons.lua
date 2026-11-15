@@ -1,6 +1,6 @@
 local DataStorage = require("datastorage")
 local lfs = require("libs/libkoreader-lfs")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local Icons = {}
 local data = DataStorage:getDataDir()

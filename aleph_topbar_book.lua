@@ -1,7 +1,7 @@
 local PluginLoader = require("pluginloader")
 local datetime = require("datetime")
 local logger = require("logger")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local Book = {}
 

@@ -11,7 +11,7 @@ dimensions and spacing are in dp and mirror the design mocks one for one.
 
 local datetime = require("datetime")
 local T = require("ffi/util").template
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardColour = require("aleph_board_colour")
 local BoardData = require("aleph_board_data")
@@ -1064,7 +1064,7 @@ local LINKS = {
         function(n) return _.ngettext("book here", "books here", n) end },
     search = { "search", function() return _("Search") end, function() return nil end, function() return "" end },
     -- How much of the library is finished: a percentage (BoardWidgets.readShare).
-    read = { "book-check", function() return _("Read") end, function(d) return d.counts.read end, function() return _("of your books") end },
+    read = { "book-check", function() return _.pgettext("Widget", "Read") end, function(d) return d.counts.read end, function() return _("of your books") end },
 }
 BoardWidgets.LINKS = LINKS
 

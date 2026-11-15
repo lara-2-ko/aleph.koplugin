@@ -18,7 +18,7 @@ These use KOReader's own filters, so the subtitle and the Filter dialog agree.
 local Device = require("device")
 local Geom = require("ui/geometry")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
-local _ = require("gettext")
+local _ = require("aleph_gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")

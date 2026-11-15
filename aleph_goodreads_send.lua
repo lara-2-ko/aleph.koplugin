@@ -174,7 +174,7 @@ end
 -- The whole flow from the book page. browser: the Browser (for its sheet,
 -- messages and prompts).
 function Send.start(browser, book)
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     local GR = require("aleph_goodreads")
     local ui = browser.plugin and browser.plugin.ui
     local plugin = GR.plugin(ui)
@@ -212,7 +212,7 @@ function Send.choose(browser, plugin, Api, book, list, query)
             Send.confirm(browser, plugin, Api, book, saved)
         end,
         on_search = function()
-            local _ = require("gettext")
+            local _ = require("aleph_gettext")
             browser:input(_("Search on Goodreads"), query, function(q)
                 q = (q or ""):gsub("^%s+", ""):gsub("%s+$", "")
                 if q == "" then return end
@@ -226,7 +226,7 @@ end
 
 -- The sheet's model for the choices (Browser:detailSheetModel).
 function Send.sheetModel(sheet, book)
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     local rows = {}
     for i, c in ipairs(sheet.choices or {}) do
         if i > 12 then break end
@@ -240,7 +240,7 @@ end
 
 -- What will be sent, then sending.
 function Send.confirm(browser, plugin, Api, book, link)
-    local _ = require("gettext")
+    local _ = require("aleph_gettext")
     local T = require("ffi/util").template
     local p = Send.payload(book, plugin.settings)
     if not p.code then
