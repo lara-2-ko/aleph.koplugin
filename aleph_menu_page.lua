@@ -19,6 +19,7 @@ local UIManager = require("ui/uimanager")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
+local KeyNav = require("aleph_keynav")
 
 local Screen = Device.screen
 local INK = BoardMetrics.INK
@@ -90,7 +91,7 @@ function MenuPage:init()
         self.key_events.PageKeyFwd = { { Device.input.group.PgFwd } }
         self.key_events.PageKeyBack = { { Device.input.group.PgBack } }
     end
-    if Device:hasDPad() then
+    if KeyNav.enabled() then
         self.key_events.FocusUp = { { "Up" } }
         self.key_events.FocusDown = { { "Down" } }
         self.key_events.FocusLeft = { { "Left" } }
@@ -252,31 +253,17 @@ function MenuPage:runAction(action)
 end
 
 -- ------------------------------------------------------------------ focus
-local function centre(d)
-    return d.x + d.w / 2, d.y + d.h / 2
-end
-
 function MenuPage:moveFocus(dx, dy)
     local hits = self.hits or {}
     if #hits == 0 then return true end
     local current = self.focus_index and hits[self.focus_index]
     local old = current and current.dimen and current.dimen:copy()
-    local best, best_score
+    local best
     if not current or not current.dimen then
         best = 1
     else
-        local cx, cy = centre(current.dimen)
-        for index, area in ipairs(hits) do
-            if index ~= self.focus_index and area.dimen then
-                local ax, ay = centre(area.dimen)
-                local along = (ax - cx) * dx + (ay - cy) * dy
-                if along > 1 then
-                    local across = math.abs((ax - cx) * dy) + math.abs((ay - cy) * dx)
-                    local score = along + across * 2
-                    if not best_score or score < best_score then best, best_score = index, score end
-                end
-            end
-        end
+        -- The nearest area that way (aleph_keynav.lua, shared with Home).
+        best = KeyNav.next(hits, self.focus_index, dx, dy)
     end
     if not best then return true end
     self.focus_index = best

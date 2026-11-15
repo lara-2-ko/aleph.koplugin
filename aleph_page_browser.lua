@@ -19,7 +19,7 @@ Over the book, a page at a glance and everything around it:
                                    or next chapter
 
 Opened by swiping up from the bottom edge of a book (ZenOS's bottom swipe
-zone; Settings > Opening > Dialogs turns it off) or by the "Aleph:
+zone; Settings > Reader turns it off) or by the "Aleph:
 page browser" gesture action. Back or × returns to the page you were on.
 
 As in ZenOS, the previews are KOReader's own page thumbnails
@@ -27,6 +27,7 @@ As in ZenOS, the previews are KOReader's own page thumbnails
 up wins, and jumps put the page you were on in the location stack.
 ]]
 
+local Prefs = require("aleph_prefs")
 local Device = require("device")
 local Event = require("ui/event")
 local Geom = require("ui/geometry")
@@ -39,6 +40,7 @@ local BoardUI = require("aleph_board_ui")
 local MenuPage = require("aleph_menu_page")
 local MenuUI = require("aleph_menu_ui")
 local Picture = require("aleph_picture")
+local try = require("aleph_try").call
 
 local Screen = Device.screen
 local INK = BoardMetrics.INK
@@ -63,20 +65,20 @@ local function wOf(widget) return widget:getSize().w end
 -- ------------------------------------------------------------------ book
 local function pageCount(ui)
     local n
-    pcall(function() n = ui.document:getPageCount() end)
+    try(function() n = ui.document:getPageCount() end)
     return math.max(1, tonumber(n) or 1)
 end
 
 local function currentPage(ui)
     local page
-    pcall(function() page = ui:getCurrentPage() end)
+    try(function() page = ui:getCurrentPage() end)
     if not page then pcall(function() page = ui.document:getCurrentPage() end) end
     return tonumber(page) or 1
 end
 
 local function chapterOf(ui, page)
     local title
-    pcall(function() title = ui.toc:getTocTitleByPage(page) end)
+    try(function() title = ui.toc:getTocTitleByPage(page) end)
     if type(title) ~= "string" or not title:match("%S") then return nil end
     return title
 end
@@ -186,7 +188,7 @@ function PageBrowser.releaseThumbs(page)
     for _k, bb in pairs(st.bbs or {}) do if bb.free then bb:free() end end
     st.bbs = {}
     if st.pending and page.ui.thumbnail then
-        pcall(function() page.ui.thumbnail:cancelPageThumbnailRequests() end)
+        try(function() page.ui.thumbnail:cancelPageThumbnailRequests() end)
     end
     st.pending = nil
 end
@@ -367,7 +369,7 @@ local function setFocus(page, n)
 end
 
 local function goTo(ui, n)
-    pcall(function() ui.link:addCurrentLocationToStack() end)
+    try(function() ui.link:addCurrentLocationToStack() end)
     ui:handleEvent(Event:new("GotoPage", n))
 end
 
@@ -382,7 +384,7 @@ end
 
 local function chapterStep(ui, n, dir)
     local target
-    pcall(function()
+    try(function()
         if dir < 0 then target = ui.toc:getPreviousChapter(n) else target = ui.toc:getNextChapter(n) end
     end)
     return tonumber(target)
@@ -501,8 +503,7 @@ end
 
 -- ----------------------------------------------------------- the opening
 local function swipeWanted()
-    local stored = G_reader_settings:readSetting("aleph")
-    return not (type(stored) == "table" and stored.page_browser_swipe == false)
+    return Prefs.on("page_browser_swipe")
 end
 PageBrowser.swipeWanted = swipeWanted
 

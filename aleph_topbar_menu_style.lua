@@ -126,8 +126,8 @@ function MenuStyle.prepare(menu)
 end
 
 function MenuStyle.install(menu, plugin)
-    if menu._qtb_styled then return end
-    menu._qtb_styled = true
+    if menu._aleph_topbar_styled then return end
+    menu._aleph_topbar_styled = true
 
     menu.menu_frame.color = border
     menu.menu_frame.radius = Style.px(10)
@@ -242,10 +242,10 @@ end
 
 function MenuStyle.styleRows(menu, plugin)
     for _, row in ipairs(menu.item_group) do
-        if type(row) == "table" and row.item and row.item_frame and not row._qtb_row then
-            row._qtb_row = true
+        if type(row) == "table" and row.item and row.item_frame and not row._aleph_topbar_row then
+            row._aleph_topbar_row = true
             local ok, err = pcall(styleRow, menu, plugin, row)
-            if not ok then require("logger").warn("QuickTopBar: could not style a menu row:", err) end
+            if not ok then require("logger").warn("Aleph: Quick Top Bar: could not style a menu row:", err) end
         end
     end
 end

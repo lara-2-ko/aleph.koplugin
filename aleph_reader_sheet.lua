@@ -7,7 +7,7 @@ Opened where KOReader opens its bottom menu (a tap at the bottom of the
 page, or a swipe up while the page browser's swipe is off). The page stays in
 view above it, dimmed.
 
-  head        cover, title, author, a chip with the progress, close
+  head        cover (opens the book's page), title, author, a chip with the progress, close
   card        This book: 18%, page 214 of 542 · Chapter: its title, pages left
   tabs        This book | Also reading
   This book   Style & format (KOReader's own bottom menu: fonts, margins,
@@ -22,11 +22,12 @@ view above it, dimmed.
               the library
   Each tab sets the sheet's height, so switching tabs resizes it.
 
-Settings > Opening Aleph > Dialogs > "Reader menu at the bottom"
+Settings > Reader > "Reader menu at the bottom"
 turns it off, and KOReader's own menu comes back. If the sheet cannot be
 built, KOReader's opens.
 ]]
 
+local Prefs = require("aleph_prefs")
 local Event = require("ui/event")
 local Geom = require("ui/geometry")
 local UIManager = require("ui/uimanager")
@@ -37,6 +38,7 @@ local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
 local MenuPage = require("aleph_menu_page")
 local MenuUI = require("aleph_menu_ui")
+local try = require("aleph_try").call
 
 local INK = BoardMetrics.INK
 local px = BoardMetrics.px
@@ -51,8 +53,7 @@ local function hOf(widget) return widget:getSize().h end
 local function wOf(widget) return widget:getSize().w end
 
 local function wanted()
-    local stored = G_reader_settings:readSetting("aleph")
-    return not (type(stored) == "table" and stored.reader_sheet == false)
+    return Prefs.on("reader_sheet")
 end
 Sheet.wanted = wanted
 
@@ -74,25 +75,31 @@ local function annotationCounts(ui)
     return highlights, bookmarks
 end
 
+-- Whether the page shown has KOReader's bookmark (its dog-ear). KOReader
+-- has no isCurrentPageBookmarked: asked of the current page by its own
+-- isPageBookmarked (the call the dog-ear itself uses).
 local function bookmarked(ui)
     local on = false
-    pcall(function() on = ui.bookmark:isCurrentPageBookmarked() end)
+    try(function()
+        on = ui.bookmark:isPageBookmarked()
+    end)
     return on == true
 end
 
--- The library index: this book's cover, and the others in progress. It is
--- read again only when the index file changed (a big library's index takes a
--- while to read on an e-reader).
+-- The library: this book's cover, and the others in progress. The library
+-- is the one kept for the session (aleph_local.lua: its index file is read
+-- once); the sheet's own short list of it is made again only when the
+-- library's entries changed.
 local index_cache
 local function library(ui)
-    local path = require("datastorage"):getSettingsDir() .. "/aleph_index.lua"
-    local mtime = require("libs/libkoreader-lfs").attributes(path, "modification")
-    if index_cache and index_cache.mtime == mtime then return index_cache.lib end
+    local stamp
     local ok, lib = pcall(function()
-        local settings = G_reader_settings:readSetting("aleph") or {}
+        local settings = Prefs.get()
         local full = require("aleph_local").new(settings, ui)
-        -- Only what the sheet shows is kept for the reading session, not the
-        -- whole index (every book's highlights and descriptions).
+        stamp = tostring(full.revision) .. ":" .. #(full.books or {})
+        if index_cache and index_cache.stamp == stamp then return index_cache.lib end
+        -- Only what the sheet shows, not every book's highlights and
+        -- descriptions.
         local books = {}
         for i, b in ipairs(full.books or {}) do
             books[i] = { path = b.path, title = b.title, authors = b.authors, readStatus = b.readStatus,
@@ -102,8 +109,10 @@ local function library(ui)
         return { books = books }
     end)
     if not ok then return nil end
-    index_cache = { mtime = mtime, lib = lib }
-    collectgarbage("step", 512)
+    if not (index_cache and index_cache.lib == lib) then
+        index_cache = { stamp = stamp, lib = lib }
+        collectgarbage("step", 512)
+    end
     return lib
 end
 
@@ -121,7 +130,7 @@ end
 local function plugin(ui, name)
     local p = ui and rawget(ui, name)
     if type(p) ~= "table" then
-        pcall(function() p = require("pluginloader"):getPluginInstance(name) end)
+        try(function() p = require("pluginloader"):getPluginInstance(name) end)
     end
     return type(p) == "table" and p or nil
 end
@@ -139,14 +148,14 @@ function Sheet.data(ui)
     local doc = ui.document
     local props = ui.doc_props or {}
     local page, pages
-    pcall(function() page = ui:getCurrentPage() end)
-    pcall(function() pages = doc:getPageCount() end)
+    try(function() page = ui:getCurrentPage() end)
+    try(function() pages = doc:getPageCount() end)
     local percent
-    pcall(function() percent = ui.doc_settings:readSetting("percent_finished") end)
+    try(function() percent = ui.doc_settings:readSetting("percent_finished") end)
     if page and pages and pages > 0 then percent = page / pages end
     local chapter, left
-    pcall(function() chapter = ui.toc:getTocTitleByPage(page) end)
-    pcall(function() left = ui.toc:getChapterPagesLeft(page) end)
+    try(function() chapter = ui.toc:getTocTitleByPage(page) end)
+    try(function() left = ui.toc:getChapterPagesLeft(page) end)
     local highlights, bookmarks = annotationCounts(ui)
     local lib = library(ui)
     local file = doc and doc.file
@@ -183,8 +192,14 @@ function Sheet.data(ui)
         file = file,
         xray = xray ~= nil,
         xray_summary = xray and Xray.summary(xray) or nil,
+        -- Aleph's own X-Ray (aleph_xr.lua), when it is on in Settings.
+        own_xray = Prefs.is("xray_enabled"),
         hid = hid ~= nil, hid_on = hid and hidRunning(hid) or false,
         syncery = syncery ~= nil,
+        -- Sync: with Syncery and/or KOSyncthing+ (the same chain as Home's
+        -- Sync button). Goodreads: with the Goodreads plugin by advokatb.
+        sync = syncery ~= nil or (select(2, pcall(function() return require("aleph_integrations").syncthing(ui) ~= nil end)) == true),
+        goodreads = select(2, pcall(function() return require("aleph_goodreads").available(ui) end)) == true,
     }
 end
 
@@ -195,7 +210,7 @@ local function coverOf(page, w, h)
     -- Not in the library index: the book's own cover, drawn once.
     if not page.cover_bb and not page.cover_tried then
         page.cover_tried = true
-        pcall(function() page.cover_bb = page.ui.document:getCoverPageImage() end)
+        try(function() page.cover_bb = page.ui.document:getCoverPageImage() end)
     end
     if page.cover_bb then
         return require("aleph_picture").view(page, page.cover_bb, w, h)
@@ -221,8 +236,9 @@ local function head(page, w)
     local tw = w - cw - px(14) - wOf(close) + inset - px(14)
     local chip = MenuUI.chip(d.bookmarked and T(_("%1 · page bookmarked"), pct(d.percent) or "") or T(_("Reading · %1"), pct(d.percent) or "?"),
         { icon = d.bookmarked and "bookmark-check" or "book-open", ink = true })
+    -- The cover opens the book's page (Aleph's book information).
     local row = hstack({ w = w + inset, valign = "top", gap = px(14) }, {
-        coverOf(page, cw, ch),
+        BoardUI.hit(coverOf(page, cw, ch), { kind = "book-page" }),
         vstack({ w = tw }, {
             text(d.title, { s = 18, b = true, w = tw, data = true }),
             d.author ~= "" and authorLine(d, tw) or false,
@@ -307,9 +323,11 @@ local function quickRow(page, w)
     local d = page.data
     local items = {}
     if d.hid then items[#items + 1] = { icon = "bluetooth", label = _("Bluetooth"), switch = d.hid_on, action = { kind = "hid" } } end
-    if d.syncery then
+    if d.sync then
         items[#items + 1] = { icon = "refresh-cw", label = _("Sync now"), action = { kind = "sync" } }
-        items[#items + 1] = { icon = "smartphone", label = _("Progress"), action = { kind = "sync_progress" } }
+    end
+    if d.goodreads then
+        items[#items + 1] = { icon = "arrow-up-right", label = _("Goodreads"), action = { kind = "goodreads_progress" } }
     end
     if #items == 0 then return nil end
     local gap = px(8)
@@ -347,8 +365,13 @@ local function thisBook(page, w)
     }
     -- X-Ray, when installed, right under the book's details.
     if d.xray then
-        table.insert(rows, 3, MenuUI.row(w, { icon = "sparkles", label = _("X-Ray"),
+        table.insert(rows, 3, MenuUI.row(w, { icon = "sparkles", label = d.own_xray and _("X-Ray plugin") or _("X-Ray"),
             sub = d.xray_summary or _("Characters, places, terms and more"), chevron = true, action = { kind = "xray" } }))
+    end
+    -- Aleph's own, above the plugin's when both are there.
+    if d.own_xray then
+        table.insert(rows, 3, MenuUI.row(w, { icon = "sparkles", label = _("X-Ray"),
+            sub = _("The names of this book, up to this page"), chevron = true, action = { kind = "own-xray" } }))
     end
     local list = {}
     for index, r in ipairs(rows) do
@@ -407,7 +430,7 @@ end
 -- BookOrbit's frame: a bottom sheet rounded at the top below 700dp, a
 -- bordered popover above it.
 local function build(page, sw, sh)
-    pcall(function() require("aleph_picture").release(page) end)
+    try(function() require("aleph_picture").release(page) end)
     BoardMetrics.refresh()
     local mx = MenuUI.mx()
     local wide = BoardMetrics.layoutW() >= 700
@@ -447,7 +470,11 @@ local function handOff(page, fn)
     end)
 end
 
+-- Aleph Home: the book closes and Aleph opens over the file browser
+-- (aleph_opening.lua, goHome); over the book only when that cannot be done.
 local function openBoard(ui, then_fn)
+    local ok, done = pcall(function() return require("aleph_opening").goHome(ui, then_fn) end)
+    if ok and done then return end
     local board = ui.aleph
     if not board then pcall(function() board = require("pluginloader"):getPluginInstance("aleph") end) end
     if board then
@@ -459,7 +486,17 @@ end
 local function onAction(page, action)
     local ui = page.ui
     local k = action.kind
-    if k == "tab" then
+    if k == "book-page" then
+        local file = ui.document and ui.document.file
+        handOff(page, function()
+            local board = ui.aleph
+            if not board then pcall(function() board = require("pluginloader"):getPluginInstance("aleph") end) end
+            if not (board and file and board:showBookPage(file)) then
+                try(function() require("aleph_toast").show(_("This book is not in Aleph's library yet. Refresh the library to add it.")) end)
+            end
+        end)
+        return
+    elseif k == "tab" then
         page.tab = action.tab
         page:refresh()
     elseif k == "style" then
@@ -471,6 +508,13 @@ local function onAction(page, action)
     elseif k == "pages" then
         handOff(page, function() require("aleph_page_browser").open(ui) end)
     elseif k == "bookmark" then
+        -- Adding one, with the list of colours to come (aleph_bookmark_colors):
+        -- the menu closes first, so the list stands alone over the page.
+        local asks = not page.data.bookmarked and require("aleph_bookmark_colors").askOnAdd()
+        if asks then
+            handOff(page, function() ui:handleEvent(Event:new("ToggleBookmark")) end)
+            return true
+        end
         ui:handleEvent(Event:new("ToggleBookmark"))
         page.data.bookmarked = bookmarked(ui)
         local h, b = annotationCounts(ui)
@@ -493,14 +537,43 @@ local function onAction(page, action)
             page:refresh()
         end)
     elseif k == "sync" then
+        -- What Home's Sync button does: the whole chain with Syncery
+        -- (aleph_sync_chain.lua), KOSyncthing+ alone starts Syncthing,
+        -- Syncery alone runs its Sync now.
         local syncery = plugin(ui, "syncery")
-        if syncery then handOff(page, function() syncery:syncNow() end) end
-    elseif k == "sync_progress" then
-        local syncery = plugin(ui, "syncery")
-        if syncery then handOff(page, function()
-            if syncery.onSynceryProgressBrowser then syncery:onSynceryProgressBrowser()
-            else require("syncery_ui/progress_browser/init").show(syncery) end
+        local Chain = require("aleph_sync_chain")
+        local Integrations = require("aleph_integrations")
+        if Chain.available(ui) then
+            handOff(page, function() Chain.run(ui) end)
+        elseif Integrations.syncthing(ui) then
+            handOff(page, function() Integrations.startSyncthing() end)
+        elseif syncery then handOff(page, function() syncery:syncNow() end) end
+    elseif k == "goodreads_progress" then
+        -- The Goodreads plugin's own Update progress; a book not linked yet
+        -- is linked first (its own Link book), then sent.
+        local gr = require("aleph_goodreads").plugin(ui)
+        if gr then handOff(page, function()
+            local linked = false
+            try(function() linked = gr.settings:bookLinked() end)
+            if not linked and gr.menu and type(gr.menu.showLinkBookDialog) == "function" then
+                gr.menu:showLinkBookDialog(false, function() gr:onGoodreadsSyncProgress() end)
+            elseif type(gr.onGoodreadsSyncProgress) == "function" then
+                gr:onGoodreadsSyncProgress()
+            else
+                require("aleph_plugins").dispatch(ui, "goodreads_sync_progress")
+            end
         end) end
+    elseif k == "own-xray" then
+        page:close()
+        UIManager:nextTick(function()
+            local ok, err = pcall(function()
+                local XR = require("aleph_xr")
+                XR.install()
+                XR.attach(ui)
+                XR.open(ui)
+            end)
+            if not ok then require("logger").warn("Aleph: X-Ray failed:", err) end
+        end)
     elseif k == "xray" then
         local d = page.data
         page:close()
@@ -524,7 +597,7 @@ local function onAction(page, action)
         local b = page.data.others[action.index]
         if not b then return true end
         if not require("libs/libkoreader-lfs").attributes(b.path, "mode") then
-            pcall(function() require("aleph_toast").show(_("This book is no longer on this device."), { icon = "x" }) end)
+            try(function() require("aleph_toast").show(_("This book is no longer on this device."), { icon = "x" }) end)
             return true
         end
         handOff(page, function()
@@ -553,7 +626,8 @@ function Sheet.open(ui)
             return false
         end,
         on_close = function(p)
-            pcall(function() require("aleph_picture").release(p) end)
+            if ui._aleph_reader_sheet == p then ui._aleph_reader_sheet = nil end
+            try(function() require("aleph_picture").release(p) end)
             if p.cover_bb and p.cover_bb.free then p.cover_bb:free() end
             p.cover_bb = nil
         end,
@@ -561,6 +635,7 @@ function Sheet.open(ui)
         tab = "book",
         data = Sheet.data(ui),
     }
+    ui._aleph_reader_sheet = page
     UIManager:show(page, "ui")
     return page
 end
@@ -569,7 +644,7 @@ end
 function Sheet.nativeMenu(ui)
     local config = ui.config
     local ReaderConfig = require("apps/reader/modules/readerconfig")
-    local native = ReaderConfig._rb_native_show
+    local native = ReaderConfig._aleph_native_show
     if config and native then return native(config) end
     if config then return config:onShowConfigMenu() end
 end
@@ -581,13 +656,23 @@ function Sheet.install()
     if not ok or type(ReaderConfig) ~= "table" or ReaderConfig._aleph_sheet then return end
     ReaderConfig._aleph_sheet = true
     local original = ReaderConfig.onShowConfigMenu
-    ReaderConfig._rb_native_show = original
+    ReaderConfig._aleph_native_show = original
     ReaderConfig.onShowConfigMenu = function(self, ...)
         if not wanted() or not self.ui or not self.ui.document then return original(self, ...) end
         local shown, page = pcall(Sheet.open, self.ui)
         if shown and page then return true end
         if not shown then require("logger").warn("Aleph: reader menu failed:", page) end
         return original(self, ...)
+    end
+    -- KOReader closes the bottom menu when the top menu that opened with it
+    -- runs one of its items (a plugin's window, say), or is closed by a tap
+    -- outside it: the sheet, standing in for the bottom menu, closes then too,
+    -- so it does not stay over the page under that window.
+    local original_close = ReaderConfig.onCloseConfigMenu
+    ReaderConfig.onCloseConfigMenu = function(self, ...)
+        local page = self.ui and self.ui._aleph_reader_sheet
+        if page and not page.closed then pcall(function() page:close() end) end
+        if original_close then return original_close(self, ...) end
     end
 end
 

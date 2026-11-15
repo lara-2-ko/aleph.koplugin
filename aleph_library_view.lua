@@ -27,7 +27,6 @@ local _ = require("gettext")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
-local CatalogWidgets = require("aleph_catalog_widgets")
 local ListData = require("aleph_list_data")
 
 -- The few menu parts the sheets need (BookOrbit keeps these in its menu kit).
@@ -113,7 +112,7 @@ local env = nil
 
 -- Wraps widget as a control in focus row `row`; key names it for the dump.
 local function region(widget, action, row, key)
-    local r = Region:new{ action = action, run = env and env.run, CatalogWidgets.focusable(widget) }
+    local r = Region:new{ action = action, run = env and env.run, widget }
     if env and row then
         env.rows[row] = env.rows[row] or {}
         table.insert(env.rows[row], r)
@@ -439,7 +438,7 @@ local function readMark(cover_w)
     local k = L * 0.34
     local body = string.format('<path d="M0 0H%dV%dZ" fill="#ffffff"/><path d="M%d 0H%dV%dZ" fill="#000000"/><path d="%s" fill="none" stroke="#ffffff" stroke-width="%.2f" stroke-linecap="round" stroke-linejoin="round"/>',
         S, S, S - L, S, L, checkPath(S - L * 0.3, L * 0.3, k), math.max(2, L * 0.085))
-    local path = svgFile(string.format("rb-readmark-%d-%d", S, L), body, S)
+    local path = svgFile(string.format("aleph-readmark-%d-%d", S, L), body, S)
     return IconWidget:new{ file = path, width = S, height = S, alpha = true }, S
 end
 ListView.readMark = readMark
@@ -1169,7 +1168,8 @@ end
 
 -- --------------------------------------------------------------- sheets
 -- Sort and filter, from the toolbar. sheet: { title, sorts = { labels,
--- selected }, order = { labels, selected } or nil, shows = { labels, selected },
+-- selected }, names = { labels, selected } or nil (Author: first or last
+-- name), order = { labels, selected } or nil, shows = { labels, selected },
 -- rows = { { icon, label, value, toggle, chevron, action, key } }, note }.
 function ListView.sortSheet(sheet)
     return function(screen_w, screen_h)
@@ -1179,6 +1179,10 @@ function ListView.sortSheet(sheet)
                 ListView.sheetLabel(inner, _("Sort by")),
                 ListView.segmented(inner, sheet.sorts.labels, sheet.sorts.selected, function(i) return { kind = "sheet-sort", index = i } end, { h = 40, s = 13, row = "sheet-sort", key = "sort" }),
             }
+            if sheet.names then
+                -- Author: by first or by last name.
+                table.insert(items, ListView.segmented(inner, sheet.names.labels, sheet.names.selected, function(i) return { kind = "sheet-names", index = i } end, { h = 36, s = 13, row = "sheet-names", key = "names" }))
+            end
             if sheet.order then
                 table.insert(items, ListView.segmented(inner, sheet.order.labels, sheet.order.selected, function(i) return { kind = "sheet-order", index = i } end, { h = 36, s = 13, row = "sheet-order", key = "order" }))
             end
@@ -1187,8 +1191,11 @@ function ListView.sortSheet(sheet)
             if sheet.rows and #sheet.rows > 0 then
                 local rw = inner - 2 * px(16)
                 local rows = {}
+                -- Six filters: rows a little lower, so the sheet still fits.
+                -- (Lower again with the First name / Last name row above.)
+                local rh = #sheet.rows > 4 and (sheet.names and 40 or 44) or 50
                 for i, r in ipairs(sheet.rows) do
-                    table.insert(rows, ListView.groupRow(rw, { icon = r.icon, label = r.label, value = r.value, toggle = r.toggle, chevron = r.chevron, action = r.action, row = "sheet-row-" .. i, key = r.key, h = 50, s = 15 }))
+                    table.insert(rows, ListView.groupRow(rw, { icon = r.icon, label = r.label, value = r.value, toggle = r.toggle, chevron = r.chevron, action = r.action, row = "sheet-row-" .. i, key = r.key, h = rh, s = 15 }))
                 end
                 table.insert(items, ListView.groupCard(inner, rows))
             end
@@ -1214,6 +1221,9 @@ function ListView.pickSheet(sheet)
             local fits_one = math.floor((room - fixed) / rowh)
             local paged = n > 2 * fits_one
             local per_col = n <= fits_one and n or math.max(3, math.floor((room - fixed - (paged and (px(14) + px(44)) or 0)) / rowh))
+            -- Two columns of about the same length, so the sheet is only as
+            -- tall as the list needs (15 choices: 8 and 7, not 14 and 1).
+            if not paged and n > fits_one then per_col = math.ceil(n / 2) end
             local per_page = n <= fits_one and n or 2 * per_col
             local pages = math.max(1, math.ceil(n / per_page))
             local page = math.max(1, math.min(sheet.page or 1, pages))

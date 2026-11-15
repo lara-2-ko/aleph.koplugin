@@ -24,6 +24,7 @@ local lfs = require("libs/libkoreader-lfs")
 local logger = require("logger")
 
 local BoardMetrics = require("aleph_board_metrics")
+local try = require("aleph_try").call
 
 local INK = BoardMetrics.INK
 local px = BoardMetrics.px
@@ -220,8 +221,129 @@ local function finishRun()
     end
 end
 
+-- One author looked up, the photo written to the cache folder. Returns
+-- "found", the photo's file name and its source; "none"; or "error" and why
+-- (as the fourth value). Touches nothing but that file, so it can run in a
+-- background process.
+local function lookupToFile(name)
+    local ok, photo, source = pcall(lookup, name)
+    if not ok then return "error", nil, nil, tostring(photo) end
+    if not photo then return "none" end
+    local file = keyOf(name) .. "." .. imageExtension(photo)
+    local f = io.open(dir() .. "/" .. file, "wb")
+    if not f then return "error", nil, nil, "cannot write " .. file end
+    f:write(photo)
+    f:close()
+    return "found", file, source
+end
+
+-- What a lookup gave, put on record, and on to the next author.
+local function record(name, outcome, file, source, err)
+    local key = keyOf(name)
+    if outcome == "found" then
+        store():saveSetting(key, { ok = true, file = file, src = source, at = os.time() })
+        run.found = run.found + 1
+        notify()
+    elseif outcome == "none" then
+        store():saveSetting(key, { ok = false, at = os.time() })
+    else
+        logger.warn("Aleph: portrait lookup failed:", err)
+    end
+    run.done = run.done + 1
+    if run.on_progress then pcall(run.on_progress, run.done, run.total, run.found) end
+    if run.done % 10 == 0 then pcall(function() store():flush() end) end
+    if #queue == 0 then
+        try(function() store():flush() end)
+        return finishRun()
+    end
+    schedule(1)
+end
+
+-- The lookup runs in a background process where the device allows it (as
+-- KOReader's own Wikipedia lookups do), so the screen answers while the
+-- network is asked: the process writes the photo and a short note of what
+-- it found, and KOReader's process reads the note when it ends. Where no
+-- process can be started, the lookup is done here and the screen waits for
+-- it, as before.
+local LOOKUP_WAIT = 60
+local no_background = false
+local job
+
+local function subprocess()
+    if no_background then return nil end
+    local ok, u = pcall(require, "ffi/util")
+    if ok and type(u) == "table" and type(u.runInSubProcess) == "function" and type(u.isSubProcessDone) == "function" then
+        return u
+    end
+end
+
+local function pollLookup()
+    local j = job
+    if not j then return end
+    local u = subprocess()
+    local ok, done = pcall(u.isSubProcessDone, j.pid)
+    if not ok then done = true end
+    local late = false
+    if not done and os.time() - j.started > LOOKUP_WAIT then
+        pcall(function()
+            if u.terminateSubProcess then u.terminateSubProcess(j.pid) end
+            u.isSubProcessDone(j.pid, true)
+        end)
+        done, late = true, true
+    end
+    if not done then
+        UIManager:scheduleIn(0.3, pollLookup)
+        return
+    end
+    job = nil
+    running = false
+    local outcome, file, source, err = "error", nil, nil, late and "took too long" or "no answer"
+    local f = io.open(j.note, "r")
+    if f then
+        local text = f:read("*a") or ""
+        f:close()
+        os.remove(j.note)
+        local what, a, b = text:match("^([^\n]*)\n([^\n]*)\n([^\n]*)")
+        if what == "found" and a ~= "" and lfs.attributes(dir() .. "/" .. a, "mode") == "file" then
+            outcome, file, source = "found", a, b
+        elseif what == "none" then
+            outcome = "none"
+        elseif what == "error" then
+            err = a
+        end
+    end
+    record(j.name, outcome, file, source, err)
+end
+
+-- Starts the background lookup. False when it could not be started.
+local function lookupInBackground(name)
+    local u = subprocess()
+    if not u then return false end
+    local note = dir() .. "/" .. keyOf(name) .. ".note"
+    os.remove(note)
+    local ok, pid = pcall(u.runInSubProcess, function()
+        local outcome, file, source, err = lookupToFile(name)
+        local f = io.open(note .. ".part", "w")
+        if f then
+            f:write(outcome, "\n", tostring(file or err or ""):gsub("\n", " "), "\n", tostring(source or ""), "\n")
+            f:close()
+            os.rename(note .. ".part", note)
+        end
+    end)
+    if not ok or not pid then
+        no_background = true
+        return false
+    end
+    job = { pid = pid, name = name, note = note, started = os.time() }
+    -- Nothing else is looked up until this one is back.
+    running = true
+    UIManager:scheduleIn(0.3, pollLookup)
+    return true
+end
+
 pump = function()
     running = false
+    if job then running = true; return end
     local name = table.remove(queue, 1)
     if not name then return finishRun() end
     queued[normalize(name)] = nil
@@ -230,31 +352,8 @@ pump = function()
         queue, queued = {}, {}
         return finishRun()
     end
-    local ok, photo, source = pcall(lookup, name)
-    local key = keyOf(name)
-    if ok and photo then
-        local file = key .. "." .. imageExtension(photo)
-        local f = io.open(dir() .. "/" .. file, "wb")
-        if f then
-            f:write(photo)
-            f:close()
-            store():saveSetting(key, { ok = true, file = file, src = source, at = os.time() })
-            run.found = run.found + 1
-            notify()
-        end
-    elseif ok then
-        store():saveSetting(key, { ok = false, at = os.time() })
-    else
-        logger.warn("Aleph: portrait lookup failed:", photo)
-    end
-    run.done = run.done + 1
-    if run.on_progress then pcall(run.on_progress, run.done, run.total, run.found) end
-    if run.done % 10 == 0 then pcall(function() store():flush() end) end
-    if #queue == 0 then
-        pcall(function() store():flush() end)
-        return finishRun()
-    end
-    schedule(1)
+    if lookupInBackground(name) then return end
+    record(name, lookupToFile(name))
 end
 
 -- Adds the names not looked up yet (the ones the Authors list shows).

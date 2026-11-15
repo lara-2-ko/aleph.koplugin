@@ -17,7 +17,7 @@ function Viewport.bounds(highlight)
         local top, bottom = margins.top + doc:getHeaderHeight(), highlight.screen_h - margins.bottom
         if highlight.view and Viewport.isScrolling(highlight.view) then
             local position = doc:getCurrentPos()
-            local cached = highlight._rb_highlight_viewport
+            local cached = highlight._aleph_highlight_viewport
             if cached and cached.position == position and cached.margin_top == top and cached.margin_bottom == bottom then
                 return cached.top, cached.bottom
             end
@@ -33,12 +33,12 @@ function Viewport.bounds(highlight)
                     end
                 end
             end
-            local controller = highlight._rb_highlight_handles
+            local controller = highlight._aleph_highlight_handles
             local item = controller and (controller.draft or controller.item) or highlight.selected_text
             -- Geometry queries replace CRe's selection even when drawing is disabled.
             if item then doc:getTextFromXPointers(item.pos0, item.pos1, not (controller and controller.index)) end
             cached.top, cached.bottom = top, bottom
-            highlight._rb_highlight_viewport = cached
+            highlight._aleph_highlight_viewport = cached
         end
         return top, bottom
     end

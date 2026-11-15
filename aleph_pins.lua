@@ -26,6 +26,7 @@ reached through touch zones, and KOReader's own pin and go-to-pin actions use
 these pins.
 ]]
 
+local Prefs = require("aleph_prefs")
 local Device = require("device")
 local Event = require("ui/event")
 local Geom = require("ui/geometry")
@@ -36,6 +37,7 @@ local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
 local MenuUI = require("aleph_menu_ui")
 local Panel = require("aleph_panel")
+local try = require("aleph_try").call
 
 local Screen = Device.screen
 local INK = BoardMetrics.INK
@@ -47,21 +49,20 @@ local KEY = "aleph_pins"
 local Pins = {}
 
 local function wanted()
-    local stored = G_reader_settings:readSetting("aleph")
-    return not (type(stored) == "table" and stored.pins_enabled == false)
+    return Prefs.on("pins_enabled")
 end
 
 local function toast(text, icon)
-    pcall(function() require("aleph_toast").show(text, { icon = icon or "pin" }) end)
+    try(function() require("aleph_toast").show(text, { icon = icon or "pin" }) end)
 end
 
 -- ------------------------------------------------------------------ store
 function Pins.list(ui)
     local list = require("aleph_migrate").docKey(ui.doc_settings, KEY)
-    if type(list) ~= "table" then
-        list = {}
-        ui.doc_settings:saveSetting(KEY, list)
-    end
+    -- A book with no pins gets an empty list that is not saved: it is
+    -- written to the book's settings with its first pin (Pins.add), not
+    -- into every book that is merely opened.
+    if type(list) ~= "table" then list = {} end
     return list
 end
 
@@ -176,7 +177,7 @@ function Pins.imageFile(ui, pin)
     local moved = name and (imageDir() .. "/" .. name)
     if moved and lfs.attributes(moved, "mode") == "file" then
         pin.file = moved
-        pcall(function() ui.doc_settings:saveSetting(KEY, Pins.list(ui)) end)
+        try(function() ui.doc_settings:saveSetting(KEY, Pins.list(ui)) end)
         return moved
     end
     return nil
@@ -227,14 +228,13 @@ end
 -- A pin and the count, painted on the page by ReaderView (a window over the
 -- page would take part in every gesture; this does not).
 local function side()
-    local stored = G_reader_settings:readSetting("aleph")
-    return (type(stored) == "table" and stored.pins_left) and "left" or "right"
+    return Prefs.get().pins_left and "left" or "right"
 end
 
 local function badgeWidget(ui, count)
     BoardMetrics.refresh()
     local background = ui.view and ui.view.page_bgcolor or INK.white
-    local cached = ui._rb_pin_badge
+    local cached = ui._aleph_pin_badge
     if cached and cached.count == count and cached.background == background
             and cached.scale == BoardMetrics.get().dp then
         return cached
@@ -249,7 +249,7 @@ local function badgeWidget(ui, count)
     local widget = BoardUI.box({ w = w, h = h, radius = px(8), border = border, border_col = INK.black, bg = background },
         BoardUI.hstack({ w = w - 2 * border, h = h - 2 * border }, { BoardUI.flex(0), content, BoardUI.flex(0) }))
     cached = { count = count, background = background, scale = BoardMetrics.get().dp, widget = widget, w = w, h = h }
-    ui._rb_pin_badge = cached
+    ui._aleph_pin_badge = cached
     return cached
 end
 
@@ -267,18 +267,15 @@ local NUDGE = 8
 Pins.ANCHORS, Pins.NUDGE = ANCHORS, NUDGE
 
 function Pins.badgePlace()
-    local stored = G_reader_settings:readSetting("aleph")
-    local place = type(stored) == "table" and type(stored.pins_badge) == "table" and stored.pins_badge or {}
+    local stored = Prefs.get()
+    local place = type(stored.pins_badge) == "table" and stored.pins_badge or {}
     local anchor = place.anchor
     if not ANCHOR_LABELS[anchor] then anchor = side() == "left" and "bl" or "br" end
     return { anchor = anchor, dx = tonumber(place.dx) or 0, dy = tonumber(place.dy) or 0 }
 end
 
 function Pins.setBadgePlace(place)
-    local stored = G_reader_settings:readSetting("aleph")
-    if type(stored) ~= "table" then stored = {} end
-    stored.pins_badge = { anchor = place.anchor, dx = place.dx ~= 0 and place.dx or nil, dy = place.dy ~= 0 and place.dy or nil }
-    G_reader_settings:saveSetting("aleph", stored)
+    Prefs.set("pins_badge", { anchor = place.anchor, dx = place.dx ~= 0 and place.dx or nil, dy = place.dy ~= 0 and place.dy or nil })
 end
 
 function Pins.placeLabel(place)
@@ -314,27 +311,27 @@ local function badgeRect(ui, badge)
         footer_h = ok and height or 0
     end
     -- Above Aleph's bottom line too, when it shows.
-    pcall(function() footer_h = footer_h + require("aleph_bookends").bottomHeight(ui) end)
+    try(function() footer_h = footer_h + require("aleph_bookends").bottomHeight(ui) end)
     local x, y = Pins.placeRect(Pins.badgePlace(), badge.w, badge.h, sw, sh, footer_h)
     return Geom:new{ x = x, y = y, w = badge.w, h = badge.h }
 end
 
 function Pins.paintBadge(view, bb)
     local ui = view.ui
-    if not ui or not ui._rb_pins_attached or not wanted() or bb ~= Screen.bb then return end
+    if not ui or not ui._aleph_pins_attached or not wanted() or bb ~= Screen.bb then return end
     local count = #Pins.list(ui)
-    if count == 0 then ui._rb_pin_rect = nil; return end
+    if count == 0 then ui._aleph_pin_rect = nil; return end
     local ok, badge = pcall(badgeWidget, ui, count)
     if not ok then return end
     local rect = badgeRect(ui, badge)
-    ui._rb_pin_rect = rect
-    pcall(badge.widget.paintTo, badge.widget, bb, rect.x, rect.y)
+    ui._aleph_pin_rect = rect
+    try(badge.widget.paintTo, badge.widget, bb, rect.x, rect.y)
 end
 
 -- Repaints the badge's old and new place.
 function Pins.repaintBadge(ui)
     if not ui.view then return end
-    local before = ui._rb_pin_rect
+    local before = ui._aleph_pin_rect
     local count = #Pins.list(ui)
     local region = before and before:copy()
     if count > 0 then
@@ -362,15 +359,11 @@ end
 local ZOOMS = { 1, 1.5, 2, 3, 4 }
 
 local function drawerLarge()
-    local stored = G_reader_settings:readSetting("aleph")
-    return type(stored) == "table" and stored.pins_large == true
+    return Prefs.is("pins_large")
 end
 
 local function setDrawerLarge(on)
-    local stored = G_reader_settings:readSetting("aleph")
-    if type(stored) ~= "table" then stored = {} end
-    stored.pins_large = on and true or nil
-    G_reader_settings:saveSetting("aleph", stored)
+    Prefs.set("pins_large", on and true or nil)
 end
 
 -- The zoom step after (dir 1) or before (dir -1) z.
@@ -612,10 +605,10 @@ end
 -- the half of the screen away from it.
 function Pins.openPlacer(ui, on_close)
     local place = Pins.badgePlace()
-    local in_book = ui and ui.document and ui._rb_pins_attached
+    local in_book = ui and ui.document and ui._aleph_pins_attached
     local panel
     local function badgeAtTop()
-        local rect = in_book and ui._rb_pin_rect
+        local rect = in_book and ui._aleph_pin_rect
         if rect then return rect.y < Screen:getHeight() / 2 end
         return place.anchor:sub(1, 1) == "t"
     end
@@ -713,15 +706,11 @@ function Pins.openPlacer(ui, on_close)
                 changed()
             elseif k == "reset" then
                 place = { anchor = side() == "left" and "bl" or "br", dx = 0, dy = 0 }
-                local stored = G_reader_settings:readSetting("aleph")
-                if type(stored) == "table" then stored.pins_badge = nil; G_reader_settings:saveSetting("aleph", stored) end
+                Prefs.set("pins_badge", nil)
                 if in_book then Pins.repaintBadge(ui) end
                 p:refresh()
             elseif k == "drawer-side" then
-                local stored = G_reader_settings:readSetting("aleph")
-                if type(stored) ~= "table" then stored = {} end
-                stored.pins_left = action.left or nil
-                G_reader_settings:saveSetting("aleph", stored)
+                Prefs.set("pins_left", action.left or nil)
                 p:refresh()
             end
         end,
@@ -922,7 +911,7 @@ function Pins.install()
         Goto._aleph_pins = true
         local pin = Goto.onPinPage
         Goto.onPinPage = function(self, page, remove)
-            if not wanted() or not self.ui._rb_pins_attached then return pin(self, page, remove) end
+            if not wanted() or not self.ui._aleph_pins_attached then return pin(self, page, remove) end
             local ui = self.ui
             page = page or ui:getCurrentPage()
             local at = Pins.indexOfPage(ui, page)
@@ -935,7 +924,7 @@ function Pins.install()
         end
         local go = Goto.onGoToPinnedPage
         Goto.onGoToPinnedPage = function(self, ...)
-            if not wanted() or not self.ui._rb_pins_attached or #Pins.list(self.ui) == 0 then return go(self, ...) end
+            if not wanted() or not self.ui._aleph_pins_attached or #Pins.list(self.ui) == 0 then return go(self, ...) end
             Pins.openDrawer(self.ui, 1)
             return true
         end
@@ -946,10 +935,10 @@ end
 -- touch zones of the badge.
 function Pins.attach(ui)
     if not wanted() or not ui.document then return end
-    if ui._rb_pins_attached then return end
-    ui._rb_pins_attached = true
+    if ui._aleph_pins_attached then return end
+    ui._aleph_pins_attached = true
     if ui.highlight and ui.highlight.addToHighlightDialog then
-        ui.highlight:addToHighlightDialog("13_rb_pin", function(this)
+        ui.highlight:addToHighlightDialog("13_aleph_pin", function(this)
             local selection = this.selected_text
             local pos = selection and selection.pos0
             local page
@@ -973,7 +962,7 @@ function Pins.attach(ui)
         end)
     end
     ui:registerPostInitCallback(function()
-        if not ui._rb_pins_attached then return end
+        if not ui._aleph_pins_attached then return end
         -- Tap and hold on the badge take precedence over the page's own zones,
         -- and anything else goes to the page as usual.
         local overrides = { "readerfooter_tap", "readerfooter_hold", "readerlink_tap", "readerhighlight_tap",
@@ -982,14 +971,14 @@ function Pins.attach(ui)
             if zone.def and (zone.def.ges == "tap" or zone.def.ges == "hold") then overrides[#overrides + 1] = id end
         end
         local function hit(ges)
-            local box = ui._rb_pin_rect
+            local box = ui._aleph_pin_rect
             return wanted() and box and ges and ges.pos and #Pins.list(ui) > 0
                 and ges.pos.x >= box.x - box.w * 0.1 and ges.pos.x < box.x + box.w * 1.1
                 and ges.pos.y >= box.y - box.h * 0.1 and ges.pos.y < box.y + box.h * 1.1
         end
         local zones = {}
         for _i, gesture in ipairs({ "tap", "hold" }) do
-            zones[#zones + 1] = { id = "rb_pin_" .. gesture, ges = gesture,
+            zones[#zones + 1] = { id = "aleph_pin_" .. gesture, ges = gesture,
                 screen_zone = { ratio_x = 0, ratio_y = 0, ratio_w = 1, ratio_h = 1 }, overrides = overrides,
                 handler = function(ges)
                     if not hit(ges) then return false end
@@ -1004,11 +993,11 @@ end
 
 function Pins.detach(ui)
     if not ui then return end
-    ui._rb_pins_attached = nil
-    ui._rb_pin_rect = nil
-    local cached = ui._rb_pin_badge
+    ui._aleph_pins_attached = nil
+    ui._aleph_pin_rect = nil
+    local cached = ui._aleph_pin_badge
     if cached and cached.widget and cached.widget.free then cached.widget:free() end
-    ui._rb_pin_badge = nil
+    ui._aleph_pin_badge = nil
 end
 
 return Pins

@@ -84,12 +84,12 @@ function Book.showDetails(ui)
     if board and type(board.showBookPage) == "function" then
         local ok, shown = pcall(board.showBookPage, board, ui.document.file)
         if ok and shown then return end
-        if not ok then logger.warn("QuickTopBar: could not open Aleph's book page", shown) end
+        if not ok then logger.warn("Aleph: Quick Top Bar: could not open Aleph's book page", shown) end
     end
     if PluginLoader:getPluginInstance("bookshelf") then
         local ok, shown = pcall(showBookshelf, ui)
         if ok and shown then return end
-        if not ok then logger.warn("QuickTopBar: could not open Bookshelf book details", shown) end
+        if not ok then logger.warn("Aleph: Quick Top Bar: could not open Bookshelf book details", shown) end
     end
     if ui.bookinfo then ui.bookinfo:onShowBookInfo() end
 end

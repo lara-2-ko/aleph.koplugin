@@ -24,7 +24,7 @@ function Apps.capture(menu, build, ...)
         local name = instances[widget] or paths[widget.path]
             or (type(widget.name) == "string" and names[widget.name:lower()])
         local original = widget.addToMainMenu
-        if name and name ~= "quicktopbar" and type(original) == "function" and not restore[widget] then
+        if name and name ~= "aleph_topbar" and type(original) == "function" and not restore[widget] then
             restore[widget] = { rawget(widget, "addToMainMenu") }
             widget.addToMainMenu = function(instance, items)
                 if items ~= menu.menu_items then return original(instance, items) end
@@ -64,9 +64,9 @@ end
 
 function Apps.build(menu, captured)
     local enabled, disabled = PluginLoader:loadPlugins()
-    local tab = { id = "quicktopbar_apps", icon = "appbar.tools", ignored_by_menu_search = true }
+    local tab = { id = "aleph_topbar_apps", icon = "appbar.tools", ignored_by_menu_search = true }
     local function add(plugin, is_enabled)
-        if plugin.name == "quicktopbar" then return end
+        if plugin.name == "aleph_topbar" then return end
         local entries, keys = captured[plugin.name] or {}, {}
         for key in pairs(entries) do keys[#keys + 1] = key end
         if #keys == 0 and is_enabled and plugin.name:lower() == "storefront" then

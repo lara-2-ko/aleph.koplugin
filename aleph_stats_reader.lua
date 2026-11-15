@@ -17,7 +17,7 @@ local logger = require("logger")
 
 local unpack = table.unpack or unpack
 
-local BookOrbitStatsReader = {}
+local StatsReader = {}
 
 local BUSY_TIMEOUT_MS = 1000
 -- One cached statement per shape. The event query's shape varies with the
@@ -74,7 +74,7 @@ end
 local function openConn()
     local ok, conn = pcall(SQ3.open, dbPath(), "ro")
     if not ok or not conn then
-        logger.dbg("BookOrbit: cannot open statistics.sqlite3:", conn)
+        logger.dbg("Aleph: cannot open statistics.sqlite3:", conn)
         return nil
     end
     pcall(conn.set_busy_timeout, conn, BUSY_TIMEOUT_MS)
@@ -86,7 +86,7 @@ Session.__index = Session
 
 -- Opens the shared read-only connection. A busy database is the expected
 -- transient failure here, so one reopen is attempted before giving up.
-function BookOrbitStatsReader.openSession()
+function StatsReader.openSession()
     local conn = openConn() or openConn()
     if not conn then return nil, "open_failed" end
     return setmetatable({ conn = conn, statements = {}, statement_count = 0 }, Session)
@@ -138,11 +138,11 @@ function Session:select(sql, params)
     if not self.conn then return nil, "closed" end
     local ok, res = pcall(self._select, self, sql, params)
     if ok then return res end
-    logger.dbg("BookOrbit: statistics query failed, reopening:", res)
+    logger.dbg("Aleph: statistics query failed, reopening:", res)
     if not self:_reopen() then return nil, "open_failed" end
     local retried, retry_res = pcall(self._select, self, sql, params)
     if retried then return retry_res end
-    logger.dbg("BookOrbit: statistics query failed:", retry_res)
+    logger.dbg("Aleph: statistics query failed:", retry_res)
     return nil, "query_failed"
 end
 
@@ -443,12 +443,12 @@ function Session:bookJournal(ids)
 end
 
 local function withSession(fn)
-    local session = BookOrbitStatsReader.openSession()
+    local session = StatsReader.openSession()
     if not session then return nil, "open_failed" end
     local ok, result = pcall(fn, session)
     session:close()
     if not ok then
-        logger.dbg("BookOrbit: statistics query failed:", result)
+        logger.dbg("Aleph: statistics query failed:", result)
         return nil, "query_failed"
     end
     return result
@@ -458,11 +458,11 @@ end
 -- title+authors+md5), so rows are grouped per md5. The sweep enumerates in
 -- chunks and therefore drives the collector itself; a group is only complete
 -- once every page has been added.
-function BookOrbitStatsReader.newBookCollector()
+function StatsReader.newBookCollector()
     return { by_md5 = {}, list = {} }
 end
 
-function BookOrbitStatsReader.collectBookRow(collector, row)
+function StatsReader.collectBookRow(collector, row)
     local entry = collector.by_md5[row.md5]
     if not entry then
         entry = { md5 = row.md5, ids = {}, rows = {}, last_open = 0, _variant_seen = {}, _variant_count = 0 }
@@ -473,17 +473,17 @@ function BookOrbitStatsReader.collectBookRow(collector, row)
     return entry
 end
 
-function BookOrbitStatsReader.collectedEntries(collector)
+function StatsReader.collectedEntries(collector)
     return collector.list
 end
 
-function BookOrbitStatsReader.finalizeBookEntry(entry)
+function StatsReader.finalizeBookEntry(entry)
     return finalizeEntry(entry)
 end
 
 -- Returns { ids, rows, last_open, title, authors, metadata_ambiguous, stats_ambiguous } for one md5.
 -- Used by live single-book sync before match-check.
-function BookOrbitStatsReader.getBook(md5)
+function StatsReader.getBook(md5)
     return withSession(function(session)
         return session:book(md5)
     end)
@@ -496,39 +496,39 @@ end
 -- capture before the statistics row exists) and resolves through getBookIds().
 local identity_cache
 
-function BookOrbitStatsReader.primeIdentity(md5)
+function StatsReader.primeIdentity(md5)
     if type(md5) ~= "string" or md5 == "" then return nil end
     if identity_cache and identity_cache.md5 == md5 then
         return identity_cache.book
     end
-    local book = BookOrbitStatsReader.getBook(md5)
+    local book = StatsReader.getBook(md5)
     identity_cache = { md5 = md5, book = book }
     return book
 end
 
 -- Returns the cached entry plus whether the digest was cached at all, so a
 -- caller can tell "no statistics row" from "never looked up".
-function BookOrbitStatsReader.cachedIdentity(md5)
+function StatsReader.cachedIdentity(md5)
     if identity_cache and identity_cache.md5 == md5 then
         return identity_cache.book, true
     end
     return nil, false
 end
 
-function BookOrbitStatsReader.forgetIdentity()
+function StatsReader.forgetIdentity()
     identity_cache = nil
 end
 
 -- Returns the stat book row ids sharing one md5 (the stats unique key is
 -- title+authors+md5, so a single file can map to several rows).
-function BookOrbitStatsReader.getBookIds(md5)
+function StatsReader.getBookIds(md5)
     local result = withSession(function(session)
         return session:bookIds(md5)
     end)
     return result or {}
 end
 
-function BookOrbitStatsReader.getReadingSummary()
+function StatsReader.getReadingSummary()
     return withSession(function(session)
         return session:readingSummary()
     end)
@@ -559,51 +559,51 @@ local function remembered(key, compute)
     return value
 end
 
-function BookOrbitStatsReader.forget()
+function StatsReader.forget()
     memo = { stamp = nil, results = {}, count = 0 }
 end
 
-function BookOrbitStatsReader.getDailySeconds(since)
+function StatsReader.getDailySeconds(since)
     return remembered("daily:" .. tostring(since), function()
         return withSession(function(session) return session:dailySeconds(since) end)
     end)
 end
 
-function BookOrbitStatsReader.getHourMinutes(since)
+function StatsReader.getHourMinutes(since)
     return remembered("hours:" .. tostring(since), function()
         return withSession(function(session) return session:hourMinutes(since) end)
     end)
 end
 
-function BookOrbitStatsReader.getPageTurns(today_start)
+function StatsReader.getPageTurns(today_start)
     return remembered("turns:" .. tostring(today_start), function()
         return withSession(function(session) return session:pageTurns(today_start) end)
     end)
 end
 
-function BookOrbitStatsReader.getSessionRecords(since)
+function StatsReader.getSessionRecords(since)
     return remembered("records:" .. tostring(since), function()
         return withSession(function(session) return session:sessionRecords(since) end)
     end)
 end
 
-function BookOrbitStatsReader.getBookPace(md5, days)
+function StatsReader.getBookPace(md5, days)
     return remembered("pace:" .. tostring(md5) .. ":" .. tostring(days), function()
         return withSession(function(session) return session:bookPace(session:bookIds(md5), days) end)
     end)
 end
 
-function BookOrbitStatsReader.getBookJournal(md5)
+function StatsReader.getBookJournal(md5)
     return withSession(function(session)
         return session:bookJournal(session:bookIds(md5))
     end)
 end
 
-function BookOrbitStatsReader.getEventsAfter(ids, watermark, limit)
+function StatsReader.getEventsAfter(ids, watermark, limit)
     if not ids or #ids == 0 then return {} end
     return withSession(function(session)
         return session:eventsAfter(ids, watermark, limit)
     end)
 end
 
-return BookOrbitStatsReader
+return StatsReader

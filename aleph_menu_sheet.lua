@@ -71,6 +71,7 @@ function MenuSheet.data(browser)
         on_home = on_home,
         place = currentPlace(browser),
         version = require("aleph_prefs").VERSION,
+        owner = require("aleph_owner").summary(),
     }
 end
 
@@ -171,6 +172,9 @@ function MenuSheet.body(d, w, o)
     local rows = {
         MenuUI.row(iw, { icon = "sliders-horizontal", label = _("Settings"),
             sub = not o.side_rows and _("Opening, layout, goal, interface size") or nil, chevron = true, action = { kind = "settings" } }),
+        -- Who to contact if the device is found (aleph_owner.lua).
+        MenuUI.row(iw, { icon = "contact", label = _("Owner information"),
+            sub = not o.side_rows and d.owner or nil, sub_data = true, chevron = true, action = { kind = "owner" } }),
         MenuUI.row(iw, { icon = "circle-help", label = _("About"),
             sub = not o.side_rows and T(_("Version %1 · legal notices"), d.version) or nil, chevron = true, action = { kind = "about" } }),
     }

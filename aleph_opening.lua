@@ -10,6 +10,7 @@ It is installed once, as a hook on ReaderUI:showReaderCoroutine, and only for
 that one message; every other message stays KOReader's.
 ]]
 
+local Prefs = require("aleph_prefs")
 local Device = require("device")
 local Geom = require("ui/geometry")
 local InputContainer = require("ui/widget/container/inputcontainer")
@@ -132,8 +133,33 @@ function Card:getVisibleArea()
 end
 
 local function styled()
-    local stored = G_reader_settings:readSetting("aleph")
-    return not (type(stored) == "table" and stored.style_dialogs == false)
+    return Prefs.on("style_dialogs")
+end
+
+-- Aleph Home from a book (the reader menu): the book closes, KOReader's file
+-- browser comes back as it does for its own Home, and Aleph opens over it,
+-- so the top menu is the file browser's again, not the book's. `then_fn`
+-- (optional) gets the board's browser once it is up. The file browser's
+-- start (main.lua, openOver) takes `Opening.pending_home`; when the file
+-- browser was still open underneath, it is opened here a moment later.
+Opening.pending_home = nil
+function Opening.goHome(ui, then_fn)
+    local UIManager = require("ui/uimanager")
+    if not (ui and ui.document and type(ui.onHome) == "function") then return false end
+    Opening.pending_home = then_fn or true
+    ui:onHome()
+    UIManager:scheduleIn(0.6, function()
+        local pending = Opening.pending_home
+        if not pending then return end
+        Opening.pending_home = nil
+        local fm = require("apps/filemanager/filemanager").instance
+        local plugin = fm and (rawget(fm, "aleph") or (fm.modules and fm.modules.aleph))
+        if plugin and plugin.onShowAleph then
+            plugin:onShowAleph()
+            if type(pending) == "function" and plugin.browser then pcall(pending, plugin.browser) end
+        end
+    end)
+    return true
 end
 
 function Opening.install()

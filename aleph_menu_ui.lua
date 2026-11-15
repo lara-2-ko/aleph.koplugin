@@ -148,16 +148,19 @@ function MenuUI.segmented(w, options, selected, action_for)
         hstack({ w = inner, h = h - 2 * b }, segs))
 end
 
-function MenuUI.stepper(value, unit, action_minus, action_plus)
+-- action_mid (optional): a tap on the number itself (to type one).
+function MenuUI.stepper(value, unit, action_minus, action_plus, action_mid)
     local s = px(36)
     local function btn(name, action)
         local c = BoardUI.circle(s, { border = math.max(1, px(1.5)), bg = INK.white }, icon(name, px(16), { sw = 2.75 }))
         return action and BoardUI.hit(c, action) or c
     end
-    local mid = vstack({ w = px(52), align = "center" }, {
-        text(tostring(value), { s = 18, b = true }),
+    local num = text(tostring(value), { s = 18, b = true })
+    local mid = vstack({ w = math.max(px(52), num:getSize().w + px(8)), align = "center" }, {
+        num,
         unit and text(unit, { s = 12, col = INK.g4 }) or false,
     })
+    if action_mid then mid = BoardUI.hit(mid, action_mid) end
     return hstack({ gap = px(10) }, { btn("minus", action_minus), mid, btn("plus", action_plus) })
 end
 

@@ -1,7 +1,10 @@
+local Prefs = require("aleph_prefs")
+local _ = require("gettext")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local UIManager = require("ui/uimanager")
 local Dispatcher = require("dispatcher")
-local Board = WidgetContainer:extend{name="aleph", is_doc_only=false}
+local try = require("aleph_try").call
+local Board = WidgetContainer:extend{ name = "aleph", is_doc_only = false }
 
 -- Opening the board over the file browser, at startup and after a book is
 -- closed. Done the way ZenOS takes over the browser: a class-level hook on
@@ -12,18 +15,27 @@ local Board = WidgetContainer:extend{name="aleph", is_doc_only=false}
 -- KOReader has just built.
 local logger = require("logger")
 
+-- The library index written if it has changes not written yet
+-- (aleph_local.lua: in a background process where one can be started).
+-- Set when KOReader quits or restarts: the book open then closes after that,
+-- and its new state is written as it does.
+local quitting = false
+local function saveIndexLater()
+    local Local = package.loaded["aleph_local"]
+    if Local and Local.flushIfDirty then try(Local.flushIfDirty) end
+end
+
 -- Settings, library index and cache from the plugin's old name
 -- (readingboard.koplugin), moved before anything reads them.
-pcall(function() require("aleph_migrate").run() end)
--- KOReader's own windows in Aleph's style (Settings > Opening > Aleph dialogs).
+try(function() require("aleph_migrate").run() end)
+-- KOReader's own windows in Aleph's style (Settings > Home > Aleph dialogs).
 do
     local ok, err = pcall(function() require("aleph_theme").sync() end)
     if not ok then logger.warn("Aleph: theme not applied:", err) end
 end
 
 local function wantsBoard()
-    local stored = G_reader_settings:readSetting("aleph")
-    return type(stored) == "table" and stored.open_home == true
+    return Prefs.is("open_home")
 end
 
 local function onScreen(widget)
@@ -36,7 +48,10 @@ end
 -- Shows the board over `fm` once. Each file browser KOReader builds is a new
 -- widget, so each gets one opening: closing the board is never undone.
 local function openOver(fm, tries)
-    if not fm or fm._aleph_opened or not wantsBoard() then return end
+    -- Aleph Home from a book's reader menu asks for the board this once.
+    local Opening = package.loaded["aleph_opening"]
+    local pending = Opening and Opening.pending_home
+    if not fm or (fm._aleph_opened and not pending) or not (wantsBoard() or pending) then return end
     local plugin = fm.aleph or (fm.modules and fm.modules.aleph)
     if not plugin then
         -- Registered under another name: find it among the browser's modules.
@@ -51,10 +66,12 @@ local function openOver(fm, tries)
         return
     end
     fm._aleph_opened = true
+    if pending then Opening.pending_home = nil end
     local ok, err = pcall(plugin.onShowAleph, plugin)
+    if ok and type(pending) == "function" and plugin.browser then pcall(pending, plugin.browser) end
     if not ok then
         logger.warn("Aleph: could not open over the file browser:", err)
-        UIManager:show(require("ui/widget/infomessage"):new{ text = "Aleph could not open at startup:\n" .. tostring(err) })
+        UIManager:show(require("ui/widget/infomessage"):new{ text = _("Aleph could not open at startup:") .. "\n" .. tostring(err) })
     end
 end
 
@@ -67,6 +84,22 @@ if not FileManager._aleph_hooked then
         openOver(FileManager.instance)
         return result
     end
+    -- Turning the screen rebuilds the whole file browser, its book covers
+    -- included, before anything else is drawn (a second or more), though
+    -- the board covers it. While the board is up, the browser only learns
+    -- the new size; it is rebuilt when the board closes.
+    local original_rotate = FileManager.rotate
+    function FileManager:rotate(...)
+        local plugin = rawget(self, "aleph") or (self.modules and self.modules.aleph)
+        local browser = plugin and plugin.browser
+        if browser and not browser.closed then
+            self._aleph_rotate_pending = true
+            self.dimen = require("device").screen:getSize()
+            self:handleEvent(require("ui/event"):new("SetDimensions", self.dimen))
+            return
+        end
+        return original_rotate(self, ...)
+    end
 end
 
 -- KOReader's "Opening file" message in the board's style. (The search prompt is
@@ -77,31 +110,35 @@ if not ok_opening then logger.warn("Aleph: opening card not installed:", opening
 -- The reader controls gain a Background tab; it is added here, at load, because
 -- KOReader reads its option list when a book opens.
 local ok_tab, tab_err = pcall(function() require("aleph_config").installOptions() end)
+-- The night profile (Settings > Home > Night profile): watches night mode
+-- turning on and off; does nothing while the profile is off.
+try(function() require("aleph_night").install() end)
 if not ok_tab then logger.warn("Aleph: Background tab not added:", tab_err) end
 
 function Board:init()
     self.settings = G_reader_settings:readSetting("aleph", {})
     if not self.settings.library_roots then
         local home = G_reader_settings:readSetting("home_dir")
-        self.settings.library_roots = home and {home} or {}
+        self.settings.library_roots = home and { home } or {}
     end
     -- Aleph on the first page of Tools, below calibre.
-    pcall(function() require("aleph_menu_pin").ensure() end)
+    try(function() require("aleph_menu_pin").ensure() end)
     self.ui.menu:registerToMainMenu(self)
     -- The top menu's Controls and Apps tabs (settings: Opening > Quick top bar).
     local ok_bar, bar_err = pcall(function() require("aleph_topbar").sync(self) end)
     if not ok_bar then logger.warn("Aleph: Quick Top Bar not started:", bar_err) end
-    Dispatcher:registerAction("aleph_open", {category="none", event="ShowAleph", title="Aleph: open", general=true})
-    Dispatcher:registerAction("aleph_pins", {category="none", event="ShowAlephPins", title="Aleph: pinned pages", reader=true})
-    Dispatcher:registerAction("aleph_page_browser", {category="none", event="ShowAlephPageBrowser", title="Aleph: page browser", reader=true})
-    Dispatcher:registerAction("aleph_this_book", {category="none", event="ShowAlephThisBook", title="Aleph: this book", reader=true})
+    Dispatcher:registerAction("aleph_open", { category = "none", event = "ShowAleph", title = _("Aleph: open"), general = true })
+    Dispatcher:registerAction("aleph_pins", { category = "none", event = "ShowAlephPins", title = _("Aleph: pinned pages"), reader = true })
+    Dispatcher:registerAction("aleph_page_browser", { category = "none", event = "ShowAlephPageBrowser", title = _("Aleph: page browser"), reader = true })
+    Dispatcher:registerAction("aleph_xray", { category = "none", event = "ShowAlephXray", title = _("Aleph: X-Ray"), reader = true })
+    Dispatcher:registerAction("aleph_this_book", { category = "none", event = "ShowAlephThisBook", title = _("Aleph: this book"), reader = true })
     -- Gestures bound to the old action names, and the old folder left installed.
     local ui = self.ui
     UIManager:nextTick(function()
-        pcall(function() require("aleph_migrate").gestures(ui) end)
-        pcall(function() require("aleph_migrate").warnOldFolder(ui) end)
+        try(function() require("aleph_migrate").gestures(ui) end)
+        try(function() require("aleph_migrate").warnOldFolder(ui) end)
         -- ZenOS replaces the same screens: say so (Aleph runs as usual).
-        pcall(function() require("aleph_conflicts").check(ui) end)
+        try(function() require("aleph_conflicts").check(ui) end)
     end)
     -- The first file browser of a session is being built while this runs, before
     -- the hook above can see its showFiles finish: open over it as soon as it is
@@ -110,33 +147,45 @@ function Board:init()
         local fm = self.ui
         UIManager:nextTick(function() openOver(fm) end)
     else
-        -- In a book. Each step is logged before and after it runs: if the
-        -- reader ever stops here, the last "Aleph: reader" line in
-        -- koreader/crash.log names the step that did not finish.
+        -- In a book. With the troubleshooting log on (Settings > About),
+        -- each step is logged before and after it runs: if the reader ever
+        -- stops here, the last "Aleph: debug: reader step" line in
+        -- koreader/crash.log names the step that did not finish. A step
+        -- that fails is always logged.
+        local Debug = require("aleph_debug")
         local function step(name, fn)
-            logger.info("Aleph: reader step " .. name)
+            Debug.log("reader step " .. name)
             local ok, err = pcall(fn)
             if not ok then logger.warn("Aleph: " .. name .. " not installed:", err) end
-            logger.info("Aleph: reader step " .. name .. " done")
+            Debug.log("reader step " .. name .. " done")
         end
         step("highlight", function() require("aleph_highlight").install() end)
         step("dictionary", function() require("aleph_dictionary").install() end)
         step("details", function() require("aleph_bookmark").install() end)
         step("page browser", function() require("aleph_page_browser").install() end)
         step("reader menu", function() require("aleph_reader_sheet").install() end)
+        -- Coloured bookmarks: the ribbon and the list of colours.
+        step("bookmark colours", function()
+            local ui = self.ui
+            ui:registerPostInitCallback(function()
+                try(function() require("aleph_bookmark_colors").attach(ui) end)
+            end)
+        end)
         -- Stats at the top and bottom of the pages, and their minute tick.
         step("bookends", function()
             local Bookends = require("aleph_bookends")
             Bookends.install()
             Bookends.attach(self.ui)
+            -- The page turner's battery on the bottom line (HID Passthrough).
+            try(function() require("aleph_page_turner").attach(self.ui) end)
         end)
         for _i, name in ipairs({ "aleph_menu_skin", "aleph_imageviewer", "aleph_config" }) do
             step(name, function() require(name).install() end)
         end
         self.ui:registerPostInitCallback(function()
-            logger.info("Aleph: reader step saved background")
-            pcall(function() require("aleph_config").applySaved(self.ui) end)
-            logger.info("Aleph: reader step saved background done")
+            Debug.log("reader step saved background")
+            try(function() require("aleph_config").applySaved(self.ui) end)
+            Debug.log("reader step saved background done")
         end)
         -- Pinned pages: the Pin button, the pictures menu, and (only when the
         -- book has pins) the badge.
@@ -145,33 +194,42 @@ function Board:init()
             Pins.install()
             Pins.attach(self.ui)
         end)
+        -- Aleph's own X-Ray (aleph_xr.lua): only with Settings > X-Ray on;
+        -- off (as it is unless turned on), none of it is loaded.
+        if Prefs.is("xray_enabled") then
+            step("x-ray", function()
+                local XR = require("aleph_xr")
+                XR.install()
+                XR.attach(self.ui)
+            end)
+        end
     end
 end
 function Board:addToMainMenu(items)
-    items.aleph = {text="Aleph", callback=function() self:onShowAleph() end}
+    items.aleph = { text = "Aleph", callback = function() self:onShowAleph() end }
     -- In a book, where the pin badge sits (and the side its drawer opens on),
     -- right under Aleph in Tools.
     if self.ui.document then
-        items.aleph_pin_badge = {text="Pin badge position", callback=function()
+        items.aleph_pin_badge = { text = _("Pin badge position"), callback = function()
             require("aleph_pins").openPlacer(self.ui)
-        end}
-        items.aleph_bookends = {text="Book margins (top and bottom stats)", callback=function()
+        end }
+        items.aleph_bookends = { text = _("Book margins (top and bottom stats)"), callback = function()
             require("aleph_bookends_page").open(self.ui)
-        end}
+        end }
     end
 end
 function Board:onShowAleph()
     if self.browser and not self.browser.closed then return true end
-    self.browser = require("aleph_browser"):new{plugin=self,settings=self.settings}
+    self.browser = require("aleph_browser"):new{ plugin = self, settings = self.settings }
     UIManager:show(self.browser)
-    self.browser:startScan()
+    self.browser:startScanIfDue()
     return true
 end
 -- The board's page for a book, over the reader. True when it was shown.
 function Board:showBookPage(path)
     if not path then return false end
     if self.browser and not self.browser.closed then return false end
-    local browser = require("aleph_browser"):new{plugin=self,settings=self.settings}
+    local browser = require("aleph_browser"):new{ plugin = self, settings = self.settings }
     if not browser:openBookPage(path) then
         browser:onClose()
         return false
@@ -195,7 +253,7 @@ function Board:onToggleNightMode()
 end
 Board.onSetNightMode = Board.onToggleNightMode
 
-function Board:onRBSetPageBackground(index)
+function Board:onAlephSetPageBackground(index)
     local Config = require("aleph_config")
     if index == 5 then
         Config.pickCustom(self.ui, function() Config.applyBackground(self.ui, 5) end)
@@ -221,7 +279,12 @@ function Board:onReaderReady()
     local ok, err = pcall(function() require("aleph_page_browser").registerZone(self.ui) end)
     if not ok then logger.warn("Aleph: page browser swipe not added:", err) end
     -- KOReader sets up its status bar by now: hide it if the bottom line asks.
-    pcall(function() require("aleph_bookends").applyStock(self.ui) end)
+    try(function() require("aleph_bookends").applyStock(self.ui) end)
+    -- The Goodreads plugin's automatic tracking, asked in the background
+    -- (aleph_goodreads_track.lua): only with its switch on in Settings.
+    if Prefs.is("goodreads_background") then
+        try(function() require("aleph_goodreads_track").attach(self.ui) end)
+    end
 end
 function Board:onShowAlephThisBook()
     if not self.ui.document then return false end
@@ -232,23 +295,101 @@ function Board:onShowAlephThisBook()
     end
     return true
 end
+-- The gesture "Aleph: X-Ray": the names of the open book.
+function Board:onShowAlephXray()
+    if not self.ui.document then return false end
+    if not Prefs.is("xray_enabled") then
+        try(function() require("aleph_toast").show(_("X-Ray is off. Turn it on in Aleph's Settings > X-Ray."), { icon = "info", timeout = 4 }) end)
+        return true
+    end
+    try(function()
+        local XR = require("aleph_xr")
+        XR.install()
+        XR.attach(self.ui)
+        XR.open(self.ui)
+    end)
+    return true
+end
 function Board:onShowAlephPins()
     if not self.ui.document then return false end
     require("aleph_pins").openList(self.ui)
     return true
 end
 function Board:onCloseDocument()
-    pcall(function() require("aleph_bookends").detach(self.ui) end)
-    pcall(function() require("aleph_pins").detach(self.ui) end)
+    try(function() require("aleph_bookends").detach(self.ui) end)
+    try(function() require("aleph_page_turner").detach(self.ui) end)
+    try(function() require("aleph_pins").detach(self.ui) end)
+    -- X-Ray, when it was loaded for this book.
+    local XR = package.loaded["aleph_xr"]
+    if XR then try(XR.detach, self.ui) end
     if self.ui.doc_settings then
         require("aleph_chapter_map").remember(self.ui, self.ui.doc_settings:readSetting("partial_md5_checksum"))
     end
+    -- A finished book goes on the record now, in case it is deleted before
+    -- the library is scanned again.
+    try(function() require("aleph_finished_log").fromReader(self.ui) end)
+    -- The book's entry in the library, made again from the reader's own
+    -- settings: Home is right the first time it is drawn after the book,
+    -- with no scan of the whole library (aleph_local.lua).
+    try(function() require("aleph_local").refreshClosing(self.ui) end)
     require("aleph_board_data").invalidateLocal()
+    if quitting then saveIndexLater() end
+end
+-- The device goes to sleep: the minute tick of the page's top and bottom
+-- lines stops, and starts again on waking (the page is painted again then).
+-- Neither is consumed: KOReader and the other plugins hear them too.
+function Board:onSuspend()
+    if self.ui and self.ui.document then
+        try(function() require("aleph_bookends").disarm(self.ui) end)
+    end
+    -- Nobody waits as the device goes to sleep: the library index, when it
+    -- has changes not written yet, is written now (in the background).
+    saveIndexLater()
+end
+function Board:onResume()
+    if self.ui and self.ui.document then
+        try(function() require("aleph_bookends").arm(self.ui) end)
+    end
+    -- Night mode by the clock (Settings > Home > Night profile): a period
+    -- that started while the device slept is set now.
+    try(function() require("aleph_night").checkSchedule() end)
 end
 -- KOReader's Exit and Restart close the file browser, and KOReader quits when
 -- nothing is left on screen. The board is a screen of its own over the file
 -- browser, so it (and any page, sheet or panel of it) is closed with it; left
 -- open it would keep KOReader running until it was closed by hand.
+-- The screen turned: the board and Aleph's pages over it are laid out again
+-- for the new size at once (they did not hear of it, and waited for the next
+-- tap or the clock). A sheet over the board keeps a picture of the screen
+-- under it, which no longer fits: it closes.
+function Board:onSetDimensions()
+    local browser = self.browser
+    if not browser or browser.closed then return end
+    UIManager:nextTick(function()
+        if browser.closed then return end
+        local Screen = require("device").screen
+        local w, h = Screen:getWidth(), Screen:getHeight()
+        local pages = {}
+        for _i, window in ipairs(UIManager._window_stack or {}) do
+            local widget = window.widget
+            if widget ~= browser and type(widget.name) == "string" and widget.name:find("^aleph") then pages[#pages + 1] = widget end
+        end
+        try(function() browser:updateItems() end)
+        UIManager:setDirty(browser, "full")
+        for _i, page in ipairs(pages) do
+            try(function()
+                if page.backdrop_bb or page.backdrop then
+                    if page.close then page:close() else UIManager:close(page) end
+                elseif page.dimen and (page.rebuild or page.refresh) then
+                    page.dimen.w, page.dimen.h = w, h
+                    if page.refresh then page:refresh() end
+                    UIManager:setDirty(page, "full")
+                end
+            end)
+        end
+    end)
+end
+
 function Board:onCloseWidget()
     local browser = self.browser
     if browser and not browser.closed then pcall(function() browser:onClose() end) end
@@ -261,5 +402,20 @@ function Board:onCloseWidget()
 end
 function Board:onFlushSettings()
     G_reader_settings:saveSetting("aleph", self.settings)
+    -- The library index is not written here: KOReader saves its settings as
+    -- each book closes, and writing the whole index then made changing books
+    -- and quitting wait about 12 seconds (1.1.47). It is written as the
+    -- device goes to sleep and as KOReader quits or restarts (below), in the
+    -- background; the library kept in memory is the one Home shows meanwhile,
+    -- and a scan puts right an index that missed a write.
 end
+-- KOReader quits or restarts: the index, when it has changes not written
+-- yet, is written by a background process that finishes on its own.
+-- With a book open, after it closes (onCloseDocument), so its new state is
+-- in; from Home or the file browser, at once.
+function Board:onExit()
+    quitting = true
+    if not (self.ui and self.ui.document) then saveIndexLater() end
+end
+Board.onRestart = Board.onExit
 return Board

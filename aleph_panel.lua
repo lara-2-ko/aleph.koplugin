@@ -21,6 +21,7 @@ local UIManager = require("ui/uimanager")
 
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
+local KeyNav = require("aleph_keynav")
 
 local Screen = Device.screen
 local px = BoardMetrics.px
@@ -35,6 +36,8 @@ local Panel = InputContainer:extend{
     panel_rect = nil,
     on_gesture = nil,
 }
+
+KeyNav.install(Panel)
 
 function Panel:init()
     BoardMetrics.refresh()
@@ -52,6 +55,8 @@ function Panel:init()
     if Device:hasKeys() then
         self.key_events.ClosePanel = { { Device.input.group.Back } }
     end
+    -- The direction keys move a mark between the panel's controls.
+    KeyNav.keys(self)
     self:rebuild()
 end
 
@@ -100,7 +105,10 @@ end
 function Panel:paintTo(bb, x, y)
     local extra = self.extra
     if extra then extra:paintTo(bb) end
-    if not (extra and extra.dragging) and self[1] then self[1]:paintTo(bb, 0, 0) end
+    if not (extra and extra.dragging) and self[1] then
+        self[1]:paintTo(bb, 0, 0)
+        KeyNav.paint(self, bb)
+    end
 end
 
 function Panel:handleEvent(event)

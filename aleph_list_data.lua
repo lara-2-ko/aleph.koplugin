@@ -120,24 +120,34 @@ function ListData.finishedOn(book)
     return ok and label or nil
 end
 
+-- Another e-reader's newer position (Syncery's files), as "60% on
+-- Colorsoft", or nil (aleph_remote_progress.lua).
+local function remoteNote(book)
+    local ok, note = pcall(function() return require("aleph_remote_progress").note(book) end)
+    return ok and note or nil
+end
+ListData.remoteNote = remoteNote
+
 -- The right-hand cell of a book row: a value on top and words under it.
 -- Returns { kind, pct, label, bottom }.
 function ListData.statusCell(book, o)
     o = o or {}
     local state = ListData.stateOf(book)
+    local remote = remoteNote(book)
     if state == "reading" then
-        local bottom
-        if o.minutes_left then
+        local bottom = remote
+        if bottom then -- the other e-reader's position, in place of the day
+        elseif o.minutes_left then
             bottom = T(_("%1 left"), o.narrow and ListData.shortDuration(o.minutes_left) or ListData.duration(o.minutes_left))
         else bottom = BoardData.relativeDay(book.lastReadAt, o.now) end
         return { kind = "reading", pct = tonumber(book.progressPercentage) or 0, label = ListData.pctLabel(book) or "0%", bottom = bottom }
     elseif state == "finished" then
         return { kind = "finished", label = _("Read"), bottom = ListData.finishedOn(book) }
     elseif state == "paused" then
-        return { kind = "want", label = _("On hold"), bottom = formats(book)[1] }
+        return { kind = "want", label = _("On hold"), bottom = remote or formats(book)[1] }
     end
     local f = formats(book)
-    return { kind = "format", label = f[1] or "", bottom = nil }
+    return { kind = "format", label = f[1] or "", bottom = remote }
 end
 
 -- The gray line under a cover in a grid: the value first, then words that
@@ -145,6 +155,10 @@ end
 function ListData.bookMeta(book, o)
     o = o or {}
     local state = ListData.stateOf(book)
+    local remote = remoteNote(book)
+    if remote and state ~= "finished" then
+        return { { t = ListData.pctLabel(book) or "0%", b = true }, { t = " · " .. remote } }
+    end
     if state == "reading" then
         local after
         if o.minutes_left then after = T(_(" · %1 left"), ListData.shortDuration(o.minutes_left))

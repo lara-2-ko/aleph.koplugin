@@ -26,6 +26,7 @@ local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
 local MenuPage = require("aleph_menu_page")
 local MenuUI = require("aleph_menu_ui")
+local try = require("aleph_try").call
 
 local INK = BoardMetrics.INK
 local px = BoardMetrics.px
@@ -49,7 +50,7 @@ end
 -- ----------------------------------------------------------------- data
 local function currentPage(ui)
     local page
-    pcall(function() page = ui.toc and ui.toc.pageno end)
+    try(function() page = ui.toc and ui.toc.pageno end)
     if not page then pcall(function() page = ui:getCurrentPage() end) end
     if not page then pcall(function() page = ui.document:getCurrentPage() end) end
     return page
@@ -59,7 +60,7 @@ end
 -- KOReader is set to show them, else the page number. Only the number.
 local function pageLabel(ui, item)
     local label
-    pcall(function()
+    try(function()
         if ui.pagemap and ui.pagemap:wantsPageLabels() then
             if item.xpointer then
                 label = ui.pagemap:getXPointerPageLabel(item.xpointer, true)
@@ -76,7 +77,7 @@ end
 -- the current chapter.
 function Toc.entries(ui)
     local toc = ui.toc
-    pcall(toc.fillToc, toc)
+    try(toc.fillToc, toc)
     local items = {}
     for _i, item in ipairs(toc.toc or {}) do
         local title = tostring(item.title or ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -213,7 +214,7 @@ end
 
 -- Goes to a chapter the way KOReader's table of contents does.
 local function go(ui, entry)
-    pcall(function() ui.link:addCurrentLocationToStack() end)
+    try(function() ui.link:addCurrentLocationToStack() end)
     if entry.xpointer then
         ui:handleEvent(Event:new("GotoXPointer", entry.xpointer, entry.xpointer))
     else

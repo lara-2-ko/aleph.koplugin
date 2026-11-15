@@ -23,6 +23,7 @@ local _ = require("gettext")
 local BoardMetrics = require("aleph_board_metrics")
 local BoardUI = require("aleph_board_ui")
 local Cell = require("aleph_cell")
+local try = require("aleph_try").call
 
 local Screen = Device.screen
 local INK = BoardMetrics.INK
@@ -41,17 +42,7 @@ local FONTS = {
 
 -- Runs fn with KOReader's named fonts answered by the board's.
 local function withFonts(fn, ...)
-    local Font = require("ui/font")
-    local original = Font.getFace
-    local file = BoardMetrics.faceFile("sans")
-    Font.getFace = function(font, name, size, ...)
-        if FONTS[name] then name = file end
-        return original(font, name, size, ...)
-    end
-    local ok, result = pcall(fn, ...)
-    Font.getFace = original
-    if not ok then error(result, 0) end
-    return result
+    return (require("aleph_override").fonts(FONTS, nil, fn, ...))
 end
 
 -- --------------------------------------------------------------- arrows
@@ -128,7 +119,7 @@ function Bar:filterRows(w)
         menu:onClose()
         bm.match_table = match
         -- KOReader's own list again, not Aleph's bookmarks page.
-        local show = bm._rb_native_show or bm.onShowBookmark
+        local show = bm._aleph_native_show or bm.onShowBookmark
         show(bm)
     end
     -- Type.
@@ -150,7 +141,7 @@ function Bar:filterRows(w)
     local function apply(field, value)
         if (field == "drawer" and bm.show_drawer_only == value) or (field == "color" and bm.show_color_only == value) then
             menu:onClose()
-            local show = bm._rb_native_show or bm.onShowBookmark
+            local show = bm._aleph_native_show or bm.onShowBookmark
             show(bm)
             return
         end
@@ -165,16 +156,37 @@ function Bar:filterRows(w)
     local styles = ui.highlight:getHighlightStyles()
     local colors = ui.highlight.highlight_colors
     local look_gap = px(10)
-    local style_w = math.min(px(64), floor((w - 2 * pad - (#styles - 1) * look_gap) / math.max(1, #styles)))
+    -- As many style chips as fit; more styles than that (a patch or a
+    -- modified KOReader adds them) and the last chip opens them all.
+    local look_w = w - 2 * pad
+    local slots = math.max(2, floor((look_w + look_gap) / (px(58) + look_gap)))
+    local selected_at
+    for i, style in ipairs(styles) do if style[2] == bm.show_drawer_only then selected_at = i end end
+    local first, last, _off, more = HL.styleWindow(#styles, slots, nil, selected_at)
+    local style_w = more and math.min(px(64), floor((look_w - (slots - 1) * look_gap) / slots))
+        or math.min(px(64), floor((look_w - (#styles - 1) * look_gap) / math.max(1, #styles)))
     local swatch_w = math.min(px(40), floor((w - 2 * pad - (#colors - 1) * gap) / math.max(1, #colors)))
     local look_cells, color_cells = {}, {}
     local sample_color = HL.palette.hex(bm.show_color_only or "yellow")
-    for _i, style in ipairs(styles) do
+    for i = first, last do
+        local style = styles[i]
         local id = style[2]
         table.insert(look_cells, Cell:new{
             w = style_w, h = px(40), radius = px(10), active = bm.show_drawer_only == id,
-            sample = function(sw, sh) return HL.styleSample(id, sw, sh, sample_color) end,
+            sample = function(sw, sh) return HL.styleSample(id, sw, sh, sample_color, style[1]) end,
             source = { enabled = true, callback = function() apply("drawer", id) end },
+        })
+    end
+    if more then
+        table.insert(look_cells, Cell:new{
+            w = style_w, h = px(40), radius = px(10), icon_name = "ellipsis",
+            source = { enabled = true, callback = function()
+                HL.openStylePicker{
+                    styles = styles, selected = bm.show_drawer_only, hex = sample_color,
+                    title = _("Show one style"),
+                    on_pick = function(id) apply("drawer", id) end,
+                }
+            end },
         })
     end
     for _i, color in ipairs(colors) do
@@ -279,8 +291,8 @@ function Bar:free() if self[1] and self[1].free then self[1]:free() end end
 -- the board's, in the board's font and size.
 function MenuSkin.pageLabel(menu)
     local button = menu.page_info_text
-    if not button or button._rb_label then return end
-    button._rb_label = true
+    if not button or button._aleph_label then return end
+    button._aleph_label = true
     local cache = {}
     button.paintTo = function(b, bb, x, y)
         local size = b:getSize()
@@ -310,7 +322,7 @@ function MenuSkin.install()
     function Menu:init()
         if not scope or not self.title_bar_fm_style or not wanted() then return original_init(self) end
         BoardMetrics.refresh()
-        self._rb_kind = scope.kind
+        self._aleph_kind = scope.kind
         self.items_font_size = BoardMetrics.fontSize(15)
         -- Page numbers on their own, without dotted leaders.
         if scope.kind == "toc" then self.with_dots = false end
@@ -323,12 +335,12 @@ function MenuSkin.install()
         self.page_info_right_chev = chevron("chevron-right", function() self:onNextPage() end, function() self:onLastPage() end)
         self.page_info_last_chev = chevron("chevrons-right", function() self:onLastPage() end)
         local result = withFonts(original_init, self)
-        pcall(MenuSkin.pageLabel, self)
+        try(MenuSkin.pageLabel, self)
         return result
     end
 
     function Menu:updateItems(...)
-        if not self._rb_kind then return original_update(self, ...) end
+        if not self._aleph_kind then return original_update(self, ...) end
         return withFonts(original_update, self, ...)
     end
 

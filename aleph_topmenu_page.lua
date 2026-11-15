@@ -10,7 +10,7 @@ now (Settings > Top menu), on pages like the rest of Aleph:
   TopMenu.openApps     every app: shown or hidden, its icon, its place
   TopMenu.appOptions   a held app in the Apps tab: change its icon, hide it
 
-The values are the Quick Top Bar's own (G_reader_settings "quicktopbar"),
+The values are the top bar's own (G_reader_settings "aleph_topbar"),
 so nothing is lost from before.
 ]]
 
@@ -32,7 +32,7 @@ local floor = math.floor
 local TopMenu = {}
 
 -- ------------------------------------------------------------- settings
-local KEY = "quicktopbar"
+local KEY = "aleph_topbar"
 
 function TopMenu.read(key, default)
     local stored = G_reader_settings:readSetting(KEY)
@@ -74,10 +74,10 @@ end
 -- are off.
 function TopMenu.apps(ui)
     local menu = ui and ui.menu
-    if not (menu and menu.quicktopbar_plugin) then return {} end
+    if not (menu and menu.aleph_topbar_plugin) then return {} end
     if not menu.tab_item_table then pcall(menu.setUpdateItemTable, menu) end
     for _i, tab in ipairs(menu.tab_item_table or {}) do
-        if tab.id == "quicktopbar_apps" then return tab end
+        if tab.id == "aleph_topbar_apps" then return tab end
     end
     return {}
 end

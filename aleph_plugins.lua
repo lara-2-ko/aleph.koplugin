@@ -21,6 +21,7 @@ looked at, so a report says where a plugin went missing.
 ]]
 
 local logger = require("logger")
+local try = require("aleph_try").call
 
 local Plugins = {}
 
@@ -50,14 +51,14 @@ function Plugins.find(name, ui, check)
     local hosts = Plugins.hosts(ui)
     for _i, host in ipairs(hosts) do
         local direct
-        pcall(function() direct = host[name] end)
+        try(function() direct = host[name] end)
         if accept(direct, check) then return direct end
     end
     -- Among the modules, by the name KOReader gives a module.
     local names = { [name] = true, ["reader" .. name] = true, ["filemanager" .. name] = true }
     for _i, host in ipairs(hosts) do
         local found
-        pcall(function()
+        try(function()
             for _k, module in pairs(host) do
                 if type(module) == "table" then
                     local n = rawget(module, "name") or module.name

@@ -4,14 +4,21 @@ local _ = require("gettext")
 
 local Icons = {}
 local data = DataStorage:getDataDir()
+-- Icons of one's own: koreader/aleph-topbar-icons, or the folder the Quick
+-- Top Bar plugin used (koreader/quicktopbar-icons) when only that one is there.
+local function customDir()
+    local new, old = data .. "/aleph-topbar-icons", data .. "/quicktopbar-icons"
+    if lfs.attributes(new, "mode") ~= "directory" and lfs.attributes(old, "mode") == "directory" then return old end
+    return new
+end
 local directories = {
     core = "resources/icons/mdlight",
     legacy = "resources/icons",
     user = data .. "/icons",
-    custom = data .. "/quicktopbar-icons",
+    custom = customDir(),
 }
 
--- The files QuickTopBar draws its own controls with, which are not choices.
+-- The files TopBar draws its own controls with, which are not choices.
 local technical = {
     "^check%-white", "^chevron%-", "^sub%-arrow", "^minus", "^plus", "^close", "^status%-", "^tab%-", "^zap", "%-white%.",
 }

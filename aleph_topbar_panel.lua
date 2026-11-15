@@ -12,6 +12,7 @@ local lfs = require("libs/libkoreader-lfs")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local datetime = require("datetime")
 local _ = require("gettext")
+local try = require("aleph_try").call
 
 local Screen = Device.screen
 local black, gray = Blitbuffer.COLOR_BLACK, Blitbuffer.COLOR_GRAY
@@ -122,7 +123,7 @@ function Panel:addStatus()
         }
         -- Charging: a thin outlined bolt, as tall as the Wi-Fi icon.
         local charging = false
-        pcall(function() charging = power:isCharging() and true or false end)
+        try(function() charging = power:isCharging() and true or false end)
         if charging then
             local bolt = scale(15)
             right = right - scale(4) - bolt
@@ -265,7 +266,7 @@ function Panel:init()
     local y = scale(34)
     local tile_height, tile_diameter = scale(68), scale(34)
     local tiles, columns, slider
-    if self.menu.item_table.id == "quicktopbar_controls" then
+    if self.menu.item_table.id == "aleph_topbar_controls" then
         tiles, slider = self.plugin:controls(self.menu)
         -- More room between the status line (Wi-Fi, battery, clock) and the
         -- row of quick actions; everything below moves down with it.
@@ -286,7 +287,7 @@ function Panel:init()
         end
         if #tiles == 0 then
             self:addText(_("No apps to show"), 0, y + scale(8), self.dimen.w, "center", nil, true)
-            self:addText(_("Choose apps in Tools → QuickTopBar → Show apps."),
+            self:addText(_("Choose apps in Tools → TopBar → Show apps."),
                 scale(8), y + scale(36), self.dimen.w - scale(16), "center", dark)
             y = y + scale(62)
         end

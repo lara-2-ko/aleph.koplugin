@@ -20,39 +20,41 @@ local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local _ = require("gettext")
 
 local Screen = Device.screen
-local settings_key = "quicktopbar"
-local QuickTopBar = WidgetContainer:extend{ name = "quicktopbar" }
+-- Its settings (G_reader_settings "aleph_topbar"; "quicktopbar" before 1.1.46,
+-- copied over by aleph_migrate.lua).
+local settings_key = "aleph_topbar"
+local TopBar = WidgetContainer:extend{ name = "aleph_topbar" }
 
-function QuickTopBar:read(key, default)
+function TopBar:read(key, default)
     local settings = G_reader_settings:readSetting(settings_key)
     if type(settings) == "table" and settings[key] ~= nil then return settings[key] end
     return default
 end
 
-function QuickTopBar:save(key, value)
+function TopBar:save(key, value)
     local settings = G_reader_settings:readSetting(settings_key)
     if type(settings) ~= "table" then settings = {} end
     settings[key] = value
     G_reader_settings:saveSetting(settings_key, settings)
 end
 
-function QuickTopBar:iconPath(key, default)
+function TopBar:iconPath(key, default)
     return Icons.path(self.path, self:read(key), default)
 end
 
-function QuickTopBar:chooseIcon(menu, key, label, default)
+function TopBar:chooseIcon(menu, key, label, default)
     Icons.show(self.path, label, self:read(key), default, function(value)
         self:save(key, value)
         menu:updateItems()
     end)
 end
 
-function QuickTopBar:isAppHidden(key)
+function TopBar:isAppHidden(key)
     local hidden = self:read("hidden_apps")
     return type(hidden) == "table" and hidden[key] == true
 end
 
-function QuickTopBar:setAppHidden(key, hide)
+function TopBar:setAppHidden(key, hide)
     local hidden = self:read("hidden_apps")
     if type(hidden) ~= "table" then hidden = {} end
     hidden[key] = hide and true or nil
@@ -60,7 +62,7 @@ function QuickTopBar:setAppHidden(key, hide)
 end
 
 -- A held app in the Apps tab: change its icon or hide it, in a sheet.
-function QuickTopBar:appTileOptions(menu, item)
+function TopBar:appTileOptions(menu, item)
     require("aleph_topmenu_page").appOptions(self.path, item, function()
         if menu and menu.item_table then menu:updateItems() end
     end)
@@ -70,13 +72,13 @@ local function send(name, ...)
     UIManager:broadcastEvent(Event:new(name, ...))
 end
 
-function QuickTopBar:controls(menu)
+function TopBar:controls(menu)
     local tiles, power = {}, Device:getPowerDevice()
     local frontlight, warmth = Device:hasFrontlight(), Device:hasNaturalLight()
     local function refresh()
         if self.ui.menu.menu_container and self.ui.menu.menu_container[1] == menu
-                and menu._qtb_panel and menu.item_table.id == "quicktopbar_controls"
-                and not menu._qtb_panel.dragging then
+                and menu._aleph_topbar_panel and menu.item_table.id == "aleph_topbar_controls"
+                and not menu._aleph_topbar_panel.dragging then
             menu:updateItems()
         end
     end
@@ -149,7 +151,7 @@ function QuickTopBar:controls(menu)
     return tiles, slider
 end
 
-function QuickTopBar:apps(menu, page, per_page, target_item)
+function TopBar:apps(menu, page, per_page, target_item)
     local tab, tiles, visible = menu.item_table, {}, {}
     for index, item in ipairs(tab) do
         if not self:isAppHidden(item.icon_key) then visible[#visible + 1] = index end
@@ -190,11 +192,11 @@ function QuickTopBar:apps(menu, page, per_page, target_item)
     return tiles
 end
 
-function QuickTopBar:bookSummary()
+function TopBar:bookSummary()
     return Book.summary(self.ui)
 end
 
-function QuickTopBar:openBookDetails(menu)
+function TopBar:openBookDetails(menu)
     local document = self.ui.document
     menu:closeMenu()
     UIManager:nextTick(function()
@@ -206,11 +208,11 @@ end
 
 local function topbarOwner(menu)
     local first = menu.tab_item_table and menu.tab_item_table[1]
-    return first and first.quicktopbar_owner
+    return first and first.aleph_topbar_owner
 end
 
 -- Every tab of the top menu is drawn with an icon in Aleph's style.
--- The two QuickTopBar tabs keep the icon chosen for them; KOReader's own tabs
+-- The two TopBar tabs keep the icon chosen for them; KOReader's own tabs
 -- get the matching bundled icon.
 local TAB_ICONS = {
     ["appbar.filebrowser"] = "tab-filebrowser", ["appbar.navigation"] = "tab-navigation",
@@ -224,7 +226,7 @@ local function refreshTabIcons(menu, plugin)
     for i, tab in ipairs(menu.tab_item_table) do
         local button = menu.bar.icon_widgets[i]
         local file
-        if i <= #owners and tab.quicktopbar_owner then
+        if i <= #owners and tab.aleph_topbar_owner then
             file = plugin:iconPath("tab_" .. owners[i], owners[i])
         elseif TAB_ICONS[tab.icon] then
             file = Style.icon(plugin.path, TAB_ICONS[tab.icon])
@@ -242,22 +244,12 @@ end
 -- header icons. While the menu is built, that one size is answered with
 -- Aleph's, so the icons and the bar come out smaller together.
 local function withSmallerTabIcons(build)
-    local ok, full = pcall(function() return G_defaults:readSetting("DGENERIC_ICON_SIZE") end)
-    full = ok and full or 48
-    local own = rawget(Screen, "scaleBySize")
-    local original = Screen.scaleBySize
-    Screen.scaleBySize = function(screen, size)
-        if size == full then return Style.px(26) end
-        return original(screen, size)
-    end
-    local built, err = pcall(build)
-    Screen.scaleBySize = own
-    if not built then error(err, 0) end
+    require("aleph_override").tabIcons(Style.px(26), build)
 end
 
 local function installTouchMenu()
-    if TouchMenu.quicktopbar_installed then return end
-    TouchMenu.quicktopbar_installed = true
+    if TouchMenu.aleph_topbar_installed then return end
+    TouchMenu.aleph_topbar_installed = true
 
     local init = TouchMenu.init
     function TouchMenu:init()
@@ -270,10 +262,10 @@ local function installTouchMenu()
             init(self)
         end
         if not plugin then return end
-        self.ges_events.QuickTopBarHold = {
+        self.ges_events.AlephTopBarHold = {
             GestureRange:new{ ges = "hold", range = self.dimen },
         }
-        self.ges_events.QuickTopBarRelease = {
+        self.ges_events.AlephTopBarRelease = {
             GestureRange:new{ ges = "pan_release", range = self.screen_size },
         }
     end
@@ -282,12 +274,12 @@ local function installTouchMenu()
     function TouchMenu:updateItems(page, target_item)
         local plugin = topbarOwner(self)
         if not plugin then return update(self, page, target_item) end
-        self._qtb_panel = nil
+        self._aleph_topbar_panel = nil
 
         MenuStyle.install(self, plugin)
         refreshTabIcons(self, plugin)
 
-        if not self.item_table.quicktopbar_owner then
+        if not self.item_table.aleph_topbar_owner then
             -- Keep custom font previews and change only the regular row text.
             local changed = {}
             for _, item in ipairs(self.item_table) do
@@ -306,8 +298,8 @@ local function installTouchMenu()
 
         local old = self.dimen:copy()
         self.item_group:clear()
-        self._qtb_panel = Panel:new{ menu = self, plugin = plugin, target_page = page, target_item = target_item }
-        self.item_group[1], self.item_group[2] = self.bar, self._qtb_panel
+        self._aleph_topbar_panel = Panel:new{ menu = self, plugin = plugin, target_page = page, target_item = target_item }
+        self.item_group[1], self.item_group[2] = self.bar, self._aleph_topbar_panel
         self.item_group[3], self.item_group[4] = self.footer_top_margin, self.footer
         self.layout = { self.bar.icon_widgets }
         MenuStyle.setPageLabel(self)
@@ -340,31 +332,31 @@ local function installTouchMenu()
     end
 
     local handlers = { TapCloseAllMenus = "tap", Pan = "pan", Swipe = "swipe",
-        QuickTopBarHold = "hold", QuickTopBarRelease = "release" }
+        AlephTopBarHold = "hold", AlephTopBarRelease = "release" }
     for name, kind in pairs(handlers) do
         local method = "on" .. name
         local original = TouchMenu[method]
         TouchMenu[method] = function(self, arg, gesture)
-            if gesture and self._qtb_panel and self._qtb_panel:handle(kind, gesture) then return true end
+            if gesture and self._aleph_topbar_panel and self._aleph_topbar_panel:handle(kind, gesture) then return true end
             if original then return original(self, arg, gesture) end
         end
     end
 end
 
 local function installMenuClass(class)
-    if class.quicktopbar_installed then return end
-    class.quicktopbar_installed = true
+    if class.aleph_topbar_installed then return end
+    class.aleph_topbar_installed = true
     local build = class.setUpdateItemTable
     function class:setUpdateItemTable(...)
-        local plugin = self.quicktopbar_plugin
+        local plugin = self.aleph_topbar_plugin
         if not plugin then return build(self, ...) end
         local captured = Apps.capture(self, build, ...)
         local apps = Apps.build(self, captured)
         Apps.order(apps, plugin:read("app_order"))
-        apps.quicktopbar_owner = plugin
+        apps.aleph_topbar_owner = plugin
         table.insert(self.tab_item_table, 1, apps)
         table.insert(self.tab_item_table, 1, {
-            id = "quicktopbar_controls", icon = "appbar.settings", quicktopbar_owner = plugin,
+            id = "aleph_topbar_controls", icon = "appbar.settings", aleph_topbar_owner = plugin,
         })
         -- In a book: Aleph's settings, one tap away, just before
         -- KOReader's main menu tab.
@@ -375,7 +367,7 @@ local function installMenuClass(class)
             end
             table.insert(self.tab_item_table, at, {
                 id = "aleph_settings", icon = "appbar.aleph",
-                aleph_button = function() QuickTopBar.openBoardSettings(self.ui) end,
+                aleph_button = function() TopBar.openBoardSettings(self.ui) end,
             })
         end
     end
@@ -383,7 +375,7 @@ end
 
 -- Aleph's settings over the book: the board opens underneath and
 -- closes with them, so Back returns to the page.
-function QuickTopBar.openBoardSettings(ui)
+function TopBar.openBoardSettings(ui)
     local board = ui and ui.aleph
     if not board then
         local ok, found = pcall(function() return require("pluginloader"):getPluginInstance("aleph") end)
@@ -408,13 +400,13 @@ function QuickTopBar.openBoardSettings(ui)
     end
 end
 
-function QuickTopBar:init()
+function TopBar:init()
     if not self.ui or not self.ui.menu then return end
     installTouchMenu()
     local class = self.ui.document and require("apps/reader/modules/readermenu")
         or require("apps/filemanager/filemanagermenu")
     installMenuClass(class)
-    self.ui.menu.quicktopbar_plugin = self
+    self.ui.menu.aleph_topbar_plugin = self
     self.ui.menu.tab_item_table = nil
     -- Its settings are in Aleph's: Settings > Top menu (aleph_topmenu_page.lua),
     -- not an entry of their own in KOReader's menu.
@@ -422,27 +414,28 @@ end
 
 -- ---------------------------------------------------- Aleph hooks
 -- True when the standalone Quick Top Bar plugin is enabled in KOReader.
-function QuickTopBar.standalone()
+function TopBar.standalone()
     local ok, enabled = pcall(function() return (require("pluginloader"):loadPlugins()) end)
     for _i, plugin in ipairs(ok and enabled or {}) do
+        -- (The standalone plugin's own name: not Aleph's to change.)
         if plugin.name == "quicktopbar" then return true end
     end
     return false
 end
 
-function QuickTopBar.wanted(board)
-    return board.settings.topbar ~= false and not QuickTopBar.standalone()
+function TopBar.wanted(board)
+    return board.settings.topbar ~= false and not TopBar.standalone()
 end
 
 -- Adds the Controls and Apps tabs to the top menu of the book or file browser
 -- Aleph is running in. The tabs appear the next time the menu opens.
-function QuickTopBar.start(board)
+function TopBar.start(board)
     local ui = board.ui
-    if not (ui and ui.menu) or ui.menu.quicktopbar_plugin then return end
-    board._topbar = QuickTopBar:new{ ui = ui, path = board.path }
+    if not (ui and ui.menu) or ui.menu.aleph_topbar_plugin then return end
+    board._topbar = TopBar:new{ ui = ui, path = board.path }
 end
 
-function QuickTopBar.stop(board)
+function TopBar.stop(board)
     local ui = board.ui
     local plugin = board._topbar
     board._topbar = nil
@@ -452,13 +445,13 @@ function QuickTopBar.stop(board)
             if ui.menu.registered_widgets[index] == plugin then table.remove(ui.menu.registered_widgets, index) end
         end
     end
-    ui.menu.quicktopbar_plugin = nil
+    ui.menu.aleph_topbar_plugin = nil
     ui.menu.tab_item_table = nil
 end
 
 -- Switches it on or off to match the setting (and the standalone plugin).
-function QuickTopBar.sync(board)
-    if QuickTopBar.wanted(board) then QuickTopBar.start(board) else QuickTopBar.stop(board) end
+function TopBar.sync(board)
+    if TopBar.wanted(board) then TopBar.start(board) else TopBar.stop(board) end
 end
 
-return QuickTopBar
+return TopBar

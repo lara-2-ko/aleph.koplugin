@@ -1,10 +1,11 @@
+local Prefs = require("aleph_prefs")
 local Blitbuffer = require("ffi/blitbuffer")
 local Device = require("device")
 local Font = require("ui/font")
 
 local Screen = Device.screen
 local Style = {}
-local interface_sizes = { [100] = 1, [105] = 1.05, [110] = 1.1, [115] = 1.15, [120] = 1.2, [125] = 1.2 }
+local interface_sizes = { [100] = 1, [105] = 1.05, [110] = 1.1, [115] = 1.15, [120] = 1.2, [125] = 1.25, [130] = 1.3, [140] = 1.4, [150] = 1.5 }
 
 -- The sixteen grays Aleph draws with, by the same names.
 Style.ink = {
@@ -27,8 +28,7 @@ end
 
 local synced
 local function sync(metrics)
-    local settings = G_reader_settings:readSetting("aleph")
-    local value = type(settings) == "table" and tonumber(settings.ui_scale) or nil
+    local value = tonumber(Prefs.get().ui_scale) or nil
     if value ~= synced then
         synced = value
         if value then metrics.setUserScale(value) end
@@ -36,8 +36,7 @@ local function sync(metrics)
 end
 
 local function scale()
-    local settings = G_reader_settings:readSetting("aleph")
-    local selected = type(settings) == "table" and tonumber(settings.ui_scale)
+    local selected = tonumber(Prefs.get().ui_scale)
     local size = selected and interface_sizes[math.floor(selected * 100 + 0.5)]
     local dpi, short = Screen:getDPI(), math.min(Screen:getWidth(), Screen:getHeight())
     local density = 1

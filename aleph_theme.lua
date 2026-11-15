@@ -20,11 +20,12 @@ No widget is built twice and nothing is copied: only numbers, fonts and icon
 file names change, before a window is built. Screens Aleph already styles keep
 their own look (they set their fonts and sizes explicitly).
 
-Follows Settings > Opening > Aleph dialogs: off puts KOReader's values back
+Follows Settings > Home > Aleph dialogs: off puts KOReader's values back
 for the next window opened. Theme.sync() applies the setting (and the
 interface size).
 ]]
 
+local try = require("aleph_try").call
 local Theme = { on = false }
 
 -- KOReader's named UI fonts, at Aleph's sizes (nominal, as BoardMetrics).
@@ -116,7 +117,7 @@ function Theme.apply()
     local Font = require("ui/font")
     local Size = require("ui/size")
     local BoardMetrics = require("aleph_board_metrics")
-    pcall(BoardMetrics.refresh)
+    try(BoardMetrics.refresh)
     for name, n in pairs(SIZES) do Font.sizemap[name] = BoardMetrics.fontSize(n) end
     Size.radius.window = BoardMetrics.px(16)
     Size.radius.button = BoardMetrics.px(10)
@@ -159,7 +160,7 @@ local function installHooks()
     MovableContainer.init = function(self, ...)
         if Theme.on then
             -- Never in the way of the window itself.
-            pcall(function()
+            try(function()
                 local frame = self[1]
                 -- A dialog's frame: bordered, rounded, drawn in black.
                 if type(frame) == "table" and frame.radius and (frame.bordersize or 0) > 0
