@@ -106,9 +106,80 @@ local function saveImage(image)
     return ok and path or nil
 end
 
+-- --------------------------------------------------------- the copy
+-- KOReader's Reset (book information, file browser) deletes the book's
+-- settings, and the pins with them. A copy of each book's pins is kept in
+-- settings/aleph_pins_backup.lua, by the book's checksum; a book that opens
+-- with no pins but a copy offers to bring them back.
+local BACKUP = "aleph_pins_backup.lua"
+
+local function backupStore()
+    return require("luasettings"):open(require("datastorage"):getSettingsDir() .. "/" .. BACKUP)
+end
+
+local function bookKey(ui)
+    local md5
+    pcall(function() md5 = ui.doc_settings:readSetting("partial_md5_checksum") end)
+    if type(md5) ~= "string" or md5 == "" then
+        pcall(function() md5 = require("util").partialMD5(ui.document.file) end)
+    end
+    return type(md5) == "string" and md5 ~= "" and md5 or nil
+end
+
+function Pins.keepCopy(ui)
+    local key = bookKey(ui)
+    if not key then return end
+    try(function()
+        local store = backupStore()
+        local list = Pins.list(ui)
+        if #list > 0 then
+            local props = ui.doc_props or {}
+            store:saveSetting(key, { title = props.display_title or props.title, file = ui.document and ui.document.file, pins = list, at = os.time() })
+        else
+            store:delSetting(key)
+        end
+        store:flush()
+    end)
+end
+
+-- The copy for this book, when the book has lost its pins.
+function Pins.lostPins(ui)
+    if #Pins.list(ui) > 0 then return nil end
+    local key = bookKey(ui)
+    if not key then return nil end
+    local entry
+    try(function() entry = backupStore():readSetting(key) end)
+    if type(entry) ~= "table" or type(entry.pins) ~= "table" or #entry.pins == 0 then return nil end
+    return entry.pins, key
+end
+
+function Pins.offerBack(ui)
+    local pins, key = Pins.lostPins(ui)
+    if not pins then return end
+    local n = #pins
+    local T = require("ffi/util").template
+    require("aleph_confirm").show{
+        title = _("Bring back this book's pins?"),
+        text = T(_.ngettext("This book had %1 pin before its settings were reset. Bring it back?",
+            "This book had %1 pins before its settings were reset. Bring them back?", n), n),
+        ok_label = _("Bring back"),
+        cancel_label = _("Forget them"),
+        on_ok = function()
+            if not ui.document or #Pins.list(ui) > 0 then return end
+            ui.doc_settings:saveSetting(KEY, pins)
+            Pins.changed(ui)
+            toast(T(_.ngettext("%1 pin brought back", "%1 pins brought back", n), n))
+        end,
+        on_cancel = function()
+            try(function() local store = backupStore(); store:delSetting(key); store:flush() end)
+        end,
+    }
+end
+
 -- What changed: the badge repaints, the footer count follows, KOReader's own
--- single pinned page follows the newest pin.
+-- single pinned page follows the newest pin, and the copy is kept.
 local function changed(ui)
+    Pins.keepCopy(ui)
     local list = Pins.list(ui)
     if list[1] then ui.doc_settings:saveSetting("pinned_page", list[1].location)
     else ui.doc_settings:delSetting("pinned_page") end
@@ -116,6 +187,8 @@ local function changed(ui)
     if footer and ui.view.footer_visible and footer.onUpdateFooter then pcall(footer.onUpdateFooter, footer, true, true) end
     Pins.repaintBadge(ui)
 end
+
+Pins.changed = function(ui) return changed(ui) end
 
 -- The index of the page pin on `page`, if any.
 function Pins.indexOfPage(ui, page)
@@ -390,6 +463,216 @@ local function zoomLabel(z)
     return string.format("%.1f×", z)
 end
 
+-- The drawer is kept in one table, `d`: ui (the reader), state (which pin,
+-- the pictures made so far, the zoom and where it looks) and panel.
+local function drawerFree(d)
+    local state = d.state
+    Picture.release(state)
+    for _i, bb in pairs(state.thumbs) do
+        if bb and bb.free then bb:free() end
+    end
+    state.thumbs = {}
+    Picture.collectSoon()
+end
+
+local function resetView(state)
+    state.zoom, state.cx, state.cy = 1, 0.5, 0.5
+end
+
+local function failKey(pin) return tostring(pin.file or pin.location or pin.page) end
+
+-- The picture is drawn once at the screen's size, so both drawer sizes and
+-- every zoom step use the same bitmap.
+local function request(d, i)
+    local ui, state = d.ui, d.state
+    if state.requested == i then return end
+    local pin = Pins.list(ui)[i]
+    if not pin or state.failed[failKey(pin)] then return end
+    state.requested = i
+    local sw, sh = Screen:getWidth(), Screen:getHeight()
+    UIManager:nextTick(function()
+        if not d.panel or d.panel.closed then return end
+        Pins.render(ui, pin, sw, sh, function(bb)
+            if d.panel.closed then
+                if bb and bb.free then bb:free() end
+                return
+            end
+            state.requested = nil
+            if not bb then
+                -- Asked once: a missing picture is not decoded again on
+                -- every redraw (which made the drawer crawl).
+                state.failed[failKey(pin)] = true
+                if state.index == i then d.panel:refresh() end
+                return
+            end
+            if state.thumbs[i] and state.thumbs[i].free then state.thumbs[i]:free() end
+            state.thumbs[i] = bb
+            if state.index == i then d.panel:refresh() end
+        end)
+    end)
+end
+
+-- How much of the picture shows across and down at the current zoom.
+local function visible(state)
+    local bb, view = state.thumbs[state.index], state.view
+    if not bb or not view then return 1, 1 end
+    local fit = math.min(view.w / bb:getWidth(), view.h / bb:getHeight())
+    local scale = fit * state.zoom
+    return view.w / (bb:getWidth() * scale), view.h / (bb:getHeight() * scale), scale
+end
+
+local function setZoom(d, z)
+    local state = d.state
+    z = math.max(1, math.min(ZOOMS[#ZOOMS], z))
+    if z == state.zoom then return end
+    state.zoom = z
+    if z == 1 then state.cx, state.cy = 0.5, 0.5 end
+    local vx, vy = visible(state)
+    state.cx, state.cy = Pins.clampCenter(state.cx, vx), Pins.clampCenter(state.cy, vy)
+    d.panel:refresh()
+end
+
+-- The drawer as drawn: the header, the picture, the zoom row and the buttons.
+local function drawerBuild(d, p, sw, sh)
+    local ui, state = d.ui, d.state
+    local list = Pins.list(ui)
+    state.index = math.max(1, math.min(state.index, math.max(1, #list)))
+    local pin = list[state.index]
+    if not pin then p:close(); return BoardUI.overlay(sw, sh, {}) end
+    local pw = state.large and math.min(px(440), floor(sw * 0.8)) or math.min(px(240), floor(sw * 0.46))
+    local pad = px(10)
+    local iw = pw - 2 * pad
+    local th = math.min(floor(iw * sh / sw), floor(sh * (state.large and 0.62 or 0.5)))
+    local function control(name, action, size, on)
+        local col = (on == false) and "gb" or "black"
+        local c = BoardUI.hstack({ w = px(40), h = px(36) }, { BoardUI.flex(0), BoardUI.icon(name, px(size or 20), { sw = 2.25, col = col }), BoardUI.flex(0) })
+        return (on == false) and c or BoardUI.hit(c, action)
+    end
+    local header = BoardUI.hstack({ w = iw, h = px(36) }, {
+        BoardUI.icon("pin", px(17), { sw = 2.25 }), BoardUI.space(px(6), 1),
+        BoardUI.text(state.index .. " / " .. #list, { s = 14, b = true }), BoardUI.flex(0),
+        control(state.large and "minimize-2" or "maximize-2", { kind = "size" }, 18),
+        control("maximize", { kind = "view" }, 18), control("x", { kind = "close" }),
+    })
+    local bb = state.thumbs[state.index]
+    local inner_w, inner_h = iw - 2, th - 2
+    state.view = { w = inner_w, h = inner_h }
+    -- The pictures of the last build go before new ones are made.
+    Picture.release(state)
+    local picture
+    if bb then
+        local scale
+        if state.zoom > 1 then scale = select(3, visible(state)) end
+        picture = Picture.view(state, bb, inner_w, inner_h, scale, state.cx, state.cy)
+    else
+        local failed = state.failed[failKey(pin)]
+        local note = failed and (pin.kind == "image" and _("The picture's file is missing.") or _("This page could not be drawn."))
+        picture = BoardUI.hstack({ w = iw, h = th }, { BoardUI.flex(0),
+            failed and BoardUI.text(note, { s = 14, col = INK.g4, w = iw - 2 * px(16), align = "center" })
+                or BoardUI.text("…", { s = 18, col = INK.g6 }), BoardUI.flex(0) })
+        if not failed then request(d, state.index) end
+    end
+    local framed = BoardUI.box({ w = iw, h = th, radius = px(6), border = math.max(1, px(1)), border_col = INK.g9, bg = INK.white },
+        BoardUI.hstack({ w = inner_w, h = inner_h }, { BoardUI.flex(0), picture, BoardUI.flex(0) }))
+    -- Zoom: − level +; the level returns to the whole page.
+    local can_out, can_in = state.zoom > 1, state.zoom < ZOOMS[#ZOOMS]
+    local level = BoardUI.hit(BoardUI.hstack({ w = px(56), h = px(36) }, { BoardUI.flex(0),
+        BoardUI.text(zoomLabel(state.zoom), { s = 13, b = true, col = state.zoom > 1 and INK.black or INK.g4 }), BoardUI.flex(0) }), { kind = "zoom-reset" })
+    local label = pin.snippet and pin.snippet ~= "" and BoardUI.text(pin.snippet, { s = 12, col = INK.g3, w = iw - 3 * px(40) - px(56) - px(8), lines = 1, data = true })
+        or BoardUI.text(pin.kind == "image" and _("Picture") or _("Page") .. " " .. Pins.pageOf(ui, pin), { s = 12, col = INK.g3 })
+    local zoom_row = BoardUI.hstack({ w = iw, h = px(36) }, {
+        label, BoardUI.flex(px(8)),
+        control("zoom-out", { kind = "zoom", dir = -1 }, 19, can_out), level, control("zoom-in", { kind = "zoom", dir = 1 }, 19, can_in),
+    })
+    if not state.large then
+        -- Narrow: the name above, the zoom controls on their own row.
+        zoom_row = BoardUI.vstack({ w = iw }, {
+            pin.snippet and pin.snippet ~= "" and BoardUI.text(pin.snippet, { s = 12, col = INK.g3, w = iw, lines = 2, data = true })
+                or BoardUI.text(pin.kind == "image" and _("Picture") or _("Page") .. " " .. Pins.pageOf(ui, pin), { s = 12, col = INK.g3, w = iw }),
+            BoardUI.hstack({ w = iw, h = px(36) }, { BoardUI.flex(0),
+                control("zoom-out", { kind = "zoom", dir = -1 }, 19, can_out), level, control("zoom-in", { kind = "zoom", dir = 1 }, 19, can_in), BoardUI.flex(0) }),
+        })
+    end
+    local footer = BoardUI.hstack({ w = iw, h = px(40) }, {
+        control("chevron-left", { kind = "prev" }), BoardUI.flex(0), control("corner-up-right", { kind = "goto" }),
+        BoardUI.flex(0), control("trash", { kind = "remove" }), BoardUI.flex(0), control("chevron-right", { kind = "next" }),
+    })
+    local content = BoardUI.vstack({ w = pw, pad = pad }, {
+        header, BoardUI.space(nil, px(4)), BoardUI.hit(framed, { kind = "view" }), BoardUI.space(nil, px(4)), zoom_row,
+        BoardUI.space(nil, px(2)), footer,
+    })
+    local border = math.max(1, px(1.5))
+    local ph = content:getSize().h + 2 * border
+    local widget = BoardUI.box({ w = pw, h = ph, radius = px(14), border = border, border_col = INK.g6, bg = INK.white }, content)
+    local x = side() == "right" and (sw - pw) or 0
+    local y = math.max(0, sh - ph)
+    p.panel_rect = Geom:new{ x = x, y = y, w = pw, h = ph }
+    -- Where the picture is, for pinches and swipes on it.
+    state.picture_rect = Geom:new{ x = x + border + pad, y = y + border + pad + px(36) + px(4), w = iw, h = th }
+    return BoardUI.overlay(sw, sh, { { widget = widget, x = x, y = y } })
+end
+
+local function drawerAction(d, p, action)
+    local ui, state = d.ui, d.state
+    local list = Pins.list(ui)
+    local pin = list[state.index]
+    local k = action.kind
+    if k == "close" then p:close()
+    elseif k == "prev" and #list > 0 then state.index = (state.index - 2) % #list + 1; resetView(state); p:refresh()
+    elseif k == "next" and #list > 0 then state.index = state.index % #list + 1; resetView(state); p:refresh()
+    elseif k == "view" and pin then
+        if not state.failed[failKey(pin)] then Pins.openViewer(ui, pin) end
+    elseif k == "goto" and pin then p:close(); Pins.goTo(ui, pin)
+    elseif k == "size" then
+        state.large = not state.large
+        setDrawerLarge(state.large)
+        p:rebuild() -- the new size first, so the view is kept inside it
+        local vx, vy = visible(state)
+        state.cx, state.cy = Pins.clampCenter(state.cx, vx), Pins.clampCenter(state.cy, vy)
+        -- The drawer changes size: repaint the page where it was.
+        UIManager:setDirty("all", "ui")
+        p:refresh()
+    elseif k == "zoom" then setZoom(d, zoomStep(state.zoom, action.dir))
+    elseif k == "zoom-reset" then if state.zoom > 1 then setZoom(d, 1) end
+    elseif k == "remove" and pin then
+        require("aleph_confirm").show{
+            title = _("Remove pin"), text = _("The pin is removed from this book. The page itself is not changed."),
+            ok_label = _("Remove"), on_ok = function()
+                Pins.remove(ui, state.index)
+                -- Pictures are kept by place in the list, which has
+                -- just moved up by one: drawn again from the new list.
+                drawerFree(d)
+                state.requested = nil
+                resetView(state)
+                if #Pins.list(ui) == 0 then p:close() else p:refresh() end
+            end,
+        }
+    end
+end
+
+    -- On the picture: spread / pinch zoom, a swipe moves a zoomed picture.
+local function drawerGesture(d, p, ges)
+    local state = d.state
+    local rect = state.picture_rect
+    local pos = ges.pos
+    if not rect or not pos or not pos:intersectWith(rect) then return false end
+    if ges.ges == "spread" then setZoom(d, zoomStep(state.zoom, 1)); return true end
+    if ges.ges == "pinch" then setZoom(d, zoomStep(state.zoom, -1)); return true end
+    if ges.ges == "swipe" and state.zoom > 1 then
+        local vx, vy = visible(state)
+        local d = ges.distance or 0
+        local dir = ges.direction or ""
+        local dx = (dir:find("east") and d or 0) - (dir:find("west") and d or 0)
+        local dy = (dir:find("south") and d or 0) - (dir:find("north") and d or 0)
+        -- The picture follows the finger, so the view moves against it.
+        state.cx = Pins.clampCenter(state.cx - dx / state.view.w * vx, vx)
+        state.cy = Pins.clampCenter(state.cy - dy / state.view.h * vy, vy)
+        p:refresh()
+        return true
+    end
+    return false
+end
+
 function Pins.openDrawer(ui, index)
     local pins = Pins.list(ui)
     if #pins == 0 then
@@ -398,205 +681,131 @@ function Pins.openDrawer(ui, index)
     end
     local state = { index = math.max(1, math.min(index or 1, #pins)), thumbs = {}, failed = {}, large = drawerLarge(),
         zoom = 1, cx = 0.5, cy = 0.5 }
-    local panel
-    local function free()
-        Picture.release(state)
-        for _i, bb in pairs(state.thumbs) do
-            if bb and bb.free then bb:free() end
-        end
-        state.thumbs = {}
-        Picture.collectSoon()
-    end
-    local function resetView()
-        state.zoom, state.cx, state.cy = 1, 0.5, 0.5
-    end
-    -- The picture is drawn once at the screen's size, so both drawer sizes and
-    -- every zoom step use the same bitmap.
-    local function failKey(pin) return tostring(pin.file or pin.location or pin.page) end
-    local function request(i)
-        if state.requested == i then return end
-        local pin = Pins.list(ui)[i]
-        if not pin or state.failed[failKey(pin)] then return end
-        state.requested = i
-        local sw, sh = Screen:getWidth(), Screen:getHeight()
-        UIManager:nextTick(function()
-            if not panel or panel.closed then return end
-            Pins.render(ui, pin, sw, sh, function(bb)
-                if panel.closed then
-                    if bb and bb.free then bb:free() end
-                    return
-                end
-                state.requested = nil
-                if not bb then
-                    -- Asked once: a missing picture is not decoded again on
-                    -- every redraw (which made the drawer crawl).
-                    state.failed[failKey(pin)] = true
-                    if state.index == i then panel:refresh() end
-                    return
-                end
-                if state.thumbs[i] and state.thumbs[i].free then state.thumbs[i]:free() end
-                state.thumbs[i] = bb
-                if state.index == i then panel:refresh() end
-            end)
-        end)
-    end
-    -- How much of the picture shows across and down at the current zoom.
-    local function visible()
-        local bb, view = state.thumbs[state.index], state.view
-        if not bb or not view then return 1, 1 end
-        local fit = math.min(view.w / bb:getWidth(), view.h / bb:getHeight())
-        local scale = fit * state.zoom
-        return view.w / (bb:getWidth() * scale), view.h / (bb:getHeight() * scale), scale
-    end
-    local function setZoom(z)
-        z = math.max(1, math.min(ZOOMS[#ZOOMS], z))
-        if z == state.zoom then return end
-        state.zoom = z
-        if z == 1 then state.cx, state.cy = 0.5, 0.5 end
-        local vx, vy = visible()
-        state.cx, state.cy = Pins.clampCenter(state.cx, vx), Pins.clampCenter(state.cy, vy)
-        panel:refresh()
-    end
-    panel = Panel:new{
-        build = function(p, sw, sh)
-            local list = Pins.list(ui)
-            state.index = math.max(1, math.min(state.index, math.max(1, #list)))
-            local pin = list[state.index]
-            if not pin then p:close(); return BoardUI.overlay(sw, sh, {}) end
-            local pw = state.large and math.min(px(440), floor(sw * 0.8)) or math.min(px(240), floor(sw * 0.46))
-            local pad = px(10)
-            local iw = pw - 2 * pad
-            local th = math.min(floor(iw * sh / sw), floor(sh * (state.large and 0.62 or 0.5)))
-            local function control(name, action, size, on)
-                local col = (on == false) and "gb" or "black"
-                local c = BoardUI.hstack({ w = px(40), h = px(36) }, { BoardUI.flex(0), BoardUI.icon(name, px(size or 20), { sw = 2.25, col = col }), BoardUI.flex(0) })
-                return (on == false) and c or BoardUI.hit(c, action)
-            end
-            local header = BoardUI.hstack({ w = iw, h = px(36) }, {
-                BoardUI.icon("pin", px(17), { sw = 2.25 }), BoardUI.space(px(6), 1),
-                BoardUI.text(state.index .. " / " .. #list, { s = 14, b = true }), BoardUI.flex(0),
-                control(state.large and "minimize-2" or "maximize-2", { kind = "size" }, 18),
-                control("maximize", { kind = "view" }, 18), control("x", { kind = "close" }),
-            })
-            local bb = state.thumbs[state.index]
-            local inner_w, inner_h = iw - 2, th - 2
-            state.view = { w = inner_w, h = inner_h }
-            -- The pictures of the last build go before new ones are made.
-            Picture.release(state)
-            local picture
-            if bb then
-                local scale
-                if state.zoom > 1 then scale = select(3, visible()) end
-                picture = Picture.view(state, bb, inner_w, inner_h, scale, state.cx, state.cy)
-            else
-                local failed = state.failed[failKey(pin)]
-                local note = failed and (pin.kind == "image" and _("The picture's file is missing.") or _("This page could not be drawn."))
-                picture = BoardUI.hstack({ w = iw, h = th }, { BoardUI.flex(0),
-                    failed and BoardUI.text(note, { s = 14, col = INK.g4, w = iw - 2 * px(16), align = "center" })
-                        or BoardUI.text("…", { s = 18, col = INK.g6 }), BoardUI.flex(0) })
-                if not failed then request(state.index) end
-            end
-            local framed = BoardUI.box({ w = iw, h = th, radius = px(6), border = math.max(1, px(1)), border_col = INK.g9, bg = INK.white },
-                BoardUI.hstack({ w = inner_w, h = inner_h }, { BoardUI.flex(0), picture, BoardUI.flex(0) }))
-            -- Zoom: − level +; the level returns to the whole page.
-            local can_out, can_in = state.zoom > 1, state.zoom < ZOOMS[#ZOOMS]
-            local level = BoardUI.hit(BoardUI.hstack({ w = px(56), h = px(36) }, { BoardUI.flex(0),
-                BoardUI.text(zoomLabel(state.zoom), { s = 13, b = true, col = state.zoom > 1 and INK.black or INK.g4 }), BoardUI.flex(0) }), { kind = "zoom-reset" })
-            local label = pin.snippet and pin.snippet ~= "" and BoardUI.text(pin.snippet, { s = 12, col = INK.g3, w = iw - 3 * px(40) - px(56) - px(8), lines = 1, data = true })
-                or BoardUI.text(pin.kind == "image" and _("Picture") or _("Page") .. " " .. Pins.pageOf(ui, pin), { s = 12, col = INK.g3 })
-            local zoom_row = BoardUI.hstack({ w = iw, h = px(36) }, {
-                label, BoardUI.flex(px(8)),
-                control("zoom-out", { kind = "zoom", dir = -1 }, 19, can_out), level, control("zoom-in", { kind = "zoom", dir = 1 }, 19, can_in),
-            })
-            if not state.large then
-                -- Narrow: the name above, the zoom controls on their own row.
-                zoom_row = BoardUI.vstack({ w = iw }, {
-                    pin.snippet and pin.snippet ~= "" and BoardUI.text(pin.snippet, { s = 12, col = INK.g3, w = iw, lines = 2, data = true })
-                        or BoardUI.text(pin.kind == "image" and _("Picture") or _("Page") .. " " .. Pins.pageOf(ui, pin), { s = 12, col = INK.g3, w = iw }),
-                    BoardUI.hstack({ w = iw, h = px(36) }, { BoardUI.flex(0),
-                        control("zoom-out", { kind = "zoom", dir = -1 }, 19, can_out), level, control("zoom-in", { kind = "zoom", dir = 1 }, 19, can_in), BoardUI.flex(0) }),
-                })
-            end
-            local footer = BoardUI.hstack({ w = iw, h = px(40) }, {
-                control("chevron-left", { kind = "prev" }), BoardUI.flex(0), control("corner-up-right", { kind = "goto" }),
-                BoardUI.flex(0), control("trash", { kind = "remove" }), BoardUI.flex(0), control("chevron-right", { kind = "next" }),
-            })
-            local content = BoardUI.vstack({ w = pw, pad = pad }, {
-                header, BoardUI.space(nil, px(4)), BoardUI.hit(framed, { kind = "view" }), BoardUI.space(nil, px(4)), zoom_row,
-                BoardUI.space(nil, px(2)), footer,
-            })
-            local border = math.max(1, px(1.5))
-            local ph = content:getSize().h + 2 * border
-            local widget = BoardUI.box({ w = pw, h = ph, radius = px(14), border = border, border_col = INK.g6, bg = INK.white }, content)
-            local x = side() == "right" and (sw - pw) or 0
-            local y = math.max(0, sh - ph)
-            p.panel_rect = Geom:new{ x = x, y = y, w = pw, h = ph }
-            -- Where the picture is, for pinches and swipes on it.
-            state.picture_rect = Geom:new{ x = x + border + pad, y = y + border + pad + px(36) + px(4), w = iw, h = th }
-            return BoardUI.overlay(sw, sh, { { widget = widget, x = x, y = y } })
-        end,
-        on_action = function(p, action)
-            local list = Pins.list(ui)
-            local pin = list[state.index]
-            local k = action.kind
-            if k == "close" then p:close()
-            elseif k == "prev" and #list > 0 then state.index = (state.index - 2) % #list + 1; resetView(); p:refresh()
-            elseif k == "next" and #list > 0 then state.index = state.index % #list + 1; resetView(); p:refresh()
-            elseif k == "view" and pin then
-                if not state.failed[failKey(pin)] then Pins.openViewer(ui, pin) end
-            elseif k == "goto" and pin then p:close(); Pins.goTo(ui, pin)
-            elseif k == "size" then
-                state.large = not state.large
-                setDrawerLarge(state.large)
-                local vx, vy = 1, 1
-                p:rebuild() -- the new size first, so the view is kept inside it
-                vx, vy = visible()
-                state.cx, state.cy = Pins.clampCenter(state.cx, vx), Pins.clampCenter(state.cy, vy)
-                -- The drawer changes size: repaint the page where it was.
-                UIManager:setDirty("all", "ui")
-                p:refresh()
-            elseif k == "zoom" then setZoom(zoomStep(state.zoom, action.dir))
-            elseif k == "zoom-reset" then if state.zoom > 1 then setZoom(1) end
-            elseif k == "remove" and pin then
-                require("aleph_confirm").show{
-                    title = _("Remove pin"), text = _("The pin is removed from this book. The page itself is not changed."),
-                    ok_label = _("Remove"), on_ok = function()
-                        Pins.remove(ui, state.index)
-                        -- Pictures are kept by place in the list, which has
-                        -- just moved up by one: drawn again from the new list.
-                        free()
-                        state.requested = nil
-                        resetView()
-                        if #Pins.list(ui) == 0 then p:close() else p:refresh() end
-                    end,
-                }
-            end
-        end,
-        -- On the picture: spread / pinch zoom, a swipe moves a zoomed picture.
-        on_gesture = function(p, ges)
-            local rect = state.picture_rect
-            local pos = ges.pos
-            if not rect or not pos or not pos:intersectWith(rect) then return false end
-            if ges.ges == "spread" then setZoom(zoomStep(state.zoom, 1)); return true end
-            if ges.ges == "pinch" then setZoom(zoomStep(state.zoom, -1)); return true end
-            if ges.ges == "swipe" and state.zoom > 1 then
-                local vx, vy = visible()
-                local d = ges.distance or 0
-                local dir = ges.direction or ""
-                local dx = (dir:find("east") and d or 0) - (dir:find("west") and d or 0)
-                local dy = (dir:find("south") and d or 0) - (dir:find("north") and d or 0)
-                -- The picture follows the finger, so the view moves against it.
-                state.cx = Pins.clampCenter(state.cx - dx / state.view.w * vx, vx)
-                state.cy = Pins.clampCenter(state.cy - dy / state.view.h * vy, vy)
-                p:refresh()
-                return true
-            end
-            return false
-        end,
-        on_close = free,
+    local d = { ui = ui, state = state }
+    d.panel = Panel:new{
+        build = function(p, sw, sh) return drawerBuild(d, p, sw, sh) end,
+        on_action = function(p, action) return drawerAction(d, p, action) end,
+        on_gesture = function(p, ges) return drawerGesture(d, p, ges) end,
+        on_close = function() drawerFree(d) end,
     }
-    panel:show()
-    return panel
+    d.panel:show()
+    return d.panel
+end
+
+-- The placer is kept in one table, `c`: ui, in_book (a book is open with its
+-- pins shown), place ({ anchor, dx, dy }, as chosen so far) and panel.
+local function placerAtTop(c)
+    local ui, in_book = c.ui, c.in_book
+    local rect = in_book and ui._aleph_pin_rect
+    if rect then return rect.y < Screen:getHeight() / 2 end
+    return c.place.anchor:sub(1, 1) == "t"
+end
+
+-- The place changed: saved, the badge moved, the panel drawn again.
+local function placerChanged(c)
+    local ui, in_book = c.ui, c.in_book
+    Pins.setBadgePlace(c.place)
+    if in_book then Pins.repaintBadge(ui) end
+    local before = c.panel.panel_rect and c.panel.panel_rect:copy()
+    c.panel:refresh()
+    -- The panel may have moved to the other half: the page where it was.
+    if before and c.panel.panel_rect and (before.y ~= c.panel.panel_rect.y or before.h ~= c.panel.panel_rect.h) then
+        UIManager:setDirty("all", "ui", before)
+    end
+end
+
+local function placerBuild(c, p, sw, sh)
+    local pw = math.min(px(440), sw - 2 * px(12))
+    local pad = px(16)
+    local iw = pw - 2 * pad
+    local close = BoardUI.hit(BoardUI.hstack({ w = px(44), h = px(40) }, { BoardUI.flex(0), BoardUI.icon("x", px(22), { sw = 2.25 }), BoardUI.flex(0) }), { kind = "close" })
+    local title = BoardUI.vstack({ w = iw - px(44) }, {
+        BoardUI.text(_("Pinned pages"), { s = 18, b = true }),
+        BoardUI.text(_("Where the pin badge sits on the page"), { s = 13, col = INK.g4, w = iw - px(44) }),
+    })
+    -- A small page with the eight places; the chosen one inked.
+    local mw = px(120)
+    local mh = floor(mw * sh / sw)
+    local dot = px(26)
+    local m = px(6)
+    local spots = {}
+    for _i, a in ipairs(ANCHORS) do
+        local col, row = a:sub(2, 2), a:sub(1, 1)
+        if a == "ml" then col = "l" elseif a == "mr" then col = "r" end
+        local x = (col == "l" and m) or (col == "r" and mw - dot - m) or floor((mw - dot) / 2)
+        local y = (row == "t" and m) or (row == "b" and mh - dot - m) or floor((mh - dot) / 2)
+        local on = c.place.anchor == a
+        local mark = BoardUI.box({ w = dot, h = dot, radius = px(6), border = on and 0 or math.max(1, px(1.25)), border_col = INK.g6, bg = on and INK.black or INK.white },
+            BoardUI.hstack({ w = dot, h = dot }, { BoardUI.flex(0), on and BoardUI.icon("pin", px(14), { sw = 2.25, col = "white" }) or BoardUI.space(1, 1), BoardUI.flex(0) }))
+        spots[#spots + 1] = { widget = BoardUI.hit(mark, { kind = "anchor", anchor = a }), x = x, y = y }
+    end
+    local lines = {}
+    for i = 1, 5 do
+        lines[#lines + 1] = { widget = BoardUI.rect(mw - 2 * px(30), math.max(1, px(2)), INK.ge), x = px(30), y = floor(mh * (0.22 + i * 0.1)) }
+    end
+    local frame = { { widget = BoardUI.box({ w = mw, h = mh, radius = px(10), border = math.max(1, px(1.5)), border_col = INK.black, bg = INK.white }) } }
+    for _i, l in ipairs(lines) do frame[#frame + 1] = l end
+    for _i, sp in ipairs(spots) do frame[#frame + 1] = sp end
+    local mini = BoardUI.overlay(mw, mh, frame)
+    -- Nudge: a pad of arrows, and Reset.
+    local function arrow(name, dx, dy)
+        local b = math.max(1, px(1.25))
+        local box = BoardUI.box({ w = px(48), h = px(44), radius = px(10), border = b, border_col = INK.g6, bg = INK.white },
+            BoardUI.hstack({ w = px(48) - 2 * b, h = px(44) - 2 * b }, { BoardUI.flex(0), BoardUI.icon(name, px(22), { sw = 2.5 }), BoardUI.flex(0) }))
+        return BoardUI.hit(box, { kind = "nudge", dx = dx, dy = dy })
+    end
+    local gap = px(6)
+    local pad_w = 3 * px(48) + 2 * gap
+    local nudge = BoardUI.vstack({ w = pad_w }, {
+        BoardUI.text(_("Move it"), { s = 13, b = true, col = INK.g4 }),
+        BoardUI.space(nil, px(6)),
+        BoardUI.hstack({ w = pad_w }, { BoardUI.flex(0), arrow("chevron-up", 0, -NUDGE), BoardUI.flex(0) }),
+        BoardUI.space(nil, gap),
+        BoardUI.hstack({ w = pad_w, gap = gap }, { arrow("chevron-left", -NUDGE, 0), arrow("chevron-down", 0, NUDGE), arrow("chevron-right", NUDGE, 0) }),
+        BoardUI.space(nil, px(8)),
+        BoardUI.text(Pins.placeLabel(c.place), { s = 13, col = INK.g3, w = pad_w, align = "center" }),
+    })
+    local body = BoardUI.hstack({ w = iw, valign = "center" }, { BoardUI.flex(0), mini, BoardUI.flex(0), nudge, BoardUI.flex(0) })
+    local panel_side = side() == "left" and 1 or 2
+    local foot = MenuUI.segmented(iw, { _("Drawer on the left"), _("On the right") }, panel_side, function(index) return { kind = "drawer-side", left = index == 1 } end)
+    local reset = BoardUI.hstack({ w = iw }, {
+        BoardUI.hit(MenuUI.pill(_("Reset"), { kind = "outline", h = 40, s = 14, icon = "rotate-ccw", icon_size = 16 }), { kind = "reset" }),
+        BoardUI.flex(0),
+        BoardUI.hit(MenuUI.pill(_("Done"), { h = 40, s = 14, icon = "check", icon_size = 16 }), { kind = "close" }),
+    })
+    local content = BoardUI.vstack({ w = pw, pad = pad }, {
+        BoardUI.hstack({ w = iw, valign = "top" }, { title, BoardUI.flex(0), close }),
+        BoardUI.space(nil, px(14)), body,
+        BoardUI.space(nil, px(14)), foot,
+        BoardUI.space(nil, px(12)), reset,
+    })
+    local border = math.max(1, px(1.5))
+    local ph = content:getSize().h + 2 * border
+    local widget = BoardUI.box({ w = pw, h = ph, radius = px(16), border = border, border_col = INK.black, bg = INK.white }, content)
+    local x = floor((sw - pw) / 2)
+    local y = placerAtTop(c) and (sh - ph - px(24)) or px(24)
+    p.panel_rect = Geom:new{ x = x, y = y, w = pw, h = ph }
+    return BoardUI.overlay(sw, sh, { { widget = widget, x = x, y = y } })
+end
+
+local function placerAction(c, p, action)
+    local ui, in_book = c.ui, c.in_book
+    local k = action.kind
+    if k == "anchor" then
+        c.place.anchor, c.place.dx, c.place.dy = action.anchor, 0, 0
+        placerChanged(c)
+    elseif k == "nudge" then
+        c.place.dx, c.place.dy = c.place.dx + action.dx, c.place.dy + action.dy
+        placerChanged(c)
+    elseif k == "reset" then
+        c.place = { anchor = side() == "left" and "bl" or "br", dx = 0, dy = 0 }
+        Prefs.set("pins_badge", nil)
+        if in_book then Pins.repaintBadge(ui) end
+        p:refresh()
+    elseif k == "drawer-side" then
+        Prefs.set("pins_left", action.left or nil)
+        p:refresh()
+    end
 end
 
 -- ----------------------------------------------------------------- placer
@@ -604,122 +813,16 @@ end
 -- page stays in view and the badge moves as you choose; the panel keeps to
 -- the half of the screen away from it.
 function Pins.openPlacer(ui, on_close)
-    local place = Pins.badgePlace()
-    local in_book = ui and ui.document and ui._aleph_pins_attached
-    local panel
-    local function badgeAtTop()
-        local rect = in_book and ui._aleph_pin_rect
-        if rect then return rect.y < Screen:getHeight() / 2 end
-        return place.anchor:sub(1, 1) == "t"
-    end
-    local function changed()
-        Pins.setBadgePlace(place)
-        if in_book then Pins.repaintBadge(ui) end
-        local before = panel.panel_rect and panel.panel_rect:copy()
-        panel:refresh()
-        -- The panel may have moved to the other half: the page where it was.
-        if before and panel.panel_rect and (before.y ~= panel.panel_rect.y or before.h ~= panel.panel_rect.h) then
-            UIManager:setDirty("all", "ui", before)
-        end
-    end
-    panel = Panel:new{
-        build = function(p, sw, sh)
-            local pw = math.min(px(440), sw - 2 * px(12))
-            local pad = px(16)
-            local iw = pw - 2 * pad
-            local close = BoardUI.hit(BoardUI.hstack({ w = px(44), h = px(40) }, { BoardUI.flex(0), BoardUI.icon("x", px(22), { sw = 2.25 }), BoardUI.flex(0) }), { kind = "close" })
-            local title = BoardUI.vstack({ w = iw - px(44) }, {
-                BoardUI.text(_("Pinned pages"), { s = 18, b = true }),
-                BoardUI.text(_("Where the pin badge sits on the page"), { s = 13, col = INK.g4, w = iw - px(44) }),
-            })
-            -- A small page with the eight places; the chosen one inked.
-            local mw = px(120)
-            local mh = floor(mw * sh / sw)
-            local dot = px(26)
-            local m = px(6)
-            local spots = {}
-            for _i, a in ipairs(ANCHORS) do
-                local col, row = a:sub(2, 2), a:sub(1, 1)
-                if a == "ml" then col = "l" elseif a == "mr" then col = "r" end
-                local x = (col == "l" and m) or (col == "r" and mw - dot - m) or floor((mw - dot) / 2)
-                local y = (row == "t" and m) or (row == "b" and mh - dot - m) or floor((mh - dot) / 2)
-                local on = place.anchor == a
-                local mark = BoardUI.box({ w = dot, h = dot, radius = px(6), border = on and 0 or math.max(1, px(1.25)), border_col = INK.g6, bg = on and INK.black or INK.white },
-                    BoardUI.hstack({ w = dot, h = dot }, { BoardUI.flex(0), on and BoardUI.icon("pin", px(14), { sw = 2.25, col = "white" }) or BoardUI.space(1, 1), BoardUI.flex(0) }))
-                spots[#spots + 1] = { widget = BoardUI.hit(mark, { kind = "anchor", anchor = a }), x = x, y = y }
-            end
-            local lines = {}
-            for i = 1, 5 do
-                lines[#lines + 1] = { widget = BoardUI.rect(mw - 2 * px(30), math.max(1, px(2)), INK.ge), x = px(30), y = floor(mh * (0.22 + i * 0.1)) }
-            end
-            local frame = { { widget = BoardUI.box({ w = mw, h = mh, radius = px(10), border = math.max(1, px(1.5)), border_col = INK.black, bg = INK.white }) } }
-            for _i, l in ipairs(lines) do frame[#frame + 1] = l end
-            for _i, sp in ipairs(spots) do frame[#frame + 1] = sp end
-            local mini = BoardUI.overlay(mw, mh, frame)
-            -- Nudge: a pad of arrows, and Reset.
-            local function arrow(name, dx, dy)
-                local b = math.max(1, px(1.25))
-                local box = BoardUI.box({ w = px(48), h = px(44), radius = px(10), border = b, border_col = INK.g6, bg = INK.white },
-                    BoardUI.hstack({ w = px(48) - 2 * b, h = px(44) - 2 * b }, { BoardUI.flex(0), BoardUI.icon(name, px(22), { sw = 2.5 }), BoardUI.flex(0) }))
-                return BoardUI.hit(box, { kind = "nudge", dx = dx, dy = dy })
-            end
-            local gap = px(6)
-            local pad_w = 3 * px(48) + 2 * gap
-            local nudge = BoardUI.vstack({ w = pad_w }, {
-                BoardUI.text(_("Move it"), { s = 13, b = true, col = INK.g4 }),
-                BoardUI.space(nil, px(6)),
-                BoardUI.hstack({ w = pad_w }, { BoardUI.flex(0), arrow("chevron-up", 0, -NUDGE), BoardUI.flex(0) }),
-                BoardUI.space(nil, gap),
-                BoardUI.hstack({ w = pad_w, gap = gap }, { arrow("chevron-left", -NUDGE, 0), arrow("chevron-down", 0, NUDGE), arrow("chevron-right", NUDGE, 0) }),
-                BoardUI.space(nil, px(8)),
-                BoardUI.text(Pins.placeLabel(place), { s = 13, col = INK.g3, w = pad_w, align = "center" }),
-            })
-            local body = BoardUI.hstack({ w = iw, valign = "center" }, { BoardUI.flex(0), mini, BoardUI.flex(0), nudge, BoardUI.flex(0) })
-            local panel_side = side() == "left" and 1 or 2
-            local foot = MenuUI.segmented(iw, { _("Drawer on the left"), _("On the right") }, panel_side, function(index) return { kind = "drawer-side", left = index == 1 } end)
-            local reset = BoardUI.hstack({ w = iw }, {
-                BoardUI.hit(MenuUI.pill(_("Reset"), { kind = "outline", h = 40, s = 14, icon = "rotate-ccw", icon_size = 16 }), { kind = "reset" }),
-                BoardUI.flex(0),
-                BoardUI.hit(MenuUI.pill(_("Done"), { h = 40, s = 14, icon = "check", icon_size = 16 }), { kind = "close" }),
-            })
-            local content = BoardUI.vstack({ w = pw, pad = pad }, {
-                BoardUI.hstack({ w = iw, valign = "top" }, { title, BoardUI.flex(0), close }),
-                BoardUI.space(nil, px(14)), body,
-                BoardUI.space(nil, px(14)), foot,
-                BoardUI.space(nil, px(12)), reset,
-            })
-            local border = math.max(1, px(1.5))
-            local ph = content:getSize().h + 2 * border
-            local widget = BoardUI.box({ w = pw, h = ph, radius = px(16), border = border, border_col = INK.black, bg = INK.white }, content)
-            local x = floor((sw - pw) / 2)
-            local y = badgeAtTop() and (sh - ph - px(24)) or px(24)
-            p.panel_rect = Geom:new{ x = x, y = y, w = pw, h = ph }
-            return BoardUI.overlay(sw, sh, { { widget = widget, x = x, y = y } })
-        end,
-        on_action = function(p, action)
-            local k = action.kind
-            if k == "anchor" then
-                place.anchor, place.dx, place.dy = action.anchor, 0, 0
-                changed()
-            elseif k == "nudge" then
-                place.dx, place.dy = place.dx + action.dx, place.dy + action.dy
-                changed()
-            elseif k == "reset" then
-                place = { anchor = side() == "left" and "bl" or "br", dx = 0, dy = 0 }
-                Prefs.set("pins_badge", nil)
-                if in_book then Pins.repaintBadge(ui) end
-                p:refresh()
-            elseif k == "drawer-side" then
-                Prefs.set("pins_left", action.left or nil)
-                p:refresh()
-            end
-        end,
+    local c = { ui = ui, place = Pins.badgePlace(), in_book = ui and ui.document and ui._aleph_pins_attached }
+    c.panel = Panel:new{
+        build = function(p, sw, sh) return placerBuild(c, p, sw, sh) end,
+        on_action = function(p, action) return placerAction(c, p, action) end,
         on_close = function()
             if on_close then UIManager:nextTick(on_close) end
         end,
     }
-    panel:show()
-    return panel
+    c.panel:show()
+    return c.panel
 end
 
 -- ------------------------------------------------------------------- list
@@ -895,15 +998,7 @@ function Pins.install()
     end
 
     -- The badge is painted by the reader's view.
-    local View = require("apps/reader/modules/readerview")
-    if not View._aleph_pins then
-        View._aleph_pins = true
-        local paint = View.paintTo
-        View.paintTo = function(self, bb, x, y)
-            paint(self, bb, x, y)
-            Pins.paintBadge(self, bb)
-        end
-    end
+    require("aleph_reader_paint").add("pins", 30, function(view, bb) Pins.paintBadge(view, bb) end)
 
     -- KOReader's own "Pin page" and "Go to pinned page" use these pins.
     local Goto = require("apps/reader/modules/readergoto")
@@ -963,6 +1058,17 @@ function Pins.attach(ui)
     end
     ui:registerPostInitCallback(function()
         if not ui._aleph_pins_attached then return end
+        -- Pins kept from before (no copy yet), or pins lost to a Reset.
+        UIManager:scheduleIn(1.5, function()
+            if not ui.document then return end
+            if #Pins.list(ui) > 0 then
+                local key, kept = bookKey(ui), nil
+                if key then try(function() kept = backupStore():readSetting(key) end) end
+                if not kept then Pins.keepCopy(ui) end
+            else
+                try(Pins.offerBack, ui)
+            end
+        end)
         -- Tap and hold on the badge take precedence over the page's own zones,
         -- and anything else goes to the page as usual.
         local overrides = { "readerfooter_tap", "readerfooter_hold", "readerlink_tap", "readerhighlight_tap",

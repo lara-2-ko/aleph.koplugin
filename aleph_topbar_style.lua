@@ -47,7 +47,21 @@ local function scale()
     return density * (size or 1.05)
 end
 
+-- Aleph modification, 2026-11-18: the top menu's own font and text size
+-- (aleph_fonts.lua; Settings > Top menu > Font, Text size). The size scales
+-- the whole menu with its text: rows, icons and tabs.
+local function menuScale()
+    local ok, v = pcall(function() return require("aleph_fonts").menuScale() end)
+    return ok and tonumber(v) or 1
+end
+
+local function menuFile()
+    local ok, c = pcall(function() return require("aleph_fonts").menu() end)
+    return ok and type(c) == "table" and c.file or "NotoSans-Regular.ttf"
+end
+
 function Style.px(size)
+    size = size * menuScale()
     local metrics = board()
     if metrics then
         sync(metrics)
@@ -57,12 +71,13 @@ function Style.px(size)
 end
 
 function Style.face(size)
+    size = size * menuScale()
     local metrics = board()
     if metrics then
         sync(metrics)
-        return metrics.face(size, "sans")
+        return metrics.fileFace(menuFile(), size)
     end
-    return Font:getFace("NotoSans-Regular.ttf", size * scale())
+    return Font:getFace(menuFile(), size * scale())
 end
 
 function Style.rowFace()

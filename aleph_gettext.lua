@@ -4,7 +4,7 @@ KOReader translates only the words it has in its own catalogue, so a
 KOReader set to another language showed Aleph half in English. Aleph now
 brings its own catalogue for what KOReader does not have:
 
-    l10n/<language>/aleph.po      (pt_BR, es; l10n/aleph.pot lists every text)
+    l10n/<language>/aleph.po      (pt_BR, es, fr, it; l10n/aleph.pot lists every text)
 
     local _ = require("aleph_gettext")
     _("Text")                         -- like KOReader's gettext
@@ -15,8 +15,8 @@ The language is KOReader's own (Settings > Language). For each text,
 KOReader's translation is used when it has one, so Aleph's words match the
 rest of KOReader and the texts Aleph looks for on KOReader's buttons stay
 the same; Aleph's catalogue fills in the rest, and English is left where
-neither has the text. A language Aleph has no file for (pt_PT, es_MX...)
-takes the closest one (pt_BR, es).
+neither has the text. A language Aleph has no file for (pt_PT, es_MX,
+fr_CA, it_CH...) takes the closest one (pt_BR, es, fr, it).
 
 Adding a language: copy l10n/aleph.pot to l10n/<code>/aleph.po (the code
 KOReader uses, as in koreader/l10n) and fill in the msgstr lines.
@@ -214,7 +214,7 @@ function M.npgettext(ctx, msgid, msgid_plural, n)
     return M.ngettext(msgid, msgid_plural, n)
 end
 
--- The language Aleph's texts are in now ("pt_BR", "es"), or nil for English.
+-- The language Aleph's texts are in now ("pt_BR", "es", "fr", "it"), or nil for English.
 function M.language()
     load()
     local _p, code = poFor(language())

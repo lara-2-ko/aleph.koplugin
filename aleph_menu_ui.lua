@@ -350,21 +350,6 @@ end
 -- ------------------------------------------------------------------ text
 -- "2 min ago", "3 h ago", "yesterday", "Oct 9". A timestamp of 0 is never.
 local _ = require("aleph_gettext")
-local T = require("ffi/util").template
-
-function MenuUI.ago(ts, now)
-    ts = tonumber(ts)
-    if not ts or ts <= 0 then return nil end
-    now = now or os.time()
-    local delta = math.max(0, now - ts)
-    if delta < 60 then return _("just now") end
-    if delta < 3600 then return T(_("%1 min ago"), math.floor(delta / 60)) end
-    if delta < 86400 and os.date("%Y%m%d", ts) == os.date("%Y%m%d", now) then
-        return T(_("%1 h ago"), math.floor(delta / 3600))
-    end
-    if os.date("%Y%m%d", ts) == os.date("%Y%m%d", now - 86400) then return _("yesterday") end
-    return (require("aleph_dates").monthDay(ts))
-end
 
 -- ---------------------------------------------------------- illustrations
 -- Gesture diagrams for the shortcut picker (from BookOrbit): a reader outline

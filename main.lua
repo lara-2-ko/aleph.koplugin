@@ -6,6 +6,10 @@ local Dispatcher = require("dispatcher")
 local try = require("aleph_try").call
 local Board = WidgetContainer:extend{ name = "aleph", is_doc_only = false }
 
+-- Aleph modification, 2026-11-18: who asks for redraws many times a second,
+-- written to crash.log (aleph_redraw_watch.lua).
+try(function() require("aleph_redraw_watch").install(UIManager) end)
+
 -- Opening the board over the file browser, at startup and after a book is
 -- closed. Done the way ZenOS takes over the browser: a class-level hook on
 -- FileManager:showFiles, which KOReader calls every time it builds the file
@@ -28,6 +32,8 @@ end
 -- Settings, library index and cache from the plugin's old name
 -- (readingboard.koplugin), moved before anything reads them.
 try(function() require("aleph_migrate").run() end)
+-- Home's font (Settings > Home > Font, aleph_fonts.lua), before anything is drawn.
+try(function() require("aleph_fonts").apply() end)
 -- KOReader's own windows in Aleph's style (Settings > Home > Aleph dialogs).
 do
     local ok, err = pcall(function() require("aleph_theme").sync() end)
@@ -67,12 +73,35 @@ local function openOver(fm, tries)
     end
     fm._aleph_opened = true
     if pending then Opening.pending_home = nil end
-    local ok, err = pcall(plugin.onShowAleph, plugin)
+    -- At startup quietly (Bookshelf's "Start with" decides then); asked for
+    -- from a book, Aleph stays above Bookshelf (aleph_shelf_guard.lua).
+    local ok, err = pcall(plugin.onShowAleph, plugin, not pending)
     if ok and type(pending) == "function" and plugin.browser then pcall(pending, plugin.browser) end
     if not ok then
         logger.warn("Aleph: could not open over the file browser:", err)
         UIManager:show(require("ui/widget/infomessage"):new{ text = _("Aleph could not open at startup:") .. "\n" .. tostring(err) })
     end
+end
+
+-- Aleph modification, 2026-11-18: advokatb's Goodreads plugin still on: a
+-- warning, once a start, a moment after the file browser or a book is ready
+-- (aleph_gr.lua).
+local function warnGoodreadsPlugin(ui)
+    UIManager:scheduleIn(3, function()
+        try(function() require("aleph_gr").warnPlugin(ui) end)
+    end)
+end
+
+-- Once each time KOReader starts, when its file browser is first built:
+-- the Goodreads warning and the memory diary's first line. (These were in
+-- Board:onFileManagerReady, which KOReader never sends to a plugin: they
+-- never ran.)
+local started_once = false
+local function fileBrowserStarted(fm)
+    if started_once or not fm then return end
+    started_once = true
+    warnGoodreadsPlugin(fm)
+    try(function() require("aleph_mem").report("file browser ready") end)
 end
 
 local FileManager = require("apps/filemanager/filemanager")
@@ -82,6 +111,7 @@ if not FileManager._aleph_hooked then
     function FileManager:showFiles(...)
         local result = original_showFiles(self, ...)
         openOver(FileManager.instance)
+        fileBrowserStarted(FileManager.instance)
         return result
     end
     -- Turning the screen rebuilds the whole file browser, its book covers
@@ -221,11 +251,15 @@ function Board:addToMainMenu(items)
         end }
     end
 end
-function Board:onShowAleph()
-    if self.browser and not self.browser.closed then return true end
-    self.browser = require("aleph_browser"):new{ plugin = self, settings = self.settings }
-    UIManager:show(self.browser)
-    self.browser:startScanIfDue()
+-- quiet: opened by itself (at startup), not asked for. Asked for, it stays
+-- above Bookshelf's screen (aleph_shelf_guard.lua).
+function Board:onShowAleph(quiet)
+    if not (self.browser and not self.browser.closed) then
+        self.browser = require("aleph_browser"):new{ plugin = self, settings = self.settings }
+        UIManager:show(self.browser)
+        self.browser:startScanIfDue()
+    end
+    if quiet ~= true then try(function() require("aleph_shelf_guard").keep(self.browser) end) end
     return true
 end
 -- The board's page for a book, over the reader. True when it was shown.
@@ -240,9 +274,6 @@ function Board:showBookPage(path)
     self.browser = browser
     UIManager:show(browser)
     return true
-end
-function Board:onFileManagerReady()
-    if not self.ui.document then openOver(self.ui) end
 end
 -- The Background tab of the reader controls: White, Paper, Sepia, Gray, Custom.
 -- KOReader's night mode on or off: the page colour follows (white at night).
@@ -283,11 +314,38 @@ function Board:onReaderReady()
     if not ok then logger.warn("Aleph: page browser swipe not added:", err) end
     -- KOReader sets up its status bar by now: hide it if the bottom line asks.
     try(function() require("aleph_bookends").applyStock(self.ui) end)
-    -- The Goodreads plugin's automatic tracking, asked in the background
-    -- (aleph_goodreads_track.lua): only with its switch on in Settings.
-    if Prefs.is("goodreads_background") then
-        try(function() require("aleph_goodreads_track").attach(self.ui) end)
-    end
+    -- Aleph modification, 2026-11-18: Aleph's own Goodreads, with
+    -- advokatb's plugin off (aleph_gr.lua); while it is on, a warning.
+    try(function() require("aleph_gr").open(self.ui) end)
+    warnGoodreadsPlugin(self.ui)
+    -- The memory diary: now, then every 10 minutes while reading.
+    try(function()
+        local Mem = require("aleph_mem")
+        Mem.report("book opened")
+        Mem.watch()
+    end)
+end
+-- Page turns, for Goodreads' percentage (a comparison, then at most one
+-- background question a minute). Not consumed.
+function Board:onPageUpdate(page)
+    local Core = package.loaded["aleph_gr"]
+    if Core and self.ui.document then try(Core.page, self.ui, page) end
+end
+function Board:onPosUpdate(_pos, page)
+    if page then return self:onPageUpdate(page) end
+end
+-- KOReader changed a book's status or stars: Goodreads follows (only the
+-- open book's reader, or the file browser).
+function Board:onDocSettingsItemsChanged(file, doc_settings)
+    if self.ui.document and self.ui.document.file ~= file then return end
+    try(function() require("aleph_gr").docChanged(self.ui, file, doc_settings) end)
+end
+-- Back online: what waits for Goodreads is sent.
+function Board:onNetworkConnected()
+    local Core = package.loaded["aleph_gr"]
+    if not Core then return end
+    try(Core.flush)
+    if self.ui.document then try(Core.open, self.ui) end
 end
 function Board:onShowAlephThisBook()
     if not self.ui.document then return false end
@@ -319,6 +377,11 @@ function Board:onShowAlephPins()
     return true
 end
 function Board:onCloseDocument()
+    try(function()
+        local Mem = require("aleph_mem")
+        Mem.unwatch()
+        Mem.report("book closed")
+    end)
     try(function() require("aleph_bookends").detach(self.ui) end)
     try(function() require("aleph_page_turner").detach(self.ui) end)
     try(function() require("aleph_pins").detach(self.ui) end)
@@ -333,6 +396,9 @@ function Board:onCloseDocument()
     -- A finished book goes on the record now, in case it is deleted before
     -- the library is scanned again.
     try(function() require("aleph_finished_log").fromReader(self.ui) end)
+    -- Goodreads: the percentage it closed at (aleph_gr.lua).
+    local Core = package.loaded["aleph_gr"]
+    if Core then try(Core.close, self.ui) end
     -- The book's entry in the library, made again from the reader's own
     -- settings: Home is right the first time it is drawn after the book,
     -- with no scan of the whole library (aleph_local.lua).
@@ -347,11 +413,13 @@ function Board:onSuspend()
     if self.ui and self.ui.document then
         try(function() require("aleph_bookends").disarm(self.ui) end)
     end
+    try(function() require("aleph_mem").report("going to sleep") end)
     -- Nobody waits as the device goes to sleep: the library index, when it
     -- has changes not written yet, is written now (in the background).
     saveIndexLater()
 end
 function Board:onResume()
+    try(function() require("aleph_mem").report("woke up") end)
     if self.ui and self.ui.document then
         try(function() require("aleph_bookends").arm(self.ui) end)
     end

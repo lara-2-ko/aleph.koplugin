@@ -96,62 +96,36 @@ function Bar:init()
     self:rebuild()
 end
 
--- The quick filter of the bookmarks list.
-function Bar:filterRows(w)
-    local HL = require("aleph_highlight")
-    local bm = self.bookmark
-    local ui = bm.ui
-    local menu = self.menu
-    local gap, h = px(6), px(36)
-    local pad = px(14)
-    local counts = { highlight = 0, note = 0, bookmark = 0 }
-    for _i, item in ipairs(ui.annotation.annotations) do
-        local kind = bm.getBookmarkType(item)
-        counts[kind] = (counts[kind] or 0) + 1
-    end
-    local total = counts.highlight + counts.note + counts.bookmark
-    local active_type
-    if bm.match_table and not bm.match_table.search_str then
-        for kind in pairs(bm.match_table) do active_type = kind end
-    end
-    local filtered = bm.show_drawer_only or bm.show_color_only or bm.show_edited_only
-    local function reopen(match)
+-- Closes the list and opens KOReader's own again, showing only what `match`
+-- names (nil: everything).
+local function filterReopen(bm, menu, match)
+    menu:onClose()
+    bm.match_table = match
+    -- KOReader's own list again, not Aleph's bookmarks page.
+    local show = bm._aleph_native_show or bm.onShowBookmark
+    show(bm)
+end
+
+-- Shows one style or one colour only; chosen again, it shows all again.
+local function filterApply(bm, menu, field, value)
+    if (field == "drawer" and bm.show_drawer_only == value) or (field == "color" and bm.show_color_only == value) then
         menu:onClose()
-        bm.match_table = match
-        -- KOReader's own list again, not Aleph's bookmarks page.
         local show = bm._aleph_native_show or bm.onShowBookmark
         show(bm)
+        return
     end
-    -- Type.
-    local cw = floor((w - 2 * pad - 3 * gap) / 4)
-    local types = {
-        { nil, _("All"), total }, { "highlight", _("Highlights"), counts.highlight },
-        { "bookmark", _("Bookmarks"), counts.bookmark }, { "note", _("Notes"), counts.note },
-    }
-    local type_cells = {}
-    for _i, t in ipairs(types) do
-        local kind = t[1]
-        table.insert(type_cells, Cell:new{
-            w = cw, h = h, label = t[2] .. " " .. t[3], label_size = 13,
-            active = (kind == nil and not active_type and not filtered) or (kind ~= nil and kind == active_type),
-            source = { enabled = true, callback = function() reopen(kind and { [kind] = true } or nil) end },
-        })
+    local item_table = menu.item_table
+    for i = #item_table, 1, -1 do
+        if item_table[i][field] ~= value then table.remove(item_table, i) end
     end
-    -- Style and color.
-    local function apply(field, value)
-        if (field == "drawer" and bm.show_drawer_only == value) or (field == "color" and bm.show_color_only == value) then
-            menu:onClose()
-            local show = bm._aleph_native_show or bm.onShowBookmark
-            show(bm)
-            return
-        end
-        local item_table = menu.item_table
-        for i = #item_table, 1, -1 do
-            if item_table[i][field] ~= value then table.remove(item_table, i) end
-        end
-        if field == "drawer" then bm.show_drawer_only = value else bm.show_color_only = value end
-        bm:updateBookmarkList(item_table)
-    end
+    if field == "drawer" then bm.show_drawer_only = value else bm.show_color_only = value end
+    bm:updateBookmarkList(item_table)
+end
+
+-- The style chips and the colour swatches. As many style chips as fit; more
+-- styles than that (a patch or a modified KOReader adds them) and the last
+-- chip opens them all.
+local function filterLookCells(HL, bm, gap, menu, pad, ui, w)
     -- Styles on one row, colors on the row below, each centred.
     local styles = ui.highlight:getHighlightStyles()
     local colors = ui.highlight.highlight_colors
@@ -174,7 +148,7 @@ function Bar:filterRows(w)
         table.insert(look_cells, Cell:new{
             w = style_w, h = px(40), radius = px(10), active = bm.show_drawer_only == id,
             sample = function(sw, sh) return HL.styleSample(id, sw, sh, sample_color, style[1]) end,
-            source = { enabled = true, callback = function() apply("drawer", id) end },
+            source = { enabled = true, callback = function() filterApply(bm, menu, "drawer", id) end },
         })
     end
     if more then
@@ -184,7 +158,7 @@ function Bar:filterRows(w)
                 HL.openStylePicker{
                     styles = styles, selected = bm.show_drawer_only, hex = sample_color,
                     title = _("Show one style"),
-                    on_pick = function(id) apply("drawer", id) end,
+                    on_pick = function(id) filterApply(bm, menu, "drawer", id) end,
                 }
             end },
         })
@@ -193,9 +167,54 @@ function Bar:filterRows(w)
         local id = color[2]
         table.insert(color_cells, Cell:new{
             w = swatch_w, h = swatch_w, swatch = HL.colorOf(HL.palette.hex(id)), active = bm.show_color_only == id,
-            source = { enabled = true, callback = function() apply("color", id) end },
+            source = { enabled = true, callback = function() filterApply(bm, menu, "color", id) end },
         })
     end
+    return color_cells, look_cells, look_gap
+end
+
+-- The four chips of the first row: All, Highlights, Bookmarks, Notes, each
+-- with its count; the one being shown is inked.
+local function filterTypeCells(bm, gap, h, menu, pad, ui, w)
+    local counts = { highlight = 0, note = 0, bookmark = 0 }
+    for _i, item in ipairs(ui.annotation.annotations) do
+        local kind = bm.getBookmarkType(item)
+        counts[kind] = (counts[kind] or 0) + 1
+    end
+    local total = counts.highlight + counts.note + counts.bookmark
+    local active_type
+    if bm.match_table and not bm.match_table.search_str then
+        for kind in pairs(bm.match_table) do active_type = kind end
+    end
+    local filtered = bm.show_drawer_only or bm.show_color_only or bm.show_edited_only
+    -- Type.
+    local cw = floor((w - 2 * pad - 3 * gap) / 4)
+    local types = {
+        { nil, _("All"), total }, { "highlight", _("Highlights"), counts.highlight },
+        { "bookmark", _("Bookmarks"), counts.bookmark }, { "note", _("Notes"), counts.note },
+    }
+    local type_cells = {}
+    for _i, t in ipairs(types) do
+        local kind = t[1]
+        table.insert(type_cells, Cell:new{
+            w = cw, h = h, label = t[2] .. " " .. t[3], label_size = 13,
+            active = (kind == nil and not active_type and not filtered) or (kind ~= nil and kind == active_type),
+            source = { enabled = true, callback = function() filterReopen(bm, menu, kind and { [kind] = true } or nil) end },
+        })
+    end
+    return type_cells
+end
+
+-- The quick filter of the bookmarks list.
+function Bar:filterRows(w)
+    local HL = require("aleph_highlight")
+    local bm = self.bookmark
+    local ui = bm.ui
+    local menu = self.menu
+    local gap, h = px(6), px(36)
+    local pad = px(14)
+    local type_cells = filterTypeCells(bm, gap, h, menu, pad, ui, w)
+    local color_cells, look_cells, look_gap = filterLookCells(HL, bm, gap, menu, pad, ui, w)
     return {
         BoardUI.vstack({ w = w, pad = { px(4), pad, 0, pad } }, {
             BoardUI.hstack({ gap = gap }, type_cells),

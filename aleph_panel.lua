@@ -102,7 +102,24 @@ end
 -- not in a window of its own.
 -- The posts are painted first and the panel over them, so where a post runs
 -- under the menu the menu wins and the post is hidden.
+-- Aleph modification, 2026-11-19 (1.2.49): the screen turned while the panel
+-- was open: it was placed for the old shape (next to a highlight, say), so it
+-- closes rather than be drawn in the wrong place.
+function Panel:sizeChanged()
+    if Screen:getWidth() == self.dimen.w and Screen:getHeight() == self.dimen.h then return false end
+    if not self._closing_for_size then
+        self._closing_for_size = true
+        UIManager:nextTick(function() self:close() end)
+    end
+    return true
+end
+
+function Panel:onSetDimensions()
+    if not self.closed then self:sizeChanged() end
+end
+
 function Panel:paintTo(bb, x, y)
+    if self:sizeChanged() then return end
     local extra = self.extra
     if extra then extra:paintTo(bb) end
     if not (extra and extra.dragging) and self[1] then

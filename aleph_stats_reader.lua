@@ -25,12 +25,8 @@ local BUSY_TIMEOUT_MS = 1000
 -- beyond it runs as a transient statement.
 local MAX_CACHED_STATEMENTS = 16
 
-local BOOK_ROWS_SQL = "SELECT id, md5, title, authors, last_open FROM book"
-    .. " WHERE md5 IS NOT NULL AND md5 != '' AND id > ? ORDER BY id LIMIT ?;"
 local BOOK_BY_MD5_SQL = "SELECT id, title, authors, last_open FROM book WHERE md5 = ?;"
 local BOOK_IDS_SQL = "SELECT id FROM book WHERE md5 = ?;"
-local LATEST_EVENTS_SQL = "SELECT id_book, MAX(start_time) FROM page_stat_data"
-    .. " WHERE total_pages > 0 GROUP BY id_book;"
 
 local function metadataKey(title, authors)
     return (title or "") .. "\0" .. (authors or "")
@@ -146,28 +142,6 @@ function Session:select(sql, params)
     return nil, "query_failed"
 end
 
--- Keyset pagination over the primary key, so a full-library enumeration can be
--- split into bounded chunks without an offset rescan. Returns the rows and the
--- id to continue from.
-function Session:bookRowsAfter(after_id, limit)
-    after_id = after_id or 0
-    local rows = {}
-    local res = self:select(BOOK_ROWS_SQL, { after_id, limit })
-    if not res then return rows, after_id end
-    for i = 1, #res[1] do
-        local id = tonumber(res[1][i]) or 0
-        table.insert(rows, {
-            id = id,
-            md5 = res[2][i],
-            title = res[3][i],
-            authors = res[4][i],
-            last_open = tonumber(res[5][i]) or 0,
-        })
-        if id > after_id then after_id = id end
-    end
-    return rows, after_id
-end
-
 function Session:book(md5)
     if type(md5) ~= "string" or not md5:match("^%x+$") then return nil end
     local res = self:select(BOOK_BY_MD5_SQL, { md5 })
@@ -192,118 +166,6 @@ function Session:bookIds(md5)
     return ids
 end
 
--- Latest event time per statistics row, in one query. Books whose watermark
--- already covers their latest event can then be skipped without a per-book
--- event query. Returns nil when the query failed, so callers fall back to
--- asking per book rather than silently skipping every book.
-function Session:latestEventTimes()
-    local res, err = self:select(LATEST_EVENTS_SQL)
-    if err then return nil end
-    local latest = {}
-    if res then
-        for i = 1, #res[1] do
-            latest[tonumber(res[1][i]) or 0] = tonumber(res[2][i]) or 0
-        end
-    end
-    return latest
-end
-
-local function eventsSql(count)
-    local marks = {}
-    for _ = 1, count do
-        table.insert(marks, "?")
-    end
-    return "SELECT page, start_time, duration, total_pages FROM page_stat_data"
-        .. " WHERE id_book IN (" .. table.concat(marks, ",") .. ")"
-        .. " AND start_time > ? AND total_pages > 0 ORDER BY start_time, page LIMIT ?;"
-end
-
--- Events newer than the watermark across all statistics rows of a book,
--- ordered by start_time. The caller handles batching via the limit.
-function Session:eventsAfter(ids, watermark, limit)
-    if not ids or #ids == 0 then return {} end
-    local params = {}
-    for _, id in ipairs(ids) do
-        table.insert(params, id)
-    end
-    table.insert(params, watermark or 0)
-    table.insert(params, limit)
-
-    local events = {}
-    local res = self:select(eventsSql(#ids), params)
-    if res then
-        for i = 1, #res[1] do
-            table.insert(events, {
-                page = tonumber(res[1][i]) or 0,
-                startTime = tonumber(res[2][i]) or 0,
-                durationSeconds = math.min(tonumber(res[3][i]) or 0, 86400),
-                totalPages = tonumber(res[4][i]) or 1,
-            })
-        end
-    end
-    return events
-end
-
--- Aggregated local reading activity for the dashboard stats strip: seconds
--- read today, over the past 7 days and per day of that week, plus the current
--- daily reading streak (consecutive days with any reading, still counting if
--- today has none yet).
-function Session:readingSummary()
-    local today = os.date("*t")
-    today.hour, today.min, today.sec = 0, 0, 0
-    local day_start = os.time(today)
-    local function sumSince(start_time)
-        local res = self:select(
-            "SELECT COALESCE(SUM(MIN(duration, 86400)), 0) FROM page_stat_data WHERE start_time >= ?;",
-            { start_time })
-        return res and tonumber(res[1][1]) or 0
-    end
-
-    -- Per-day totals for the strip's activity bars, oldest first, today last.
-    local day_seconds = { 0, 0, 0, 0, 0, 0, 0 }
-    local week_start = day_start - 6 * 86400
-    local day_res = self:select(
-        "SELECT date(start_time, 'unixepoch', 'localtime'), COALESCE(SUM(MIN(duration, 86400)), 0)"
-            .. " FROM page_stat_data WHERE start_time >= ? GROUP BY 1;",
-        { week_start })
-    if day_res then
-        local index_by_date = {}
-        for day = 1, 7 do
-            index_by_date[os.date("%Y-%m-%d", week_start + (day - 1) * 86400)] = day
-        end
-        for i = 1, #day_res[1] do
-            local day = index_by_date[day_res[1][i]]
-            if day then day_seconds[day] = tonumber(day_res[2][i]) or 0 end
-        end
-    end
-
-    local streak = 0
-    local res = self:select(
-        "SELECT DISTINCT date(start_time, 'unixepoch', 'localtime') FROM page_stat_data WHERE start_time >= ?;",
-        { day_start - 366 * 86400 })
-    if res then
-        local days = {}
-        for i = 1, #res[1] do
-            days[res[1][i]] = true
-        end
-        local cursor = day_start
-        if not days[os.date("%Y-%m-%d", cursor)] then
-            cursor = cursor - 86400
-        end
-        while days[os.date("%Y-%m-%d", cursor)] do
-            streak = streak + 1
-            cursor = cursor - 86400
-        end
-    end
-
-    return {
-        today_seconds = sumSince(day_start),
-        week_seconds = sumSince(day_start - 6 * 86400),
-        day_seconds = day_seconds,
-        streak_days = streak,
-    }
-end
-
 -- Seconds read per local day since `since`, in one grouped query. Each event
 -- is capped at a day so a reader left open overnight does not count as hours.
 function Session:dailySeconds(since)
@@ -318,6 +180,20 @@ function Session:dailySeconds(since)
         end
     end
     return by_day
+end
+
+-- Aleph modification, 2026-11-18: pages read since each of two times (a
+-- page counted once per book however often it was turned to), for the
+-- Monthly challenge and Year projection widgets.
+function Session:pagesSince(a, b)
+    local first = math.min(a, b)
+    local res = self:select(
+        "SELECT COUNT(DISTINCT CASE WHEN start_time >= ? THEN id_book || ':' || page END),"
+            .. " COUNT(DISTINCT CASE WHEN start_time >= ? THEN id_book || ':' || page END)"
+            .. " FROM page_stat_data WHERE start_time >= ?;",
+        { a, b, first })
+    if not res then return { 0, 0 } end
+    return { tonumber(res[1][1]) or 0, tonumber(res[2][1]) or 0 }
 end
 
 -- Minutes read in each local hour of the day since `since`, as 24 values for
@@ -338,6 +214,49 @@ function Session:hourMinutes(since)
         end
     end
     return minutes
+end
+
+-- Aleph modification, 2026-11-20: all the time read on this device, for the
+-- Hours read widget: seconds in all and since `year_start`, the books read
+-- in and when the first page was turned. Each page capped at ten minutes,
+-- as for When you read, so a book left open does not count as hours.
+function Session:totalTime(year_start)
+    local res = self:select(
+        "SELECT COALESCE(SUM(MIN(duration, 600)), 0),"
+            .. " COALESCE(SUM(CASE WHEN start_time >= ? THEN MIN(duration, 600) ELSE 0 END), 0),"
+            .. " COUNT(DISTINCT id_book), MIN(start_time) FROM page_stat_data;",
+        { year_start })
+    if not res then return nil end
+    return {
+        seconds = tonumber(res[1][1]) or 0,
+        year_seconds = tonumber(res[2][1]) or 0,
+        books = tonumber(res[3][1]) or 0,
+        first = tonumber(res[4][1]),
+    }
+end
+
+-- Aleph modification, 2026-11-20: each month of a year, for the Time read and
+-- Books and pages widgets: seconds read (each page capped at ten minutes, as
+-- for Hours read) and pages read (a page counted once per book and month).
+-- Two lists of 12, January first.
+function Session:monthStats(year_start, year_end)
+    local seconds, pages = {}, {}
+    for m = 1, 12 do seconds[m], pages[m] = 0, 0 end
+    local res = self:select(
+        "SELECT CAST(strftime('%m', start_time, 'unixepoch', 'localtime') AS INTEGER),"
+            .. " COALESCE(SUM(MIN(duration, 600)), 0), COUNT(DISTINCT id_book || ':' || page)"
+            .. " FROM page_stat_data WHERE start_time >= ? AND start_time < ? GROUP BY 1;",
+        { year_start, year_end })
+    if res then
+        for i = 1, #res[1] do
+            local m = tonumber(res[1][i])
+            if m and m >= 1 and m <= 12 then
+                seconds[m] = tonumber(res[2][i]) or 0
+                pages[m] = tonumber(res[3][i]) or 0
+            end
+        end
+    end
+    return { seconds = seconds, pages = pages }
 end
 
 -- Every page turn this device has recorded: the total, the turns since
@@ -385,60 +304,63 @@ end
 
 -- How fast one book is being read: seconds per page from its own events, the
 -- page count it was last read at, and seconds read over the last `days` days.
+-- KOReader's own longest time counted on one page (its statistics
+-- settings, "max_sec"; 120 seconds unless changed).
+local function maxSecondsPerPage()
+    local max_sec
+    pcall(function()
+        local st = G_reader_settings:readSetting("statistics")
+        max_sec = type(st) == "table" and tonumber(st.max_sec) or nil
+    end)
+    return (max_sec and max_sec > 0) and max_sec or 120
+end
+StatsReader.maxSecondsPerPage = maxSecondsPerPage
+
+-- How fast this book is read, worked out as KOReader's statistics do for the
+-- time left in its status bar (ReaderStatistics avg_time): the time on each
+-- page of the book's present layout (the page_stat view), each page counted
+-- at most max_sec, over the pages read; and the book's page count in that
+-- layout. So Home's time left is the one the book shows when it opens.
+-- recent_seconds: the reading of the last `days` days, for the finish day.
 function Session:bookPace(ids, days)
     if not ids or #ids == 0 then return nil end
     local marks = {}
     for _ = 1, #ids do table.insert(marks, "?") end
     local id_list = table.concat(marks, ",")
-    local totals = self:select(
-        "SELECT COALESCE(SUM(MIN(duration, 600)), 0), COUNT(DISTINCT page), MAX(total_pages)"
-            .. " FROM page_stat_data WHERE id_book IN (" .. id_list .. ");", ids)
-    if not totals then return nil end
-    local seconds = tonumber(totals[1][1]) or 0
-    local pages = tonumber(totals[2][1]) or 0
-    local total_pages = tonumber(totals[3][1]) or 0
+    local max_sec = maxSecondsPerPage()
+    local seconds, pages, total_pages
+    local capped = self:select(
+        "SELECT COUNT(*), COALESCE(SUM(durations), 0) FROM (SELECT MIN(SUM(duration), " .. max_sec .. ") AS durations"
+            .. " FROM page_stat WHERE id_book IN (" .. id_list .. ") GROUP BY id_book, page);", ids)
+    if capped and tonumber(capped[1][1]) then
+        pages = tonumber(capped[1][1]) or 0
+        seconds = tonumber(capped[2][1]) or 0
+        local count = self:select("SELECT MAX(pages) FROM book WHERE id IN (" .. id_list .. ");", ids)
+        total_pages = count and tonumber(count[1][1]) or 0
+    else
+        -- A statistics database without the page_stat view (very old):
+        -- the raw events, each counted at most max_sec.
+        local totals = self:select(
+            "SELECT COALESCE(SUM(MIN(duration, " .. max_sec .. ")), 0), COUNT(DISTINCT page), MAX(total_pages)"
+                .. " FROM page_stat_data WHERE id_book IN (" .. id_list .. ");", ids)
+        if not totals then return nil end
+        seconds = tonumber(totals[1][1]) or 0
+        pages = tonumber(totals[2][1]) or 0
+        total_pages = tonumber(totals[3][1]) or 0
+    end
     local params = {}
     for _, id in ipairs(ids) do table.insert(params, id) end
     table.insert(params, os.time() - (days or 14) * 86400)
     local recent = self:select(
-        "SELECT COALESCE(SUM(MIN(duration, 600)), 0) FROM page_stat_data WHERE id_book IN ("
+        "SELECT COALESCE(SUM(MIN(duration, 600)), 0), MIN(start_time) FROM page_stat_data WHERE id_book IN ("
             .. id_list .. ") AND start_time >= ?;", params)
     return {
         seconds_per_page = pages > 0 and seconds / pages or nil,
         total_pages = total_pages,
         recent_seconds = recent and tonumber(recent[1][1]) or 0,
-    }
-end
-
--- One book's reading on this device: when it started and was last read, the
--- seconds and distinct days spent on it, and the furthest page reached on
--- each day (with the page count then), oldest first, for the reading path.
--- Events are capped at ten minutes, as for pace.
-function Session:bookJournal(ids)
-    if not ids or #ids == 0 then return nil end
-    local marks = {}
-    for _ = 1, #ids do table.insert(marks, "?") end
-    local id_list = table.concat(marks, ",")
-    local totals = self:select(
-        "SELECT MIN(start_time), MAX(start_time), COALESCE(SUM(MIN(duration, 600)), 0),"
-            .. " COUNT(DISTINCT date(start_time, 'unixepoch', 'localtime'))"
-            .. " FROM page_stat_data WHERE id_book IN (" .. id_list .. ");", ids)
-    if not totals or not tonumber(totals[1][1]) then return nil end
-    local days = self:select(
-        "SELECT date(start_time, 'unixepoch', 'localtime'), MAX(page), MAX(total_pages)"
-            .. " FROM page_stat_data WHERE id_book IN (" .. id_list .. ") GROUP BY 1 ORDER BY 1;", ids)
-    local path = {}
-    if days then
-        for i = 1, #days[1] do
-            table.insert(path, { day = days[1][i], page = tonumber(days[2][i]) or 0, total = tonumber(days[3][i]) or 0 })
-        end
-    end
-    return {
-        first_read = tonumber(totals[1][1]),
-        last_read = tonumber(totals[2][1]),
-        seconds = tonumber(totals[3][1]) or 0,
-        days = tonumber(totals[4][1]) or 0,
-        path = path,
+        -- Aleph modification, 2026-11-20: when the book was first read in
+        -- those days (a book started three days ago has three days of pace).
+        recent_first = recent and tonumber(recent[2][1]) or nil,
     }
 end
 
@@ -452,86 +374,6 @@ local function withSession(fn)
         return nil, "query_failed"
     end
     return result
-end
-
--- Multiple statistics rows can share one md5 (the unique key is
--- title+authors+md5), so rows are grouped per md5. The sweep enumerates in
--- chunks and therefore drives the collector itself; a group is only complete
--- once every page has been added.
-function StatsReader.newBookCollector()
-    return { by_md5 = {}, list = {} }
-end
-
-function StatsReader.collectBookRow(collector, row)
-    local entry = collector.by_md5[row.md5]
-    if not entry then
-        entry = { md5 = row.md5, ids = {}, rows = {}, last_open = 0, _variant_seen = {}, _variant_count = 0 }
-        collector.by_md5[row.md5] = entry
-        table.insert(collector.list, entry)
-    end
-    applyRow(entry, row.id, row.title, row.authors, row.last_open)
-    return entry
-end
-
-function StatsReader.collectedEntries(collector)
-    return collector.list
-end
-
-function StatsReader.finalizeBookEntry(entry)
-    return finalizeEntry(entry)
-end
-
--- Returns { ids, rows, last_open, title, authors, metadata_ambiguous, stats_ambiguous } for one md5.
--- Used by live single-book sync before match-check.
-function StatsReader.getBook(md5)
-    return withSession(function(session)
-        return session:book(md5)
-    end)
-end
-
--- Identity cache for the currently open book. The close and suspend handlers
--- run on a hard latency budget, so they must not open statistics.sqlite3 to
--- learn the row ids; the cache is primed once the reader is ready instead.
--- Only stable identity fields live here. A miss is normal (a first open can
--- capture before the statistics row exists) and resolves through getBookIds().
-local identity_cache
-
-function StatsReader.primeIdentity(md5)
-    if type(md5) ~= "string" or md5 == "" then return nil end
-    if identity_cache and identity_cache.md5 == md5 then
-        return identity_cache.book
-    end
-    local book = StatsReader.getBook(md5)
-    identity_cache = { md5 = md5, book = book }
-    return book
-end
-
--- Returns the cached entry plus whether the digest was cached at all, so a
--- caller can tell "no statistics row" from "never looked up".
-function StatsReader.cachedIdentity(md5)
-    if identity_cache and identity_cache.md5 == md5 then
-        return identity_cache.book, true
-    end
-    return nil, false
-end
-
-function StatsReader.forgetIdentity()
-    identity_cache = nil
-end
-
--- Returns the stat book row ids sharing one md5 (the stats unique key is
--- title+authors+md5, so a single file can map to several rows).
-function StatsReader.getBookIds(md5)
-    local result = withSession(function(session)
-        return session:bookIds(md5)
-    end)
-    return result or {}
-end
-
-function StatsReader.getReadingSummary()
-    return withSession(function(session)
-        return session:readingSummary()
-    end)
 end
 
 -- Aleph, 2026-11-09: answers kept until KOReader's statistics database
@@ -581,6 +423,24 @@ function StatsReader.getPageTurns(today_start)
     end)
 end
 
+function StatsReader.getTotalTime(year_start)
+    return remembered("total:" .. tostring(year_start), function()
+        return withSession(function(session) return session:totalTime(year_start) end)
+    end)
+end
+
+function StatsReader.getMonthStats(year_start, year_end)
+    return remembered("months:" .. tostring(year_start), function()
+        return withSession(function(session) return session:monthStats(year_start, year_end) end)
+    end)
+end
+
+function StatsReader.getPagesSince(a, b)
+    return remembered("pages:" .. tostring(a) .. ":" .. tostring(b), function()
+        return withSession(function(session) return session:pagesSince(a, b) end)
+    end)
+end
+
 function StatsReader.getSessionRecords(since)
     return remembered("records:" .. tostring(since), function()
         return withSession(function(session) return session:sessionRecords(since) end)
@@ -590,19 +450,6 @@ end
 function StatsReader.getBookPace(md5, days)
     return remembered("pace:" .. tostring(md5) .. ":" .. tostring(days), function()
         return withSession(function(session) return session:bookPace(session:bookIds(md5), days) end)
-    end)
-end
-
-function StatsReader.getBookJournal(md5)
-    return withSession(function(session)
-        return session:bookJournal(session:bookIds(md5))
-    end)
-end
-
-function StatsReader.getEventsAfter(ids, watermark, limit)
-    if not ids or #ids == 0 then return {} end
-    return withSession(function(session)
-        return session:eventsAfter(ids, watermark, limit)
     end)
 end
 

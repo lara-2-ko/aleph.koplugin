@@ -49,8 +49,6 @@ local function running(ui, plugin)
 end
 Conflicts.running = running
 
-function Conflicts.zenosRunning(ui) return running(ui, Conflicts.PLUGINS[1]) end
-
 local function stored()
     return Prefs.get()
 end
@@ -79,14 +77,16 @@ local function message(list)
     if #list == 1 then
         local T = require("ffi/util").template
         return T(_("%1 is also on"), list[1].label),
-            T(_("Aleph and %1 both put their own home screen over KOReader's file browser. Running both can make KOReader slow, freeze or crash, most often when a book is closed.\n\nTo use Aleph, turn %1 off in Plugin management and restart KOReader."), list[1].label)
+            T(_("Aleph and %1 both put their own home screen over KOReader's file browser. Running both can make KOReader slow, freeze or crash, most often when a book is closed.\n\nTo use Aleph, turn %1 off in Plugin management and restart KOReader."),
+                list[1].label)
     end
     local names = {}
     for i, p in ipairs(list) do names[i] = p.label end
     local T = require("ffi/util").template
     local joined = table.concat(names, _(" and "))
     return T(_("%1 are also on"), joined),
-        T(_("These plugins replace the same screens as Aleph, starting with its home screen. Running them together can make KOReader slow, freeze or crash, most often when a book is closed.\n\nTo use Aleph, turn %1 off in Plugin management and restart KOReader."), joined)
+        T(_("These plugins replace the same screens as Aleph, starting with its home screen. Running them together can make KOReader slow, freeze or crash, most often when a book is closed.\n\nTo use Aleph, turn %1 off in Plugin management and restart KOReader."),
+            joined)
 end
 
 function Conflicts.check(ui)

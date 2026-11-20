@@ -144,7 +144,6 @@ function Browser:dashboardMode() return self.mode == "home" end
 function Browser:menuChromeHeight() return 0, 0 end
 function Browser:isOnDevice(book) return book and book.path ~= nil end
 function Browser:onDeviceCount() return #self.local_library.books end
-function Browser:dashboardResumePath(book) return book and book.path end
 function Browser:boardBookMd5(book) return book and book.md5 end
 function Browser:getCurrentDownloadDir() return self.settings.library_roots[1] end
 function Browser:thumbnailDisplay(book)
@@ -207,8 +206,10 @@ function Browser:coversArrived(event, items)
 end
 -- How many books are handed to the background process at a time.
 local COVER_BATCH = 6
-function Browser:queueCovers()
+-- delay: seconds before the next look (0.02 unless said).
+function Browser:queueCovers(delay)
     if self.cover_task or self.closed or (#self.cover_queue == 0 and (#self.cover_prefetch == 0 or self.mode == "detail")) then return end
+    self._cover_delay = delay
     self.cover_task = function()
         self.cover_task = nil
         if self.closed then return end
@@ -254,22 +255,38 @@ function Browser:queueCovers()
             self:showNewCovers(false)
             return
         end
-        if #batch > 0 and not CoverJob.start(batch, self.cover_listener) then
-            -- No background process on this device: one cover is made here
-            -- (the screen waits for it) and the others go back in the queue.
+        local started, why = true, nil
+        if #batch > 0 then started, why = CoverJob.start(batch, self.cover_listener) end
+        local wait
+        if not started and (why == "failed" or why == "low memory") then
+            -- Aleph modification, 2026-11-18: the background process could
+            -- not start this time: the books wait, and it is tried again in
+            -- half a minute (never made here, the screen waiting, meanwhile).
+            for i = #batch, 1, -1 do table.insert(queue, 1, batch[i].book) end
+            wait = 30
+        elseif not started then
+            -- No background processes on this device: one cover is made here
+            -- (the screen waits for it), the others go back in the queue, and
+            -- the next waits half a second so the screen still answers.
             for i = #batch, 2, -1 do table.insert(queue, 1, batch[i].book) end
             local it = batch[1]
             it.book.cover_checked = true
+            local t0 = os.time()
             local ok, made = pcall(Local.extractCover, it.path, it.target, it.th)
             if ok and made then it.book.cover_path = it.target end
+            if os.time() - t0 >= 2 then
+                require("logger").warn("Aleph: covers: made in KOReader's process in", os.time() - t0, "s:", tostring(it.path))
+            end
             self._cover_epoch = (self._cover_epoch or 0) + 1
             self.cover_pending[it.book.id] = nil
             if visible then self.cover_dirty = true end
+            wait = 0.5
         end
         self:showNewCovers(#self.cover_queue == 0 and not CoverJob.busy())
-        self:queueCovers()
+        self:queueCovers(wait)
     end
-    UIManager:scheduleIn(0.02, self.cover_task)
+    UIManager:scheduleIn(self._cover_delay or 0.02, self.cover_task)
+    self._cover_delay = nil
 end
 function Browser:cover(book, w, h)
     self:prepareCover(book)
@@ -344,6 +361,16 @@ end
 local SORTS = { "title", "author", "series", "recently_added", "last_read" }
 local SORT_LABELS = { _("Title"), _("Author"), _("Series"), _("Added"), _.pgettext("Sort by", "Read") }
 local TIME_SORTS = { recently_added = true, last_read = true }
+-- Aleph modification, 2026-11-18: with Reading shown, Progress is a sort
+-- too (furthest along first, or the other way).
+local DESC_FIRST = { recently_added = true, last_read = true, progress = true }
+local function sortsFor(read_status)
+    if read_status ~= "reading" then return SORTS, SORT_LABELS end
+    local ids, labels = {}, {}
+    for i, id in ipairs(SORTS) do ids[i], labels[i] = id, SORT_LABELS[i] end
+    ids[#ids + 1], labels[#labels + 1] = "progress", _("Progress")
+    return ids, labels
+end
 local STATUSES = { "all", "unread", "reading", "read", "on_hold" }
 local STATUS_LABELS = { _("All"), _("Unread"), _("Reading"), _("Finished"), _("On hold") }
 local STATUS_SHORT = { unread = _("Unread"), reading = _("Reading"), read = _("Finished"), on_hold = _("On hold") }
@@ -390,7 +417,7 @@ function Browser:sortLabel(params)
     if sort == "series" then return order == "desc" and _("Series, last first") or _("Series order") end
     if sort == "recently_added" then return order == "asc" and _("Added (oldest)") or _("Recently added") end
     if sort == "last_read" or sort == "recently_read" then return order == "asc" and _("Read (oldest)") or _("Last read") end
-    return _("Progress")
+    return order == "asc" and _("Least read first") or _("Most read first")
 end
 function Browser:libraryGroupOf(params)
     local sort = params.sort or "title"
@@ -476,6 +503,7 @@ function Browser:buildLibrary(m)
         screen_w = m.w, screen_h = m.h, marks = false,
         run = function(a, _i, hold)
             if hold then
+                if self:collectionHold(a) then return end
                 if not self:selectHold(a) then self:boardHoldBook(a) end
             else self:boardRun(a) end
         end,
@@ -567,6 +595,7 @@ function Browser:buildSeriesPage(m, books, view)
         screen_w = m.w, screen_h = m.h, marks = false,
         run = function(a, _i, hold)
             if hold then
+                if self:collectionHold(a) then return end
                 if not self:selectHold(a) then self:boardHoldBook(a) end
             else self:boardRun(a) end
         end,
@@ -587,7 +616,8 @@ function Browser:librarySheetModel(sheet)
     if sheet.pick == "collection" then
         local options = { { label = _("Whole library"), value = false, on = s.collection == nil } }
         for _i, c in ipairs(lib:collections()) do options[#options + 1] = { label = c.title .. " (" .. c.count .. ")", value = c.name, on = s.collection == c.name } end
-        return { pick = true, title = _("Collection"), options = options, page = sheet.pick_page, empty = _("No collections yet. Create them in the file browser.") }
+        return { pick = true, title = _("Collection"), options = options, page = sheet.pick_page, empty = _("No collections yet. Create them in the file browser."),
+            note = #options > 1 and _("Hold a collection to rename or delete it.") or nil }
     elseif sheet.pick == "genre" then
         local options = { { label = _("Any genre"), value = false, on = s.genre == nil } }
         for _i, g in ipairs(lib:genres()) do options[#options + 1] = { label = g.name .. " (" .. g.count .. ")", value = g.name, on = s.genre == g.name } end
@@ -615,8 +645,10 @@ function Browser:librarySheetModel(sheet)
     local sort_index = 1
     -- Author by last name is Author with "Last name" chosen under it.
     local by_last = s.sort == "author_last"
-    for i, id in ipairs(SORTS) do if id == (by_last and "author" or s.sort or "title") then sort_index = i end end
+    local sort_ids, sort_labels = sortsFor(s.read_status)
+    for i, id in ipairs(sort_ids) do if id == (by_last and "author" or s.sort or "title") then sort_index = i end end
     local time = TIME_SORTS[s.sort]
+    local order_labels = time and { _("Newest"), _("Oldest") } or s.sort == "progress" and { _("Most read"), _("Least read") } or { "A–Z", "Z–A" }
     local status_index = 1
     for i, id in ipairs(STATUSES) do if id == (s.read_status or "all") then status_index = i end end
     local rows = {
@@ -637,9 +669,9 @@ function Browser:librarySheetModel(sheet)
     end
     return {
         title = _("Sort and filter"),
-        sorts = { labels = SORT_LABELS, selected = sort_index },
+        sorts = { labels = sort_labels, selected = sort_index },
         names = (s.sort == "author" or by_last) and { labels = { _("First name"), _("Last name") }, selected = by_last and 2 or 1 } or nil,
-        order = { labels = time and { _("Newest"), _("Oldest") } or { "A–Z", "Z–A" }, selected = s.order and 2 or 1 },
+        order = { labels = order_labels, selected = s.order and 2 or 1 },
         shows = { labels = STATUS_LABELS, selected = status_index },
         rows = rows,
         note = self.library_scoped and _("For this list only") or _("Saved for the library"),
@@ -678,13 +710,18 @@ function Browser:libraryRun(a)
     elseif k == "close-sheet" or k == "sheet-done" then
         if sheet then self:libraryApplySheet() end
     elseif k == "sheet-sort" and sheet and sheet.staged then
-        sheet.staged.sort = SORTS[a.index] or "title"; sheet.staged.order = nil; self:updateItems()
+        sheet.staged.sort = (sortsFor(sheet.staged.read_status))[a.index] or "title"; sheet.staged.order = nil; self:updateItems()
     elseif k == "sheet-names" and sheet and sheet.staged then
         sheet.staged.sort = a.index == 2 and "author_last" or "author"; self:updateItems()
     elseif k == "sheet-order" and sheet and sheet.staged then
-        sheet.staged.order = (a.index == 2) and (TIME_SORTS[sheet.staged.sort] and "asc" or "desc") or nil; self:updateItems()
+        sheet.staged.order = (a.index == 2) and (DESC_FIRST[sheet.staged.sort] and "asc" or "desc") or nil; self:updateItems()
     elseif k == "sheet-show" and sheet and sheet.staged then
-        sheet.staged.read_status = STATUSES[a.index]; self:updateItems()
+        sheet.staged.read_status = STATUSES[a.index]
+        -- Progress goes with Reading: another filter goes back to Last read.
+        if sheet.staged.sort == "progress" and sheet.staged.read_status ~= "reading" then
+            sheet.staged.sort, sheet.staged.order = "last_read", nil
+        end
+        self:updateItems()
     elseif k == "sheet-open-pick" and sheet then sheet.pick = a.pick; sheet.pick_page = 1; self:updateItems()
     elseif k == "sheet-back" and sheet then sheet.pick = nil; sheet.pick_page = nil; self:updateItems()
     elseif k == "sheet-page" and sheet and sheet.pick then
@@ -804,9 +841,11 @@ function Browser:confirmDelete(b, with_data)
     end
     local text
     if with_data then
-        text = T(_("“%1” will be deleted from this device, with everything KOReader keeps about it: highlights, notes, bookmarks, the last page read, its status and rating.\n\nYour reading statistics are kept, and a finished book still counts toward this year.\n\nThis cannot be undone."), b.title)
+        text = T(_("“%1” will be deleted from this device, with everything KOReader keeps about it: highlights, notes, bookmarks, the last page read, its status and rating.\n\nYour reading statistics are kept, and a finished book still counts toward this year.\n\nThis cannot be undone."),
+            b.title)
     else
-        text = T(_("The file of “%1” will be deleted from this device.\n\nIts highlights, notes, bookmarks, last page, status and rating are kept: put the same file back in the same folder and KOReader finds them again. Your reading statistics are kept, and a finished book still counts toward this year.\n\nThe file itself cannot be brought back."), b.title)
+        text = T(_("The file of “%1” will be deleted from this device.\n\nIts highlights, notes, bookmarks, last page, status and rating are kept: put the same file back in the same folder and KOReader finds them again. Your reading statistics are kept, and a finished book still counts toward this year.\n\nThe file itself cannot be brought back."),
+            b.title)
     end
     require("aleph_confirm").show{
         title = with_data and _("Delete the book and its data?") or _("Delete the book file?"),
@@ -893,6 +932,73 @@ function Browser:selectToggle(id)
     self:updateItems()
 end
 -- A long press on a book of the library list. True when it was handled.
+-- Aleph modification, 2026-11-19: a collection held in the Collection list:
+-- Rename or Delete. One that Aleph fills from Calibre's #collections column
+-- comes back while Calibre names it: said first, with the choice to go on.
+function Browser:collectionHold(a)
+    local sheet = self.library_sheet
+    if not (a.kind == "sheet-pick" and a.value and sheet and sheet.pick == "collection") then return false end
+    local lib = self.local_library
+    local name = a.value
+    local title = lib:collectionTitle(name)
+    local Confirm = require("aleph_confirm")
+    if Local.isFavorites(name) then
+        self:message(_("Favorites is KOReader's own collection: it cannot be renamed or deleted."))
+        return true
+    end
+    local from_calibre = false
+    pcall(function() from_calibre = require("aleph_calibre_collections").fromCalibre(name) end)
+    local function done(new_name)
+        pcall(function() require("aleph_calibre_collections").forget(name) end)
+        if sheet.staged and sheet.staged.collection == name then sheet.staged.collection = new_name end
+        local params = self.params
+        if params and params.collection == name then params.collection = new_name end
+        pcall(function() require("aleph_board_data").invalidateLocal() end)
+        self:updateItems()
+    end
+    local function rename()
+        self:input(_("Rename collection"), title, function(new_name)
+            new_name = (new_name or ""):gsub("^%s+", ""):gsub("%s+$", "")
+            if new_name == "" or new_name == name then return end
+            local ok, err = pcall(lib.renameCollection, lib, name, new_name)
+            if not ok then return self:message(_("Could not rename the collection.") .. "\n" .. tostring(err)) end
+            done(new_name)
+        end, _("Rename"))
+    end
+    local function delete()
+        Confirm.show{
+            title = T(_("Delete \"%1\"?"), title),
+            text = _("The collection goes; its books stay on the device and in the library."),
+            ok_label = _("Delete"), cancel_label = _("Cancel"),
+            on_ok = function()
+                local ok, err = pcall(lib.deleteCollection, lib, name)
+                if not ok then return self:message(_("Could not delete the collection.") .. "\n" .. tostring(err)) end
+                done(nil)
+            end,
+        }
+    end
+    local function menu()
+        Confirm.show{
+            title = title,
+            text = _("Rename this collection or delete it. Deleting it keeps its books."),
+            ok_label = _("Rename"), cancel_label = _("Close"),
+            extra_label = _("Delete"),
+            on_ok = rename, on_extra = delete,
+        }
+    end
+    if from_calibre then
+        Confirm.show{
+            title = _("This collection comes from Calibre"),
+            text = T(_("Aleph fills \"%1\" from Calibre's #collections column. Renamed or deleted here, it comes back with its books the next time Aleph reads Calibre's column (when Home opens), alongside any new name.\n\nTo change it for good, rename it or clear it in Calibre's #collections column and send the books again."), title),
+            ok_label = _("Change here anyway"), cancel_label = _("Cancel"),
+            on_ok = menu,
+        }
+    else
+        menu()
+    end
+    return true
+end
+
 function Browser:selectHold(a)
     if self.mode ~= "library" or self.index_kind or self.detail_sheet then return false end
     if self.select then
@@ -979,7 +1085,7 @@ function Browser:selectRun(a)
         local books = self:selectedBooks()
         local failed, done = 0, 0
         for _i, b in ipairs(books) do
-            local ok = pcall(lib.setStatus, lib, b, a.status)
+            local ok = pcall(lib.setStatus, lib, b, a.status, { bulk = true })
             if ok then done = done + 1 else failed = failed + 1 end
         end
         self.select = nil
@@ -1070,10 +1176,8 @@ function Browser:detailSheetModel()
     if b.authors and b.authors[1] then
         rows[#rows + 1] = { label = T(_("More by %1"), b.authors[1]), icon = "feather", chevron = true, action = { kind = "menu-author" } }
     end
-    -- With the Goodreads plugin by advokatb (aleph_goodreads_send.lua).
-    if require("aleph_goodreads_send").available(self.plugin and self.plugin.ui) then
-        rows[#rows + 1] = { label = _("Send to Goodreads"), icon = "arrow-up-right", chevron = true, action = { kind = "menu-goodreads" } }
-    end
+    -- Goodreads (aleph_goodreads_send.lua; Aleph's own since 1.2.32).
+    rows[#rows + 1] = { label = _("Send to Goodreads"), icon = "arrow-up-right", chevron = true, action = { kind = "menu-goodreads" } }
     -- Deleting, last: one entry, which opens the two ways to do it.
     rows[#rows + 1] = { label = _("Delete book"), icon = "trash", chevron = true, action = { kind = "menu-delete-choose" } }
     return { title = b.title, rows = rows }
@@ -1472,7 +1576,7 @@ function Browser:showAbout()
     local dialog
     dialog = require("ui/widget/buttondialog"):new{ title = "Aleph " .. require("aleph_prefs").VERSION, text =
         "Powered by BookOrbit\nCopyright (C) 2025-2026 neon.\nAdditional copyright is held by the respective BookOrbit contributors.\nOriginal project: https://github.com/bookorbit/bookorbit\n\n" ..
-        "This is a modified version of BookOrbit and is not an official BookOrbit release. Modified 2026-11-15.\n\n" ..
+        "This is a modified version of BookOrbit and is not an official BookOrbit release. Modified 2026-11-20.\n\n" ..
         "Licensed under the GNU Affero General Public License, version 3 only, with additional terms. This software is provided without warranty. You may redistribute and modify it under those terms.\n\n" ..
         "Complete source is included in aleph.koplugin. See LICENSE, ADDITIONAL_TERMS.md and MODIFICATIONS.md. Books and statistics come from KOReader; Syncthing operates independently.",
         buttons = { { { text = _("Powered by BookOrbit ↗"), callback = function()
@@ -1480,18 +1584,6 @@ function Browser:showAbout()
             else self:message("https://github.com/bookorbit/bookorbit") end
         end } }, { { text = _("Close"), callback = function() UIManager:close(dialog) end } } } }
     UIManager:show(dialog)
-end
-function Browser:folderSettings()
-    local entries = { { _("Add folder…"), function()
-        UIManager:show(require("ui/widget/pathchooser"):new{ select_directory = true, path = self.settings.library_roots[1], onConfirm = function(path)
-            for _i, p in ipairs(self.settings.library_roots) do if p == path then return end end
-            table.insert(self.settings.library_roots, path); self:persistSetting("library_roots", self.settings.library_roots); self:startScan()
-        end })
-    end } }
-    for i, path in ipairs(self.settings.library_roots) do local index = i; entries[#entries + 1] = { T(_("Remove from index: %1"), path), function()
-        table.remove(self.settings.library_roots, index); self:persistSetting("library_roots", self.settings.library_roots); self:startScan()
-    end } end
-    self:choices(_("Library folders"), entries)
 end
 function Browser:refreshData()
     Data.invalidateLocal()
@@ -1515,8 +1607,10 @@ function Browser:startScan()
             self.scanning = false
             -- An unchanged library keeps the board as it is: no rebuild, no redraw.
             if self.local_library.last_scan_changed ~= false or #self.local_library.errors > 0 then self:refreshData() end
-            if #self.local_library.errors > 0 then self:message(T(_("Indexed %1 books. %2 files could not be read."), #self.local_library.books, #self.local_library.errors) .. "\n" .. self.local_library.errors[1]) end
+            if #self.local_library.errors > 0 then self:message(T(_("Indexed %1 books. %2 files could not be read."),
+                #self.local_library.books, #self.local_library.errors) .. "\n" .. self.local_library.errors[1]) end
             if #self.local_library.books == 0 and #self.settings.library_roots == 0 then self:showSettings("library") end
+            self:syncCalibreCollections(true)
         else UIManager:scheduleIn(0.01, self.scan_task) end
     end
     UIManager:nextTick(self.scan_task)
@@ -1526,7 +1620,20 @@ end
 -- already right and the whole library is not gone through.
 function Browser:startScanIfDue()
     local ok, due = pcall(self.local_library.scanDue, self.local_library)
-    if not ok or due then self:startScan() end
+    if not ok or due then self:startScan() else self:syncCalibreCollections() end
+end
+-- Aleph modification, 2026-11-17: the books into the collections Calibre's
+-- #collections column names (aleph_calibre_collections.lua), in the
+-- background; Home or the library drawn again when something changed.
+function Browser:syncCalibreCollections(force)
+    if self.settings.calibre_collections == false then return end
+    local lib = self.local_library
+    if not (lib and type(lib.books) == "table" and #lib.books > 0) then return end
+    try(function()
+        require("aleph_calibre_collections").sync(lib.books, function(n)
+            if n > 0 and not self.closed and (self.mode == "home" or self.mode == "library") then self:updateItems() end
+        end, force)
+    end)
 end
 function Browser:cancelScan()
     self.scanning = false
@@ -1540,7 +1647,16 @@ function Browser:boardFlip(delta)
     -- change what is being filtered.
     if self.mode == "library" and self.library_sheet and self.library_sheet.kind == "sort" then return end
     if self.mode == "library" and self.select and self.select.sheet then return end
-    if self.mode == "home" then self.current_context.board_page = math.max(1, math.min(4, self:boardPage() + delta))
+    if self.mode == "home" then
+        -- Over the pages shown (a page with no widgets is skipped).
+        local step = delta > 0 and 1 or -1
+        local at = self:boardPage()
+        for _i = 1, math.abs(delta) do
+            local nxt = self:boardNextPage(at, step)
+            if not nxt then break end
+            at = nxt
+        end
+        self.current_context.board_page = at
     else self.page = math.max(1, math.min(self.page_count or 1, self.page + delta)) end
     self:updateItems()
 end
@@ -1699,8 +1815,12 @@ BOARD_ACTIONS["rate"] = function(self, a) self:rateBook(a.book, a.rating) end
 BOARD_ACTIONS["book-actions"] = function(self, a) self:loadBookDetail(a.book.id) end
 BOARD_ACTIONS["books"] = function(self, a) self:loadBooks(a.params, a.title) end
 BOARD_ACTIONS["folders"] = function(self) self:showSettings("library") end
+BOARD_ACTIONS["goal-settings"] = function(self) self:showSettings("profile") end
+BOARD_ACTIONS["bingo"] = function() require("aleph_bingo_page").open() end
 BOARD_ACTIONS["shuffle"] = function(self) self:refreshData() end
 BOARD_ACTIONS["silverfish"] = function() return require("aleph_integrations").openSilverfish() end
+-- Aleph modification, 2026-11-16: the weather's settings.
+BOARD_ACTIONS["weather"] = function(self) return require("aleph_weather").openMenu(self) end
 BOARD_ACTIONS["insights"] = function(self, a) return require("aleph_integrations").openInsights(self.plugin.ui, a.view) end
 BOARD_ACTIONS["night"] = function(self) UIManager:broadcastEvent(Event:new("ToggleNightMode")); self:updateItems() end
 BOARD_ACTIONS["rotate"] = function() UIManager:broadcastEvent(Event:new("IterateRotation")) end

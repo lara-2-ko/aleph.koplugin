@@ -34,6 +34,24 @@ function FieldText:initTextBox(...)
     end
 end
 
+-- Aleph modification, 2026-11-20 (1.2.53): a tap on the field brings the
+-- on-screen keyboard up on a touchscreen, always. KOReader keeps it hidden,
+-- even on a tap, when it thinks a keyboard is attached (a device with keys,
+-- or anything its External keyboard plugin takes for one: a Bluetooth page
+-- turner can be) and Settings > Keyboard > Show virtual keyboard is off, so
+-- there was no way to type. It still does not open by itself then, for
+-- whoever does have a keyboard.
+function FieldText:onTapTextBox(arg, ges)
+    local used = InputText.onTapTextBox and InputText.onTapTextBox(self, arg, ges)
+    local Device = require("device")
+    if Device:isTouchDevice() and not self:isKeyboardVisible() then
+        self:onShowKeyboard()
+        local dialog = self.parent
+        if dialog and dialog.isKeyboardVisible then dialog.keyboard_visible = self:isKeyboardVisible() end
+    end
+    return used or true
+end
+
 local Prompt = InputDialog:extend{
     inputtext_class = FieldText,
     ok_label = nil,

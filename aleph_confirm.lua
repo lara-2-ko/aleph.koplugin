@@ -7,7 +7,8 @@ title, the explanation, and Cancel / action pills. Tapping outside cancels.
   Confirm.show{ title, text, ok_label, cancel_label, on_ok, on_cancel }
   (on_cancel: run by the cancel pill only, not by a tap outside;
   lines: the most lines the text may take, 14 by default;
-  extra_label, on_extra: a third choice, a full-width pill above the two)
+  extra_label, on_extra: a third choice, a full-width pill above the two;
+  modal: a tap outside does nothing, only the pills close it)
 ]]
 
 local Geom = require("ui/geometry")
@@ -27,6 +28,7 @@ local Confirm = {}
 function Confirm.show(o)
     local panel
     panel = Panel:new{
+        dismiss = not o.modal,
         build = function(p, sw, sh)
             local w = math.min(px(460), sw - 2 * px(16))
             local pad = px(18)

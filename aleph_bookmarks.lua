@@ -33,7 +33,6 @@ local Device = require("device")
 local Event = require("ui/event")
 local TextBoxWidget = require("ui/widget/textboxwidget")
 local UIManager = require("ui/uimanager")
-local datetime = require("datetime")
 local T = require("ffi/util").template
 local _ = require("aleph_gettext")
 
@@ -245,7 +244,8 @@ local function quoteBlock(e, w, max_lines)
         local label = e.chapter and T(_("in %1"), e.chapter) or _("Page bookmark")
         -- In the bookmark's colour (aleph_bookmark_colors.lua).
         local hex = require("aleph_bookmark_colors").hex(bookmarkColor(e))
-        return hstack({ w = w, gap = px(8) }, { icon("bookmark", px(18), { sw = 2.25, col = hex, fill = hex and true or nil }), text(label, { s = QUOTE_SIZE, b = true, w = w - px(26), data = true }) })
+        return hstack({ w = w, gap = px(8) },
+            { icon("bookmark", px(18), { sw = 2.25, col = hex, fill = hex and true or nil }), text(label, { s = QUOTE_SIZE, b = true, w = w - px(26), data = true }) })
     end
     local str = e.text or ""
     if filled then
@@ -340,7 +340,8 @@ local function bookmarkLookRows(page, w)
         local label = text(T(_("Search: “%1”"), page.state.search), { s = 13, b = true, data = true })
         local chip_w = wOf(label) + px(18) + px(16) + px(8) + px(14)
         local chip = BoardUI.box({ w = math.min(w, chip_w), h = px(34), radius = px(17), bg = INK.ge },
-            hstack({ w = math.min(w, chip_w), h = px(34) }, { space(px(14), 1), icon("search", px(16), { sw = 2.25 }), space(px(8), 1), label, flex(0), icon("x", px(16), { sw = 2.5 }), space(px(10), 1) }))
+            hstack({ w = math.min(w, chip_w), h = px(34) },
+                { space(px(14), 1), icon("search", px(16), { sw = 2.25 }), space(px(8), 1), label, flex(0), icon("x", px(16), { sw = 2.5 }), space(px(10), 1) }))
         rows[#rows + 1] = space(nil, px(10))
         rows[#rows + 1] = hstack({ w = w }, { flex(0), BoardUI.hit(chip, { kind = "clear-search" }), flex(0) })
     end
@@ -400,7 +401,8 @@ local function lookRows(page, w)
         local label = text(T(_("Search: “%1”"), page.state.search), { s = 13, b = true, data = true })
         local chip_w = wOf(label) + px(18) + px(16) + px(8) + px(14)
         local chip = BoardUI.box({ w = math.min(w, chip_w), h = px(34), radius = px(17), bg = INK.ge },
-            hstack({ w = math.min(w, chip_w), h = px(34) }, { space(px(14), 1), icon("search", px(16), { sw = 2.25 }), space(px(8), 1), label, flex(0), icon("x", px(16), { sw = 2.5 }), space(px(10), 1) }))
+            hstack({ w = math.min(w, chip_w), h = px(34) },
+                { space(px(14), 1), icon("search", px(16), { sw = 2.25 }), space(px(8), 1), label, flex(0), icon("x", px(16), { sw = 2.5 }), space(px(10), 1) }))
         search_row = hstack({ w = w }, { flex(0), BoardUI.hit(chip, { kind = "clear-search" }), flex(0) })
     end
     return vstack({ w = w }, {
@@ -654,6 +656,42 @@ local function exportNotes(ui)
     return false
 end
 
+-- The bookmark made most recently: gone to, and its sheet opened.
+local function jumpToLatest(page)
+    local at, newest
+    for i, e in ipairs(page.list) do
+        if e.datetime and (not newest or e.datetime > newest) then at, newest = i, e.datetime end
+    end
+    if at then
+        jumpTo(page, at)
+        UIManager:tickAfterNext(function() Bookmarks.openSheet(page, page.list[at]) end)
+    end
+end
+
+-- Asks for the words to search the bookmarks for (Aleph's own prompt, or
+-- KOReader's input box where that cannot open).
+local function promptSearch(page)
+    local function apply(value)
+        value = value and value:gsub("^%s+", ""):gsub("%s+$", "") or ""
+        page.state.search = value ~= "" and value or nil
+        refilter(page)
+        page:refresh()
+    end
+    local ok = pcall(function()
+        require("aleph_input").prompt{ title = _("Search bookmarks"), text = page.state.search or "",
+            hint = _("A word in a passage or note"), ok_label = _("Search"), on_ok = apply }
+    end)
+    if not ok then
+        local InputDialog = require("ui/widget/inputdialog")
+        local dialog
+        dialog = InputDialog:new{ title = _("Search bookmarks"), input = page.state.search or "",
+            buttons = { { { text = _("Cancel"), id = "close", callback = function() UIManager:close(dialog) end },
+                { text = _("Search"), is_enter_default = true, callback = function() local v = dialog:getInputText(); UIManager:close(dialog); apply(v) end } } } }
+        UIManager:show(dialog)
+        dialog:onShowKeyboard()
+    end
+end
+
 function Bookmarks.openOptions(page, native)
     local ui = page.ui
     local function row(iw, ic, label, sub, action)
@@ -687,25 +725,7 @@ function Bookmarks.openOptions(page, native)
             sheet:close()
             if k == "search" then
                 UIManager:tickAfterNext(function()
-                    local function apply(value)
-                        value = value and value:gsub("^%s+", ""):gsub("%s+$", "") or ""
-                        page.state.search = value ~= "" and value or nil
-                        refilter(page)
-                        page:refresh()
-                    end
-                    local ok = pcall(function()
-                        require("aleph_input").prompt{ title = _("Search bookmarks"), text = page.state.search or "",
-                            hint = _("A word in a passage or note"), ok_label = _("Search"), on_ok = apply }
-                    end)
-                    if not ok then
-                        local InputDialog = require("ui/widget/inputdialog")
-                        local dialog
-                        dialog = InputDialog:new{ title = _("Search bookmarks"), input = page.state.search or "",
-                            buttons = { { { text = _("Cancel"), id = "close", callback = function() UIManager:close(dialog) end },
-                                { text = _("Search"), is_enter_default = true, callback = function() local v = dialog:getInputText(); UIManager:close(dialog); apply(v) end } } } }
-                        UIManager:show(dialog)
-                        dialog:onShowKeyboard()
-                    end
+                    promptSearch(page)
                 end)
             elseif k == "clear" then
                 page.state.search = nil
@@ -714,14 +734,7 @@ function Bookmarks.openOptions(page, native)
                 if page.state.sort ~= "page" then page.state.sort = "page"; saveSort("page"); refilter(page) end
                 jumpTo(page, nearest(page) or 1)
             elseif k == "latest" then
-                local at, newest
-                for i, e in ipairs(page.list) do
-                    if e.datetime and (not newest or e.datetime > newest) then at, newest = i, e.datetime end
-                end
-                if at then
-                    jumpTo(page, at)
-                    UIManager:tickAfterNext(function() Bookmarks.openSheet(page, page.list[at]) end)
-                end
+                jumpToLatest(page)
             elseif k == "export" then
                 if not exportNotes(ui) then
                     page:close()
@@ -734,6 +747,95 @@ function Bookmarks.openOptions(page, native)
             return true
         end,
     }
+end
+
+-- A tap on the bookmarks page. native: opens KOReader's own list.
+local function pageAction(p, action, native)
+    local ui = p.ui
+    local k = action.kind
+    if k == "page" then turn(p, action.delta or 0, action.to)
+    elseif k == "item" then
+        local e = p.list[action.at]
+        if e then Bookmarks.openSheet(p, e) end
+    elseif k == "type" then
+        Bookmarks.setKind(p.state, action.value or nil)
+        refilter(p); p:refresh()
+    elseif k == "drawer" then
+        p.state.drawer = p.state.drawer ~= action.value and action.value or nil
+        refilter(p); p:refresh()
+    elseif k == "drawer-more" then
+        local styles = {}
+        try(function() styles = ui.highlight:getHighlightStyles() end)
+        HL().openStylePicker{
+            styles = styles,
+            selected = p.state.drawer,
+            hex = HL().palette.hex(p.state.color or "yellow"),
+            title = _("Show one style"),
+            on_pick = function(id)
+                p.state.drawer = p.state.drawer ~= id and id or nil
+                p.state.style_offset = nil -- bring the one picked into view
+                refilter(p); p:refresh()
+            end,
+        }
+    elseif k == "color" then
+        p.state.color = p.state.color ~= action.value and action.value or nil
+        refilter(p); p:refresh()
+    elseif k == "bm-color" then
+        p.state.bm_color = p.state.bm_color ~= action.value and action.value or nil
+        refilter(p); p:refresh()
+    elseif k == "sort" then
+        local nxt = SORTS[1]
+        for i, s in ipairs(SORTS) do if s == p.state.sort then nxt = SORTS[i % #SORTS + 1] end end
+        p.state.sort = nxt
+        saveSort(nxt)
+        refilter(p)
+        p.want_item = nearest(p)
+        p:refresh()
+    elseif k == "native" then
+        Bookmarks.openOptions(p, native)
+    elseif k == "clear-search" then
+        p.state.search = nil
+        refilter(p); p:refresh()
+    elseif k == "native-list" then
+        p:close()
+        if native then UIManager:nextTick(native) end
+    end
+    return true
+end
+
+-- A hold on a bookmark goes to it.
+local function pageHold(p, action)
+    local ui = p.ui
+    if action.kind == "item" and p.list[action.at] then
+        local e = p.list[action.at]
+        p:close()
+        UIManager:nextTick(function() Bookmarks.goTo(ui, e) end)
+        return true
+    end
+end
+
+local function pageSwipe(p, ges)
+    local ui = p.ui
+    -- A sideways swipe on the style strip scrolls it; anywhere
+    -- else it turns the page.
+    if (p.style_step or 0) > 0 and ges.pos and (ges.direction == "west" or ges.direction == "east") then
+        for _i, area in ipairs(p.hits or {}) do
+            local a, d = area.action, area.dimen
+            if a and (a.kind == "drawer" or a.kind == "drawer-more") and d
+                    and ges.pos.y >= d.y - px(10) and ges.pos.y <= d.y + d.h + px(10) then
+                local count = 0
+                try(function() count = #ui.highlight:getHighlightStyles() end)
+                local off = p.state.style_offset or 0
+                local max_off = math.max(0, count - p.style_step)
+                local nxt = ges.direction == "west" and math.min(max_off, off + p.style_step) or math.max(0, off - p.style_step)
+                if nxt ~= off then p.state.style_offset = nxt; p:refresh() end
+                return true
+            end
+        end
+    end
+    if ges.direction == "west" then turn(p, 1) return true end
+    if ges.direction == "east" then turn(p, -1) return true end
+    return false
 end
 
 -- Opens the list; nil when the book has nothing (KOReader's own list then
@@ -754,87 +856,9 @@ function Bookmarks.open(bm, native, opts)
         want_item = nil,
         index = 1,
         build = build,
-        on_action = function(p, action)
-            local k = action.kind
-            if k == "page" then turn(p, action.delta or 0, action.to)
-            elseif k == "item" then
-                local e = p.list[action.at]
-                if e then Bookmarks.openSheet(p, e) end
-            elseif k == "type" then
-                Bookmarks.setKind(p.state, action.value or nil)
-                refilter(p); p:refresh()
-            elseif k == "drawer" then
-                p.state.drawer = p.state.drawer ~= action.value and action.value or nil
-                refilter(p); p:refresh()
-            elseif k == "drawer-more" then
-                local styles = {}
-                try(function() styles = ui.highlight:getHighlightStyles() end)
-                HL().openStylePicker{
-                    styles = styles,
-                    selected = p.state.drawer,
-                    hex = HL().palette.hex(p.state.color or "yellow"),
-                    title = _("Show one style"),
-                    on_pick = function(id)
-                        p.state.drawer = p.state.drawer ~= id and id or nil
-                        p.state.style_offset = nil -- bring the one picked into view
-                        refilter(p); p:refresh()
-                    end,
-                }
-            elseif k == "color" then
-                p.state.color = p.state.color ~= action.value and action.value or nil
-                refilter(p); p:refresh()
-            elseif k == "bm-color" then
-                p.state.bm_color = p.state.bm_color ~= action.value and action.value or nil
-                refilter(p); p:refresh()
-            elseif k == "sort" then
-                local nxt = SORTS[1]
-                for i, s in ipairs(SORTS) do if s == p.state.sort then nxt = SORTS[i % #SORTS + 1] end end
-                p.state.sort = nxt
-                saveSort(nxt)
-                refilter(p)
-                p.want_item = nearest(p)
-                p:refresh()
-            elseif k == "native" then
-                Bookmarks.openOptions(p, native)
-            elseif k == "clear-search" then
-                p.state.search = nil
-                refilter(p); p:refresh()
-            elseif k == "native-list" then
-                p:close()
-                if native then UIManager:nextTick(native) end
-            end
-            return true
-        end,
-        on_hold = function(p, action)
-            if action.kind == "item" and p.list[action.at] then
-                local e = p.list[action.at]
-                p:close()
-                UIManager:nextTick(function() Bookmarks.goTo(ui, e) end)
-                return true
-            end
-        end,
-        on_swipe = function(p, ges)
-            -- A sideways swipe on the style strip scrolls it; anywhere
-            -- else it turns the page.
-            if (p.style_step or 0) > 0 and ges.pos and (ges.direction == "west" or ges.direction == "east") then
-                for _i, area in ipairs(p.hits or {}) do
-                    local a, d = area.action, area.dimen
-                    if a and (a.kind == "drawer" or a.kind == "drawer-more") and d
-                            and ges.pos.y >= d.y - px(10) and ges.pos.y <= d.y + d.h + px(10) then
-                        local count = 0
-                        try(function() count = #ui.highlight:getHighlightStyles() end)
-                        local off = p.state.style_offset or 0
-                        local max_off = math.max(0, count - p.style_step)
-                        local nxt = ges.direction == "west" and math.min(max_off, off + p.style_step) or math.max(0, off - p.style_step)
-                        if nxt ~= off then p.state.style_offset = nxt; p:refresh() end
-                        return true
-                    end
-                end
-            end
-            if ges.direction == "west" then turn(p, 1) return true end
-            if ges.direction == "east" then turn(p, -1) return true end
-            return false
-        end,
+        on_action = function(p, action) return pageAction(p, action, native) end,
+        on_hold = pageHold,
+        on_swipe = pageSwipe,
         on_page_key = function(p, delta) turn(p, delta) end,
     }
     -- Opened on the page nearest the reading position (page order).

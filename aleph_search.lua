@@ -25,7 +25,6 @@ process that a tap cancels); only what shows the results is Aleph's.
 ]]
 
 local Device = require("device")
-local Event = require("ui/event")
 local Geom = require("ui/geometry")
 local InputContainer = require("ui/widget/container/inputcontainer")
 local UIManager = require("ui/uimanager")
@@ -407,7 +406,9 @@ local function pickResult(s, index)
     local ui = s.ui
     if not s.stacked then
         -- KOReader's own Go back returns here too.
+        Search._quiet = true
         try(function() ui.link:addCurrentLocationToStack() end)
+        Search._quiet = false
         s.stacked = true
     end
     clearMark(ui)
@@ -688,7 +689,44 @@ Search._pick = function(s, i) return pickResult(s, i) end
 Search._strips = function() return nav_strip, back_strip end
 Search._showNav = function() return showNav() end
 
+-- ------------------------------------------------- after any jump
+-- Every jump in a book that KOReader keeps in its Go back history (the
+-- table of contents, Go to page, a link or footnote, a bookmark, a pin, the
+-- page browser, X-Ray) goes through ReaderLink:addCurrentLocationToStack
+-- just before it. The place left is noted there; once the jump is done, if
+-- the page changed, the strip at the foot offers "Go to most recent page"
+-- (Settings > Reader > Way back after a jump, on unless turned off).
+function Search.jumpBackWanted()
+    local ok, on = pcall(function() return require("aleph_prefs").get().jump_back ~= false end)
+    return not ok or on
+end
+
+function Search.installJumpBack()
+    local ok, ReaderLink = pcall(require, "apps/reader/modules/readerlink")
+    if not ok or not ReaderLink or ReaderLink._aleph_jump_back then return end
+    ReaderLink._aleph_jump_back = true
+    local add = ReaderLink.addCurrentLocationToStack
+    ReaderLink.addCurrentLocationToStack = function(self, ...)
+        local result = add(self, ...)
+        local ui = self.ui
+        -- Searching keeps its own way back (Search.finish).
+        if Search._quiet or nav_strip or not Search.jumpBackWanted() or not (ui and ui.document) then return result end
+        local from
+        pcall(function() from = Search.here(ui) end)
+        if from == nil then return result end
+        UIManager:nextTick(function()
+            if not ui.document or nav_strip then return end
+            local now
+            pcall(function() now = Search.here(ui) end)
+            if now == nil or Search.pageOf(ui, now) == Search.pageOf(ui, from) then return end
+            try(showBack, ui, from)
+        end)
+        return result
+    end
+end
+
 function Search.install()
+    Search.installJumpBack()
     local ok, ReaderSearch = pcall(require, "apps/reader/modules/readersearch")
     if not ok or not ReaderSearch or ReaderSearch._aleph_search then return end
     ReaderSearch._aleph_search = true

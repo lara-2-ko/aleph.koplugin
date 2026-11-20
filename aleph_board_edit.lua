@@ -26,58 +26,132 @@ local BoardEdit = {}
 -- The widgets a reader can add. Sizes are the codes in BoardLayout.sizeDims;
 -- the first is the size a new widget gets.
 BoardEdit.LIBRARY = {
-    { type = "forecast", name = function() return _("Finish forecast") end, desc = function() return _("When your book ends at your pace") end, sizes = { "M", "S", "L" }, tab = "reading", new = true },
+    { type = "forecast", name = function() return _("Finish forecast") end,
+        desc = function() return _("When your book ends at your pace") end, sizes = { "M", "S", "L" }, tab = "reading",
+        new = true },
     { type = "heatmap", name = function() return _("Year in reading") end, desc = function() return _("One square a day for a whole year") end, sizes = { "XL", "L" }, tab = "stats", new = true },
+    -- Aleph modification, 2026-11-20: after the Reading Log plugin's charts.
+    { type = "time_read", name = function() return _("Time read") end, desc = function() return _("The hours you read each month this year") end, sizes = { "XL", "L" }, tab = "stats", new = true },
+    { type = "books_pages", name = function() return _("Books and pages") end, desc = function() return _("Books finished and pages read each month this year") end, sizes = { "XL", "L" }, tab = "stats", new = true },
     { type = "goalpace", name = function() return _("Goal pace") end, desc = function() return _("Ahead or behind on your yearly goal") end, sizes = { "M", "S" }, tab = "stats", new = true },
     { type = "light", name = function() return _("Light") end, desc = function() return _("Brightness and warmth steppers") end, sizes = { "M", "S" }, tab = "device", new = true },
     { type = "word", name = function() return _("Word of the day") end, desc = function() return _("A word you looked up, in context") end, sizes = { "M", "L" }, tab = "reading", new = true },
-    { type = "toggles", name = function() return _("Quick settings") end, desc = function() return _("Wi-Fi, light, night mode and more: you choose the buttons") end, sizes = { "M", "S" }, tab = "device", new = true },
+    { type = "toggles", name = function() return _("Quick settings") end,
+        desc = function() return _("Wi-Fi, light, night mode and more: you choose the buttons") end,
+        sizes = { "M", "S" }, tab = "device", new = true },
+    -- Aleph modification, 2026-11-18: daily, weekly, monthly and yearly goals.
+    { type = "goals", name = function() return _("Goals") end, desc = function() return _("Today, this week, this month and this year") end, sizes = { "L", "M" }, tab = "stats", new = true },
+    { type = "goal_day", name = function() return _("Daily goal") end, desc = function() return _("Minutes read today") end, sizes = { "S", "M" }, tab = "stats", new = true },
+    { type = "goal_week", name = function() return _("Weekly goal") end, desc = function() return _("Days read this week") end, sizes = { "S", "M" }, tab = "stats", new = true },
+    { type = "goal_month", name = function() return _("Monthly goal") end, desc = function() return _("Books finished this month") end, sizes = { "S", "M" }, tab = "stats", new = true },
+    -- Aleph modification, 2026-11-18: after BookOrbit's (aleph_more_stats.lua).
+    { type = "challenge", name = function() return _("Monthly challenge") end, desc = function() return _("One challenge a month, chosen for how you read") end, sizes = { "M", "S" }, tab = "stats", new = true },
+    { type = "rhythm", name = function() return _("Reading rhythm") end, desc = function() return _("The last 14 days, and how steady you are") end, sizes = { "M", "W", "L" }, tab = "stats", new = true },
+    { type = "hours_total", name = function() return _("Hours read") end, desc = function() return _("All the hours you have read on this device") end, sizes = { "S", "M" }, tab = "stats", new = true },
+    { type = "projection", name = function() return _("Year projection") end, desc = function() return _("Books, pages and hours by the end of the year") end, sizes = { "M", "L" }, tab = "stats", new = true },
+    { type = "diversity", name = function() return _("Diversity score") end, desc = function() return _("How widely you read: genres, authors, eras, languages") end, sizes = { "L", "M" }, tab = "stats", new = true },
+    { type = "bingo", name = function() return _("Reading bingo") end, desc = function() return _("A card of reading challenges, filled as you finish books") end, sizes = { "L", "XL", "M" }, tab = "stats", new = true },
+    { type = "dna", name = function() return _("Reading DNA") end, desc = function() return _("What kind of reader you are, in five traits") end, sizes = { "L", "M" }, tab = "stats", new = true },
     { type = "records", name = function() return _("Reading records") end, desc = function() return _("Your longest and average sessions") end, sizes = { "L", "M" }, tab = "stats", new = true },
     { type = "hours", name = function() return _("When you read") end, desc = function() return _("Your reading by hour of the day") end, sizes = { "M", "L" }, tab = "stats", new = true },
-    { type = "shelf", name = function() return _("Finished this year") end, desc = function() return _("Covers of the books you finished") end, sizes = { "L", "XL" }, tab = "stats", new = true, props = { source = "finished" } },
-    { type = "shelf", name = function() return _("Pick back up") end, desc = function() return _("Books you put down a while ago") end, sizes = { "XL", "L" }, tab = "library", new = true, props = { source = "pick-back-up" } },
-    { type = "shelf", name = function() return _("Want to read") end, desc = function() return _("Books waiting for their turn") end, sizes = { "L", "XL" }, tab = "library", new = true, props = { source = "want-to-read" } },
+    { type = "shelf", name = function() return _("Finished this year") end,
+        desc = function() return _("Covers of the books you finished") end, sizes = { "L", "XL" }, tab = "stats",
+        new = true, props = { source = "finished" } },
+    { type = "shelf", name = function() return _("Pick back up") end,
+        desc = function() return _("Books you put down a while ago") end, sizes = { "XL", "L" }, tab = "library",
+        new = true, props = { source = "pick-back-up" } },
+    { type = "shelf", name = function() return _("Want to read") end,
+        desc = function() return _("Books waiting for their turn") end, sizes = { "L", "XL" }, tab = "library",
+        new = true, props = { source = "want-to-read" } },
     { type = "hero", name = function() return _("Continue reading") end, desc = function() return _("Your current book with Resume") end, sizes = { "W", "M", "L" }, tab = "reading", chrome = "ink" },
     { type = "also", name = function() return _("Also reading") end, desc = function() return _("The rest of your pile") end, sizes = { "L", "M" }, tab = "reading" },
-    { type = "highlight", name = function() return _("Highlight of the day") end, desc = function() return _("One of your highlights, daily") end, sizes = { "L", "M", "W" }, tab = "reading", chrome = "fill" },
+    { type = "highlight", name = function() return _("Highlight of the day") end,
+        desc = function() return _("One of your highlights, daily") end, sizes = { "L", "M", "W" }, tab = "reading",
+        chrome = "fill" },
     { type = "streak", name = function() return _("Streak") end, desc = function() return _("Days in a row, and your best") end, sizes = { "S", "M" }, tab = "stats" },
     { type = "week", name = function() return _("This week") end, desc = function() return _("Minutes read each day") end, sizes = { "M", "S" }, tab = "stats" },
     { type = "today", name = function() return _("Today") end, desc = function() return _("Minutes read today") end, sizes = { "S" }, tab = "stats" },
     { type = "calendar", name = function() return _("Reading calendar") end, desc = function() return _("This month, one square a day") end, sizes = { "M", "L" }, tab = "stats" },
-    { type = "shelf", name = function() return _("Up next in series") end, desc = function() return _("The next book in each series you read") end, sizes = { "L", "XL" }, tab = "library", props = { source = "up-next-in-series" } },
-    { type = "shelf", name = function() return _("Discover") end, desc = function() return _("Unread books to start, the next of each series") end, sizes = { "XL", "L" }, tab = "library", props = { source = "random", shuffle = true } },
-    { type = "shelf", name = function() return _("Recently added") end, desc = function() return _("The newest books in your library") end, sizes = { "XL", "L" }, tab = "library", props = { source = "recently-added" } },
+    { type = "shelf", name = function() return _("Up next in series") end,
+        desc = function() return _("The next book in each series you read") end, sizes = { "L", "XL" }, tab = "library",
+        props = { source = "up-next-in-series" } },
+    { type = "shelf", name = function() return _("Discover") end,
+        desc = function() return _("Unread books to start, the next of each series") end, sizes = { "XL", "L" },
+        tab = "library", props = { source = "random", shuffle = true } },
+    { type = "shelf", name = function() return _("Recently added") end,
+        desc = function() return _("The newest books in your library") end, sizes = { "XL", "L" }, tab = "library",
+        props = { source = "recently-added" } },
     { type = "link", name = function() return _("Library") end, desc = function() return _("All your books") end, sizes = { "S" }, tab = "library", props = { link = "library" } },
-    { type = "link", name = function() return _.pgettext("Widget", "Read") end, desc = function() return _("How much of your library you have read") end, sizes = { "S" }, tab = "library", props = { link = "read" }, new = true },
+    { type = "link", name = function() return _.pgettext("Widget", "Read") end,
+        desc = function() return _("How much of your library you have read") end, sizes = { "S" }, tab = "library",
+        props = { link = "read" }, new = true },
     { type = "link", name = function() return _("Series") end, desc = function() return _("Every series") end, sizes = { "S" }, tab = "library", props = { link = "series" } },
     { type = "link", name = function() return _("Authors") end, desc = function() return _("Every author") end, sizes = { "S" }, tab = "library", props = { link = "authors" } },
-    { type = "link", name = function() return _("Collections") end, desc = function() return _("Your collections, and how many") end, sizes = { "S" }, tab = "library", props = { link = "collections" } },
+    { type = "link", name = function() return _("Collections") end,
+        desc = function() return _("Your collections, and how many") end, sizes = { "S" }, tab = "library",
+        props = { link = "collections" } },
     { type = "link", name = function() return _("History") end, desc = function() return _("Books in progress, newest first") end, sizes = { "S" }, tab = "library", props = { link = "history" } },
-    { type = "link", name = function() return _("On device") end, desc = function() return _("Books on this device, and space left") end, sizes = { "S" }, tab = "device", props = { link = "device" } },
+    { type = "link", name = function() return _("On device") end,
+        desc = function() return _("Books on this device, and space left") end, sizes = { "S" }, tab = "device",
+        props = { link = "device" } },
     { type = "link", name = function() return _("Search") end, desc = function() return _("Search your library") end, sizes = { "S" }, tab = "library", props = { link = "search" } },
     { type = "clock", name = function() return _("Clock") end, desc = function() return _("Time and date, each minute") end, sizes = { "S", "M" }, tab = "device", chrome = "ink" },
+    -- Aleph modification, 2026-11-16: the weather (aleph_weather.lua).
+    { type = "weather", name = function() return _("Weather") end, desc = function() return _("Today's weather where you are, with Wi-Fi on") end, sizes = { "S", "M", "W" }, tab = "device", new = true },
     { type = "silverfish", name = function() return _("Silverfish") end, desc = function() return _("Your companion from the Silverfish plugin") end, sizes = { "L", "M" }, tab = "decor", new = true },
     { type = "buddy", name = function() return _("Reading buddy") end, desc = function() return _("A cat that keeps you company") end, sizes = { "L", "M", "S" }, tab = "decor", new = true },
-    { type = "buddy", name = function() return _("Reading dog") end, desc = function() return _("A floppy-eared friend for every chapter") end, sizes = { "L", "M", "S" }, tab = "decor", new = true, props = { animal = "dog" } },
-    { type = "buddy", name = function() return _("Reading rabbit") end, desc = function() return _("A quiet companion with a curious nose") end, sizes = { "L", "M", "S" }, tab = "decor", new = true, props = { animal = "rabbit" } },
-    { type = "buddy", name = function() return _("Reading owl") end, desc = function() return _("A feathered friend for one more page") end, sizes = { "L", "M", "S" }, tab = "decor", new = true, props = { animal = "owl" } },
-    { type = "buddy", name = function() return _("Reading penguin") end, desc = function() return _("A little bookworm in a feathered coat") end, sizes = { "L", "M", "S" }, tab = "decor", new = true, props = { animal = "penguin" } },
-    { type = "buddy", name = function() return _("Reading robot") end, desc = function() return _("Recharges with a good book") end, sizes = { "L", "M", "S" }, tab = "decor", new = true, props = { animal = "robot" } },
-    { type = "buddy", name = function() return _("Reading vampire") end, desc = function() return _("A tiny night owl with a cape and fangs") end, sizes = { "L", "M", "S" }, tab = "decor", new = true, props = { animal = "vampire" } },
-    { type = "buddy", name = function() return _("Reading dragon") end, desc = function() return _("A little dragon guarding a hoard of stories") end, sizes = { "L", "M", "S" }, tab = "decor", new = true, props = { animal = "dragon" } },
-    { type = "buddy", name = function() return _("Reading ghost") end, desc = function() return _("A friendly spirit between the pages") end, sizes = { "L", "M", "S" }, tab = "decor", new = true, props = { animal = "ghost" } },
-    { type = "buddy", name = function() return _("Reading mimic") end, desc = function() return _("A book that reads you back") end, sizes = { "L", "M", "S" }, tab = "decor", new = true, props = { animal = "mimic" } },
-    { type = "buddy", name = function() return _("Reading mummy") end, desc = function() return _("Three thousand years of catching up") end, sizes = { "L", "M", "S" }, tab = "decor", new = true, props = { animal = "mummy" } },
-    { type = "buddy", name = function() return _("Reading witch") end, desc = function() return _("Never without her spellbook") end, sizes = { "L", "M", "S" }, tab = "decor", new = true, props = { animal = "witch" } },
-    { type = "buddy", name = function() return _("Reading skeleton") end, desc = function() return _("Reads to the bone") end, sizes = { "L", "M", "S" }, tab = "decor", new = true, props = { animal = "skeleton" } },
-    { type = "buddy", name = function() return _("Reading candle") end, desc = function() return _("Burns the midnight oil") end, sizes = { "L", "M", "S" }, tab = "decor", new = true, props = { animal = "candle" } },
-    { type = "buddy", name = function() return _("Reading alien") end, desc = function() return _("Came a long way for a good book") end, sizes = { "L", "M", "S" }, tab = "decor", new = true, props = { animal = "alien" } },
-    { type = "chapters", name = function() return _("Chapter line") end, desc = function() return _("Your book as a line, chapters as stops") end, sizes = { "L", "M", "W", "S" }, tab = "decor", new = true },
+    { type = "buddy", name = function() return _("Reading dog") end,
+        desc = function() return _("A floppy-eared friend for every chapter") end, sizes = { "L", "M", "S" },
+        tab = "decor", new = true, props = { animal = "dog" } },
+    { type = "buddy", name = function() return _("Reading rabbit") end,
+        desc = function() return _("A quiet companion with a curious nose") end, sizes = { "L", "M", "S" },
+        tab = "decor", new = true, props = { animal = "rabbit" } },
+    { type = "buddy", name = function() return _("Reading owl") end,
+        desc = function() return _("A feathered friend for one more page") end, sizes = { "L", "M", "S" },
+        tab = "decor", new = true, props = { animal = "owl" } },
+    { type = "buddy", name = function() return _("Reading penguin") end,
+        desc = function() return _("A little bookworm in a feathered coat") end, sizes = { "L", "M", "S" },
+        tab = "decor", new = true, props = { animal = "penguin" } },
+    { type = "buddy", name = function() return _("Reading robot") end,
+        desc = function() return _("Recharges with a good book") end, sizes = { "L", "M", "S" }, tab = "decor",
+        new = true, props = { animal = "robot" } },
+    { type = "buddy", name = function() return _("Reading vampire") end,
+        desc = function() return _("A tiny night owl with a cape and fangs") end, sizes = { "L", "M", "S" },
+        tab = "decor", new = true, props = { animal = "vampire" } },
+    { type = "buddy", name = function() return _("Reading dragon") end,
+        desc = function() return _("A little dragon guarding a hoard of stories") end, sizes = { "L", "M", "S" },
+        tab = "decor", new = true, props = { animal = "dragon" } },
+    { type = "buddy", name = function() return _("Reading ghost") end,
+        desc = function() return _("A friendly spirit between the pages") end, sizes = { "L", "M", "S" }, tab = "decor",
+        new = true, props = { animal = "ghost" } },
+    { type = "buddy", name = function() return _("Reading mimic") end,
+        desc = function() return _("A book that reads you back") end, sizes = { "L", "M", "S" }, tab = "decor",
+        new = true, props = { animal = "mimic" } },
+    { type = "buddy", name = function() return _("Reading mummy") end,
+        desc = function() return _("Three thousand years of catching up") end, sizes = { "L", "M", "S" }, tab = "decor",
+        new = true, props = { animal = "mummy" } },
+    { type = "buddy", name = function() return _("Reading witch") end,
+        desc = function() return _("Never without her spellbook") end, sizes = { "L", "M", "S" }, tab = "decor",
+        new = true, props = { animal = "witch" } },
+    { type = "buddy", name = function() return _("Reading skeleton") end,
+        desc = function() return _("Reads to the bone") end, sizes = { "L", "M", "S" }, tab = "decor", new = true,
+        props = { animal = "skeleton" } },
+    { type = "buddy", name = function() return _("Reading candle") end,
+        desc = function() return _("Burns the midnight oil") end, sizes = { "L", "M", "S" }, tab = "decor", new = true,
+        props = { animal = "candle" } },
+    { type = "buddy", name = function() return _("Reading alien") end,
+        desc = function() return _("Came a long way for a good book") end, sizes = { "L", "M", "S" }, tab = "decor",
+        new = true, props = { animal = "alien" } },
+    { type = "chapters", name = function() return _("Chapter line") end,
+        desc = function() return _("Your book as a line, chapters as stops") end, sizes = { "L", "M", "W", "S" },
+        tab = "decor", new = true },
     { type = "dust", name = function() return _("Gathering dust") end, desc = function() return _("Books you downloaded and never opened") end, sizes = { "M", "L", "S" }, tab = "decor", new = true },
     { type = "rings", name = function() return _("Tree rings") end, desc = function() return _("A ring for every month you read") end, sizes = { "L", "M" }, tab = "decor", new = true },
     { type = "odometer", name = function() return _("Pages turned") end, desc = function() return _("Every page, on a counter") end, sizes = { "M", "S" }, tab = "decor", new = true },
     { type = "glyph", name = function() return _("Glyph of the day") end, desc = function() return _("One letter from your fonts") end, sizes = { "S", "M", "L" }, tab = "decor", new = true },
-    { type = "litclock", name = function() return _("Literary clock") end, desc = function() return _("The time in a line from a book, each minute") end, sizes = { "L", "W", "XL", "M" }, tab = "decor", new = true },
+    { type = "litclock", name = function() return _("Literary clock") end,
+        desc = function() return _("The time in a line from a book, each minute") end, sizes = { "L", "W", "XL", "M" },
+        tab = "decor", new = true },
     { type = "analog", name = function() return _("Analog clock") end, desc = function() return _("A clock face, each minute") end, sizes = { "S", "M" }, tab = "decor", new = true, chrome = "ink" },
     { type = "moon", name = function() return _("Moon phase") end, desc = function() return _("Tonight's moon") end, sizes = { "S", "M" }, tab = "decor", new = true, chrome = "ink" },
 }
@@ -123,7 +197,7 @@ local function copyItem(it)
         props = {}
         for k, v in pairs(it.props) do props[k] = v end
     end
-    return { type = it.type, cw = it.cw, rh = it.rh, chrome = it.chrome, props = props }
+    return { type = it.type, cw = it.cw, rh = it.rh, chrome = it.chrome, props = props, colour = it.colour }
 end
 
 -- ------------------------------------------------------------- state
@@ -220,6 +294,16 @@ function BoardEdit:boardEditRun(action)
         return self:boardExitEdit()
     elseif kind == "edit-select" then
         if edit.selected == action.index then edit.selected = nil else edit.selected = action.index end
+        edit.colour_open = nil
+    -- Aleph modification, 2026-11-20: a colour for the selected widget.
+    elseif kind == "edit-colour" then
+        edit.colour_open = not edit.colour_open or nil
+    elseif kind == "edit-colour-set" then
+        local it = items[edit.selected or 0]
+        if it then
+            it.colour = action.fam
+            edit.changed = true
+        end
     elseif kind == "edit-move" then
         local i = edit.selected
         local j = i and i + action.delta
@@ -245,6 +329,7 @@ function BoardEdit:boardEditRun(action)
         if i and items[i] then
             table.remove(items, i)
             edit.selected = nil
+            edit.colour_open = nil
             edit.changed = true
         end
     elseif kind == "edit-page" then
@@ -311,34 +396,26 @@ end
 -- Which list to pick a shelf from. The list opens in pick mode: tapping an
 -- entry adds it as a shelf instead of opening it.
 
--- The picked list becomes a full-width shelf on the page being edited.
-function BoardEdit:boardAddPickedShelf(source)
-    self:onReturn()
-    while self.stack and #self.stack > 0 and not self:dashboardMode() do self:onReturn() end
-    local edit = self.board_edit
-    if not edit or not self:dashboardMode() then return end
-    local g = self:boardGeometry()
-    local items = edit.pages[self:boardPage()].items
-    local params = {}
-    for k, v in pairs(source.params or {}) do params[k] = v end
-    table.insert(items, { type = "shelf", cw = g.cols, rh = 2, chrome = "line",
-        props = { source = source.type, params = params, title = source.sourceName } })
-    if not self:boardPageFits(g, items) then
-        table.remove(items)
-        self:updateItems(nil, true)
-        return full(_("This page is full. Remove a widget first, or add it on another page."))
-    end
-    edit.selected = #items
-    edit.changed = true
-    -- The new shelf's books are fetched now, not when editing ends.
-    self:boardRefreshIfMissing()
-end
-
 function BoardEdit:boardShowPagesMenu()
     local DialogUI = require("aleph_dialog_ui")
+    local page = self:boardPage()
+    local names = BoardStore.pageNames(self.board_edit and self.board_edit.pages)
     DialogUI.actions{
         title = _("Pages"),
         rows = {
+            { icon = "pen-line", label = _("Rename this page"), sub = names[page], run = function()
+                local input = require("aleph_input")
+                input.prompt{
+                    title = _("Rename this page"),
+                    text = names[page],
+                    hint = _("Empty: its usual name"),
+                    ok_label = _("Save"),
+                    on_ok = function(name)
+                        BoardStore.renamePage(page, name)
+                        self:updateItems(nil, true)
+                    end,
+                }
+            end },
             { icon = "rotate-ccw", label = _("Reset this page"), sub = _("Back to how it started"), run = function()
                 self:boardResetPage(self:boardPage())
             end },

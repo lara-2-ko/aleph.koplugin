@@ -22,8 +22,13 @@ asked again this session). A process that takes too long (a damaged book)
 is stopped. The job belongs to no screen: it carries on when Home closes,
 and the Home opened next hears of it.
 
-Where a background process cannot be started, start() returns false and the
-caller makes the cover itself, as before.
+Where background processes cannot be used at all, start() returns false,
+"unsupported" and the caller makes the covers itself, slowly. Aleph
+modification, 2026-11-18: when one could not be started this time (memory
+short as KOReader starts, say), it returns false, "failed" and the caller
+tries again later: before, background processes were then given up on for
+the whole run and every cover was made in KOReader's own process, the
+screen waiting for each. Both are written to crash.log.
 ]]
 
 local Job = {}
@@ -32,18 +37,14 @@ local POLL = 0.3
 -- How long a batch may take: this, plus this for each book in it.
 local BASE_WAIT, WAIT_EACH = 20, 15
 
-local current, listener, poll_task
+local current, listener, stop_watching
 local disabled = false
 
-local function util()
-    local ok, u = pcall(require, "ffi/util")
-    return ok and type(u) == "table" and u or nil
-end
+-- Starting and watching the process: aleph_job.lua.
+local Jobs = require("aleph_job")
 
 function Job.supported()
-    if disabled then return false end
-    local u = util()
-    return u ~= nil and type(u.runInSubProcess) == "function" and type(u.isSubProcessDone) == "function"
+    return not disabled and Jobs.available()
 end
 
 function Job.busy() return current ~= nil end
@@ -78,61 +79,59 @@ local function collect(items)
     return news
 end
 
-local function poll()
-    poll_task = nil
+-- At each look while the covers are being made: those that arrived.
+local function looked()
+    local job = current
+    if job and collect(job.items) then tell("progress", job.items) end
+end
+
+-- The process has ended (or was stopped for taking too long, and collected
+-- so no dead process is left behind).
+local function ended()
     local job = current
     if not job then return end
-    local UIManager = require("ui/uimanager")
-    local u = util()
-    local ok, done = pcall(u.isSubProcessDone, job.pid)
-    if not ok then done = true end
-    if not done and os.time() - job.started > job.wait then
-        -- Too long: stopped, and collected so no dead process is left behind.
-        pcall(function()
-            if u.terminateSubProcess then u.terminateSubProcess(job.pid) end
-            u.isSubProcessDone(job.pid, true)
-        end)
-        done = true
+    collect(job.items)
+    current = nil
+    for _i, it in ipairs(job.items) do
+        if not it.done then it.book.cover_checked = true end
     end
-    local news = collect(job.items)
-    if done then
-        current = nil
-        for _i, it in ipairs(job.items) do
-            if not it.done then it.book.cover_checked = true end
-        end
-        tell("done", job.items)
-        return
-    end
-    if news then tell("progress", job.items) end
-    poll_task = poll
-    UIManager:scheduleIn(POLL, poll_task)
+    tell("done", job.items)
 end
 
 function Job.start(items, listen)
-    if current or not items or #items == 0 or not Job.supported() then return false end
-    local u = util()
+    if current or not items or #items == 0 then return false, "busy" end
+    if not Job.supported() then return false, "unsupported" end
+    -- Aleph modification, 2026-11-19 (1.2.51): making covers opens each book
+    -- in another process, which can take 100 MB or more; below 80 MB left
+    -- the books wait (tried again in half a minute) rather than push the
+    -- device out of memory.
+    local Mem = require("aleph_mem")
+    local ok_low, low = pcall(Mem.low, 80 * 1024)
+    if ok_low and low then
+        pcall(function() require("logger").info("Aleph: covers wait, memory low:", Mem.describe()) end)
+        return false, "low memory"
+    end
     local Local = require("aleph_local")
     local work = {}
     for i, it in ipairs(items) do work[i] = { path = it.path, target = it.target, th = it.th } end
-    local ok, pid = pcall(u.runInSubProcess, function()
+    local pid = Jobs.start(function()
         for _i, w in ipairs(work) do pcall(Local.extractCover, w.path, w.target, w.th) end
-    end)
-    if not ok or not pid then
-        -- Not on this device: the caller makes covers itself from now on.
-        disabled = true
-        return false
+    end, { name = "covers (" .. #work .. ")" })
+    if not pid then
+        pcall(function() require("logger").warn("Aleph: covers: the background process could not start; trying again later. Memory:",
+            require("aleph_mem").describe()) end)
+        return false, "failed"
     end
     current = { pid = pid, items = items, started = os.time(), wait = BASE_WAIT + WAIT_EACH * #items }
     if listen then listener = listen end
-    poll_task = poll
-    require("ui/uimanager"):scheduleIn(POLL, poll_task)
+    stop_watching = Jobs.watch(pid, { every = POLL, timeout = current.wait, on_tick = looked, on_done = ended })
     return true
 end
 
 -- For tests.
 function Job._reset()
-    current, listener, poll_task, disabled = nil, nil, nil, false
+    if stop_watching then stop_watching() end
+    current, listener, stop_watching, disabled = nil, nil, nil, false
 end
-function Job._poll() return poll() end
 
 return Job

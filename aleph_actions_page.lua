@@ -279,8 +279,12 @@ local function editButton(main, index)
                         text(Actions.buttonLabel(b), { s = 16, b = true, data = true }), flex(0) }),
                     MenuUI.group(w, {
                         MenuUI.row(iw, { icon = "zap", label = _("Action"), sub = Actions.label(b.action) or _("Missing"), sub_data = true, chevron = true, action = { kind = "action" } }),
-                        MenuUI.row(iw, { icon = "palette", label = _("Icon"), sub = b.icon and Actions.buttonIcon(b) or _("The action's own"), sub_data = true, chevron = true, action = { kind = "icon" } }),
-                        MenuUI.row(iw, { icon = "pen-line", label = _("Name"), sub = (b.label and b.label ~= "") and b.label or _("The action's own"), sub_data = true, chevron = true, action = { kind = "name" } }),
+                        MenuUI.row(iw,
+                            { icon = "palette", label = _("Icon"), sub = b.icon and Actions.buttonIcon(b) or _("The action's own"), sub_data = true, chevron = true, action = { kind = "icon" } }),
+                        MenuUI.row(iw,
+                            { icon = "pen-line", label = _("Name"),
+                                sub = (b.label and b.label ~= "") and b.label or _("The action's own"), sub_data = true,
+                                chevron = true, action = { kind = "name" } }),
                     }),
                     SheetUI.pillRow(w, pills),
                 }
@@ -350,6 +354,16 @@ local USUAL = {
     week = function() return _("Reading insights") end, today = function() return _("Reading insights") end,
     records = function() return _("Reading insights") end, hours = function() return _("Reading insights") end,
     calendar = function() return _("Reading insights") end,
+    goals = function() return _("Your goals in Settings") end,
+    dna = function() return _("Reading insights") end,
+    bingo = function() return _("The bingo card") end,
+    diversity = function() return _("Reading insights") end, rhythm = function() return _("Reading insights") end,
+    challenge = function() return _("Reading insights") end, projection = function() return _("Books finished this year") end,
+    hours_total = function() return _("Reading insights") end,
+    time_read = function() return _("Reading insights") end, books_pages = function() return _("Reading insights") end,
+    goal_day = function() return _("Your goals in Settings") end,
+    goal_week = function() return _("Your goals in Settings") end,
+    goal_month = function() return _("Your goals in Settings") end,
 }
 local function usualOf(t) return USUAL[t] and USUAL[t]() or _("Nothing") end
 

@@ -532,7 +532,7 @@ function Import.chooseDates(plan, on_done)
     local BoardUI = require("aleph_board_ui")
     local MenuPage = require("aleph_menu_page")
     local MenuUI = require("aleph_menu_ui")
-    local INK, px = BoardMetrics.INK, BoardMetrics.px
+    local px = BoardMetrics.px
     local text, vstack, hstack, space, flex = BoardUI.text, BoardUI.vstack, BoardUI.hstack, BoardUI.space, BoardUI.flex
     local dates = plan.dates or {}
     local function turn(page, delta)

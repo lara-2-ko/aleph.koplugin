@@ -127,6 +127,33 @@ end
 -- Actions bound to gestures under a name of their own that changed.
 local ACTION_NAMES = { [Migrate.OPTION_OLD] = Migrate.OPTION_NEW }
 
+-- One gesture's actions: old names to new, and the order of several
+-- actions on one gesture. Returns how many were renamed.
+local function renameActions(actions)
+    local isOld = function(key) return type(key) == "string" and key:sub(1, #OLD + 1) == OLD .. "_" end
+    local renames = {}
+    for key, value in pairs(actions) do
+        if type(key) == "string" and (isOld(key) or ACTION_NAMES[key]) then renames[key] = value end
+    end
+    local moved = 0
+    for key, value in pairs(renames) do
+        actions[key] = nil
+        actions[ACTION_NAMES[key] or (NEW .. key:sub(#OLD + 1))] = value
+        moved = moved + 1
+    end
+    local order = type(actions.settings) == "table" and actions.settings.order
+    if type(order) == "table" then
+        for i, key in ipairs(order) do
+            if type(key) == "string" and ACTION_NAMES[key] then
+                order[i] = ACTION_NAMES[key]
+            elseif isOld(key) then
+                order[i] = NEW .. key:sub(#OLD + 1)
+            end
+        end
+    end
+    return moved
+end
+
 -- Renames the readingboard_* actions in the Gestures plugin's bindings.
 -- Returns how many were moved.
 function Migrate.gestureData(data)
@@ -135,29 +162,7 @@ function Migrate.gestureData(data)
     for _section, gestures in pairs(data) do
         if type(gestures) == "table" then
             for _gesture, actions in pairs(gestures) do
-                if type(actions) == "table" then
-                    local renames = {}
-                    for key, value in pairs(actions) do
-                        if type(key) == "string" and (key:sub(1, #OLD + 1) == OLD .. "_" or ACTION_NAMES[key]) then
-                            renames[key] = value
-                        end
-                    end
-                    for key, value in pairs(renames) do
-                        actions[key] = nil
-                        actions[ACTION_NAMES[key] or (NEW .. key:sub(#OLD + 1))] = value
-                        moved = moved + 1
-                    end
-                    -- The order of several actions on one gesture.
-                    if type(actions.settings) == "table" and type(actions.settings.order) == "table" then
-                        for i, key in ipairs(actions.settings.order) do
-                            if type(key) == "string" and ACTION_NAMES[key] then
-                                actions.settings.order[i] = ACTION_NAMES[key]
-                            elseif type(key) == "string" and key:sub(1, #OLD + 1) == OLD .. "_" then
-                                actions.settings.order[i] = NEW .. key:sub(#OLD + 1)
-                            end
-                        end
-                    end
-                end
+                if type(actions) == "table" then moved = moved + renameActions(actions) end
             end
         end
     end

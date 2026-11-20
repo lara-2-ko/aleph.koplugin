@@ -26,13 +26,46 @@ local BoardMetrics = {}
 BoardMetrics.UI_SCALES = { 1, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.4, 1.5 }
 BoardMetrics.DEFAULT_UI_SCALE = 1.05
 
-local FACE_HEIGHT_EM = 1.362
+local NOTO_HEIGHT_EM = 1.362
+local FACE_HEIGHT_EM = NOTO_HEIGHT_EM
 local FACES = {
     sans = "NotoSans-Regular.ttf",
     sans_italic = "NotoSans-Italic.ttf",
     serif = "NotoSerif-Regular.ttf",
     serif_italic = "NotoSerif-Italic.ttf",
 }
+local NOTO_SANS, NOTO_SANS_ITALIC = FACES.sans, FACES.sans_italic
+
+-- Aleph modification, 2026-11-18: Home's font (aleph_fonts.lua). Another
+-- sans font in place of Noto Sans; nil puts Noto Sans back. A line's
+-- height follows the font, never shorter than Noto's, so a font with tall
+-- letters is not cut. font_gen counts changes, for what is kept per font.
+BoardMetrics.font_gen = 0
+local height_measured = true
+function BoardMetrics.setSans(regular, italic)
+    regular = regular or NOTO_SANS
+    italic = italic or (regular == NOTO_SANS and NOTO_SANS_ITALIC or regular)
+    if FACES.sans == regular and FACES.sans_italic == italic then return end
+    FACES.sans, FACES.sans_italic = regular, italic
+    BoardMetrics.font_gen = BoardMetrics.font_gen + 1
+    FACE_HEIGHT_EM = NOTO_HEIGHT_EM
+    height_measured = regular == NOTO_SANS
+end
+
+-- The chosen font's line height in ems, measured once against Noto Sans.
+local function measureHeight()
+    height_measured = true
+    local ok, ratio = pcall(function()
+        local mine = Font:getFace(FACES.sans, 40)
+        local noto = Font:getFace(NOTO_SANS, 40)
+        local hm = mine.ftsize:getHeightAndAscender()
+        local hn = noto.ftsize:getHeightAndAscender()
+        return NOTO_HEIGHT_EM * hm / hn
+    end)
+    if ok and type(ratio) == "number" and ratio == ratio then
+        FACE_HEIGHT_EM = math.max(NOTO_HEIGHT_EM, math.min(1.9, ratio))
+    end
+end
 
 -- The sixteen gray levels e-ink panels can show, by name.
 BoardMetrics.INK = {
@@ -183,16 +216,13 @@ function BoardMetrics.fontSize(n)
     return n * metrics.adj * metrics.scale
 end
 
-function BoardMetrics.namedFace(name, n)
-    return Font:getFace(name, BoardMetrics.fontSize(n))
-end
-
 function BoardMetrics.fileFace(file, n)
     return Font:getFace(file, BoardMetrics.fontSize(n))
 end
 
 -- Single-line text height (TextWidget) for nominal size n.
 function BoardMetrics.lh1(n)
+    if not height_measured then measureHeight() end
     return math.ceil(FACE_HEIGHT_EM * BoardMetrics.fs(n) - 1e-7)
 end
 
@@ -207,6 +237,7 @@ end
 function BoardMetrics.textBoxHeight(lines, n)
     if lines <= 1 then return BoardMetrics.lh1(n) end
     local line = BoardMetrics.lh(n)
+    if not height_measured then measureHeight() end
     local face = FACE_HEIGHT_EM * BoardMetrics.fs(n)
     return lines * line + math.max(0, -math.floor(line - face))
 end

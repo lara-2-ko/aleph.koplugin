@@ -121,7 +121,37 @@ function MenuPage:refresh(mode)
     UIManager:setDirty(self, function() return mode or "ui", region end)
 end
 
+-- Aleph modification, 2026-11-19 (1.2.49): the screen turned (or changed
+-- size) while the page was open. KOReader tells only the reader or the file
+-- browser, not the windows over them, so a page opened from a book kept the
+-- old size. Now the page sees it when it is next drawn, or when it hears
+-- SetDimensions: it is laid out again for the new size. A sheet closes
+-- instead: its backdrop is a picture of the screen in the old shape.
+-- False when the page is closing and should not be drawn.
+function MenuPage:fitScreen()
+    local w, h = Screen:getWidth(), Screen:getHeight()
+    if w == self.dimen.w and h == self.dimen.h then return true end
+    if self.backdrop_bb or self.backdrop then
+        if not self._closing_for_size then
+            self._closing_for_size = true
+            UIManager:nextTick(function() self:close() end)
+        end
+        return false
+    end
+    -- In place: the gesture ranges hold this same rectangle.
+    self.dimen.w, self.dimen.h = w, h
+    BoardMetrics.refresh()
+    self:rebuild()
+    UIManager:setDirty(self, "full")
+    return true
+end
+
+function MenuPage:onSetDimensions()
+    if not self.closed then self:fitScreen() end
+end
+
 function MenuPage:paintTo(bb, x, y)
+    if not self:fitScreen() then return end
     if self.backdrop_bb then
         bb:blitFrom(self.backdrop_bb, 0, 0, 0, 0, self.dimen.w, self.dimen.h)
     else

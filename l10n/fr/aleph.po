@@ -1,0 +1,6974 @@
+# Aleph (aleph.koplugin) — French translation
+# This file is distributed under the same license as Aleph (AGPL-3.0 with additional terms).
+# KOReader's own translation is used first where it has one; this file fills in the rest.
+msgid ""
+msgstr ""
+"Project-Id-Version: Aleph 1.3.0\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: _meta.lua aleph_actions_page.lua aleph_page_browser.lua aleph_settings_page.lua
+msgid "Aleph"
+msgstr ""
+
+#: _meta.lua
+msgid "Aleph: every book, stat, highlight and shelf in one place. A home screen, library and reader tools, after BookOrbit's. No account or server: it goes online only for the optional features you turn on."
+msgstr "Aleph : tous vos livres, statistiques, surlignages et étagères au même endroit. Un écran d'accueil, une bibliothèque et des outils de lecture, inspirés de BookOrbit. Sans compte ni serveur : il ne se connecte à internet que pour les fonctions facultatives que vous activez."
+
+#: aleph_actions.lua aleph_bookends.lua aleph_sync_chain.lua aleph_topbar.lua
+msgid "Wi-Fi"
+msgstr ""
+
+#: aleph_actions.lua aleph_board_edit.lua aleph_board_widgets.lua aleph_light_sheet.lua aleph_settings_page.lua aleph_topbar.lua
+msgid "Light"
+msgstr "Lumière"
+
+#: aleph_actions.lua aleph_topbar.lua
+msgid "Night"
+msgstr "Nuit"
+
+#: aleph_actions.lua aleph_topbar.lua
+msgid "Rotate"
+msgstr "Pivoter"
+
+#: aleph_actions.lua
+msgid "Sync"
+msgstr "Synchroniser"
+
+#: aleph_actions.lua
+msgid "Refresh"
+msgstr "Actualiser"
+
+#: aleph_actions.lua
+msgid "With KOSyncthing+ and Syncery: both e-readers synced in one go; KOSyncthing+ alone: Syncthing; otherwise a library rescan"
+msgstr "Avec KOSyncthing+ et Syncery : les deux liseuses synchronisées d'un coup ; KOSyncthing+ seul : Syncthing ; sinon, un nouvel examen de la bibliothèque"
+
+#: aleph_actions.lua aleph_board_edit.lua aleph_board_store.lua aleph_board_widgets.lua aleph_browser.lua aleph_detail.lua aleph_menu_sheet.lua aleph_settings_page.lua
+msgid "Library"
+msgstr "Bibliothèque"
+
+#: aleph_actions.lua aleph_board_edit.lua aleph_board_widgets.lua aleph_browser.lua aleph_menu_sheet.lua
+msgid "Series"
+msgstr "Séries"
+
+#: aleph_actions.lua aleph_board_edit.lua aleph_board_widgets.lua aleph_browser.lua aleph_menu_sheet.lua
+msgid "Authors"
+msgstr "Auteurs"
+
+#: aleph_actions.lua aleph_board_edit.lua aleph_board_widgets.lua aleph_menu_sheet.lua aleph_settings_page.lua
+msgid "Collections"
+msgstr "Collections"
+
+#: aleph_actions.lua aleph_board_edit.lua aleph_board_widgets.lua aleph_browser.lua aleph_menu_sheet.lua
+msgid "History"
+msgstr "Historique"
+
+#: aleph_actions.lua aleph_actions_page.lua aleph_board_edit.lua aleph_board_widgets.lua aleph_bookmarks.lua aleph_browser.lua aleph_goodreads_send.lua aleph_reader_sheet.lua aleph_search.lua aleph_weather.lua
+msgid "Search"
+msgstr "Rechercher"
+
+#: aleph_actions.lua
+msgid "Aleph menu"
+msgstr "Menu d'Aleph"
+
+#: aleph_actions.lua
+msgid "General"
+msgstr "Général"
+
+#: aleph_actions.lua aleph_board_edit.lua
+msgid "Device"
+msgstr "Appareil"
+
+#: aleph_actions.lua
+msgid "Screen and lights"
+msgstr "Écran et éclairage"
+
+#: aleph_actions.lua
+msgid "File browser"
+msgstr "Explorateur de fichiers"
+
+#: aleph_actions.lua aleph_actions_page.lua aleph_board_host.lua
+msgid "Default"
+msgstr "Par défaut"
+
+#: aleph_actions.lua aleph_actions_page.lua aleph_bookends_page.lua
+msgid "Nothing"
+msgstr "Rien"
+
+#: aleph_actions.lua aleph_actions_page.lua
+msgid "Missing"
+msgstr "Introuvable"
+
+#: aleph_actions_page.lua
+msgid "“%1”: %2"
+msgstr ""
+
+#: aleph_actions_page.lua aleph_bookends_page.lua aleph_topmenu_page.lua
+msgid "Clear"
+msgstr "Effacer"
+
+#: aleph_actions_page.lua
+msgid "Choose an action"
+msgstr "Choisissez une action"
+
+#: aleph_actions_page.lua
+msgid "KOReader and plugins"
+msgstr "KOReader et extensions"
+
+#: aleph_actions_page.lua
+msgid "A tap does nothing"
+msgstr "Un appui ne fait rien"
+
+#: aleph_actions_page.lua
+msgid "KOReader did not list any actions."
+msgstr "KOReader n'a listé aucune action."
+
+#: aleph_actions_page.lua
+msgid "No action has that name."
+msgstr "Aucune action ne porte ce nom."
+
+#: aleph_actions_page.lua
+msgid "Search actions"
+msgstr "Rechercher des actions"
+
+#: aleph_actions_page.lua
+msgid "Choose an icon"
+msgstr "Choisissez une icône"
+
+#: aleph_actions_page.lua aleph_topmenu_page.lua
+msgid "No icon has that name."
+msgstr "Aucune icône ne porte ce nom."
+
+#: aleph_actions_page.lua
+msgid "Search icons"
+msgstr "Rechercher des icônes"
+
+#: aleph_actions_page.lua
+msgid "Button"
+msgstr "Bouton"
+
+#: aleph_actions_page.lua aleph_board_host.lua aleph_pins.lua aleph_settings_page.lua aleph_wallpaper.lua
+msgid "Remove"
+msgstr "Retirer"
+
+#: aleph_actions_page.lua aleph_board_host.lua
+msgid "Earlier"
+msgstr "Avant"
+
+#: aleph_actions_page.lua aleph_board_host.lua aleph_gr.lua
+msgid "Later"
+msgstr "Plus tard"
+
+#: aleph_actions_page.lua
+msgid "Button %1"
+msgstr "Bouton %1"
+
+#: aleph_actions_page.lua aleph_board_edit.lua
+msgid "Quick settings"
+msgstr "Réglages rapides"
+
+#: aleph_actions_page.lua
+msgid "Action"
+msgstr "Action"
+
+#: aleph_actions_page.lua
+msgid "Icon"
+msgstr "Icône"
+
+#: aleph_actions_page.lua
+msgid "The action's own"
+msgstr "Celle de l'action"
+
+#: aleph_actions_page.lua aleph_browser.lua aleph_owner.lua
+msgid "Name"
+msgstr "Nom"
+
+#: aleph_actions_page.lua
+msgid "Button name"
+msgstr "Nom du bouton"
+
+#: aleph_actions_page.lua aleph_bingo_page.lua aleph_board_edit.lua aleph_browser.lua aleph_highlight.lua aleph_owner.lua aleph_settings_page.lua
+msgid "Save"
+msgstr "Enregistrer"
+
+#: aleph_actions_page.lua
+msgid "Your current book"
+msgstr "Votre livre en cours"
+
+#: aleph_actions_page.lua
+msgid "Books in progress"
+msgstr "Livres en cours"
+
+#: aleph_actions_page.lua
+msgid "The highlight"
+msgstr "Le surlignage"
+
+#: aleph_actions_page.lua
+msgid "Its books"
+msgstr "Ses livres"
+
+#: aleph_actions_page.lua
+msgid "Its page"
+msgstr "Sa page"
+
+#: aleph_actions_page.lua
+msgid "The dictionary"
+msgstr "Le dictionnaire"
+
+#: aleph_actions_page.lua aleph_board_edit.lua aleph_board_widgets.lua aleph_silverfish.lua
+msgid "Silverfish"
+msgstr ""
+
+#: aleph_actions_page.lua
+msgid "Books finished this year"
+msgstr "Livres terminés cette année"
+
+#: aleph_actions_page.lua
+msgid "The book"
+msgstr "Le livre"
+
+#: aleph_actions_page.lua
+msgid "Reading insights"
+msgstr ""
+
+#: aleph_actions_page.lua
+msgid "Your goals in Settings"
+msgstr "Vos objectifs dans les Réglages"
+
+#: aleph_actions_page.lua
+msgid "The bingo card"
+msgstr "La grille de bingo"
+
+#: aleph_actions_page.lua
+msgid "Its plugin is no longer installed"
+msgstr "Son extension n'est plus installée"
+
+#: aleph_actions_page.lua
+msgid "Add a button"
+msgstr "Ajouter un bouton"
+
+#: aleph_actions_page.lua
+msgid "Up to %1"
+msgstr "Jusqu'à %1"
+
+#: aleph_actions_page.lua aleph_board_edit.lua aleph_bookends_page.lua aleph_color_wheel.lua aleph_pins.lua aleph_settings_page.lua
+msgid "Reset"
+msgstr "Réinitialiser"
+
+#: aleph_actions_page.lua
+msgid "Wi-Fi, Light, Night, Rotate and Sync / Refresh"
+msgstr "Wi-Fi, Lumière, Nuit, Pivoter et Synchroniser / Actualiser"
+
+#: aleph_actions_page.lua
+msgid "The buttons of the Quick settings widget. An action from KOReader or a plugin runs as its gesture does."
+msgstr "Les boutons du widget Réglages rapides. Une action de KOReader ou d'une extension fonctionne comme son geste."
+
+#: aleph_actions_page.lua
+msgid "Default: %1"
+msgstr "Par défaut : %1"
+
+#: aleph_actions_page.lua aleph_settings_page.lua
+msgid "Widget actions"
+msgstr "Actions des widgets"
+
+#: aleph_actions_page.lua aleph_menu_sheet.lua aleph_settings_page.lua
+msgid "Settings"
+msgstr "Réglages"
+
+#: aleph_actions_page.lua
+msgid "Widget taps"
+msgstr "Appuis sur les widgets"
+
+#: aleph_actions_page.lua
+msgid "New button"
+msgstr "Nouveau bouton"
+
+#: aleph_bingo.lua
+msgctxt "Bingo"
+msgid "Genre"
+msgstr "Genre"
+
+#: aleph_bingo.lua
+msgctxt "Bingo"
+msgid "Places and cultures"
+msgstr "Lieux et cultures"
+
+#: aleph_bingo.lua
+msgctxt "Bingo"
+msgid "Literary experiment"
+msgstr "Expérience littéraire"
+
+#: aleph_bingo.lua
+msgid "A literary science fiction novel"
+msgstr "Un roman de science-fiction littéraire"
+
+#: aleph_bingo.lua
+msgid "A fantasy novel"
+msgstr "Un roman de fantasy"
+
+#: aleph_bingo.lua
+msgid "A Gothic novel written before 1900"
+msgstr "Un roman gothique écrit avant 1900"
+
+#: aleph_bingo.lua
+msgid "A literary horror novel"
+msgstr "Un roman d'horreur littéraire"
+
+#: aleph_bingo.lua
+msgid "A mystery with literary ambitions"
+msgstr "Un polar aux ambitions littéraires"
+
+#: aleph_bingo.lua
+msgid "A collection of short stories"
+msgstr "Un recueil de nouvelles"
+
+#: aleph_bingo.lua
+msgid "A historical novel"
+msgstr "Un roman historique"
+
+#: aleph_bingo.lua
+msgid "A magical realism novel"
+msgstr "Un roman de réalisme magique"
+
+#: aleph_bingo.lua
+msgid "A love story"
+msgstr "Une histoire d'amour"
+
+#: aleph_bingo.lua
+msgid "A book of poetry"
+msgstr "Un recueil de poésie"
+
+#: aleph_bingo.lua
+msgid "A graphic novel or memoir"
+msgstr "Un roman graphique ou des mémoires en BD"
+
+#: aleph_bingo.lua
+msgid "A memoir"
+msgstr "Des mémoires"
+
+#: aleph_bingo.lua
+msgid "A dystopian novel"
+msgstr "Un roman dystopique"
+
+#: aleph_bingo.lua
+msgid "A nonfiction book about society"
+msgstr "Un essai sur la société"
+
+#: aleph_bingo.lua
+msgid "A classic by a woman writer"
+msgstr "Un classique écrit par une femme"
+
+#: aleph_bingo.lua
+msgid "A thriller"
+msgstr "Un thriller"
+
+#: aleph_bingo.lua
+msgid "A western"
+msgstr "Un western"
+
+#: aleph_bingo.lua
+msgid "A comic or satirical novel"
+msgstr "Un roman comique ou satirique"
+
+#: aleph_bingo.lua
+msgid "A book of essays"
+msgstr "Un recueil d'essais"
+
+#: aleph_bingo.lua
+msgid "A biography"
+msgstr "Une biographie"
+
+#: aleph_bingo.lua
+msgid "A retelling of a myth"
+msgstr "La réécriture d'un mythe"
+
+#: aleph_bingo.lua
+msgid "Fairy tales or folklore"
+msgstr "Contes de fées ou folklore"
+
+#: aleph_bingo.lua
+msgid "A play"
+msgstr "Une pièce de théâtre"
+
+#: aleph_bingo.lua
+msgid "A cosy mystery"
+msgstr "Un cosy mystery"
+
+#: aleph_bingo.lua
+msgid "An adventure story"
+msgstr "Un roman d'aventure"
+
+#: aleph_bingo.lua
+msgid "A novel about war"
+msgstr "Un roman sur la guerre"
+
+#: aleph_bingo.lua
+msgid "A coming-of-age novel"
+msgstr "Un roman d'apprentissage"
+
+#: aleph_bingo.lua
+msgid "A popular science book"
+msgstr "Un livre de vulgarisation scientifique"
+
+#: aleph_bingo.lua
+msgid "A book of philosophy"
+msgstr "Un livre de philosophie"
+
+#: aleph_bingo.lua
+msgid "Travel writing"
+msgstr "Un récit de voyage"
+
+#: aleph_bingo.lua
+msgid "A children's classic"
+msgstr "Un classique jeunesse"
+
+#: aleph_bingo.lua
+msgid "A young adult novel"
+msgstr "Un roman young adult"
+
+#: aleph_bingo.lua
+msgid "A book published before 1800"
+msgstr "Un livre publié avant 1800"
+
+#: aleph_bingo.lua
+msgid "Climate fiction"
+msgstr "Fiction climatique"
+
+#: aleph_bingo.lua
+msgid "A novel about the working class"
+msgstr "Un roman sur la classe ouvrière"
+
+#: aleph_bingo.lua
+msgid "A queer literary classic"
+msgstr "Un classique littéraire queer"
+
+#: aleph_bingo.lua
+msgid "A novel set in Africa"
+msgstr "Un roman qui se passe en Afrique"
+
+#: aleph_bingo.lua
+msgid "A book translated from an Asian language"
+msgstr "Un livre traduit d'une langue asiatique"
+
+#: aleph_bingo.lua
+msgid "A novel originally written in Arabic"
+msgstr "Un roman écrit à l'origine en arabe"
+
+#: aleph_bingo.lua
+msgid "A book by an Indigenous author"
+msgstr "Un livre d'un auteur autochtone"
+
+#: aleph_bingo.lua
+msgid "A book from a country you have never read from"
+msgstr "Un livre d'un pays dont vous n'avez jamais rien lu"
+
+#: aleph_bingo.lua
+msgid "A memoir from a different culture"
+msgstr "Des mémoires d'une autre culture"
+
+#: aleph_bingo.lua
+msgid "A book from Latin America"
+msgstr "Un livre d'Amérique latine"
+
+#: aleph_bingo.lua
+msgid "A Nordic book"
+msgstr "Un livre nordique"
+
+#: aleph_bingo.lua
+msgid "A Russian classic"
+msgstr "Un classique russe"
+
+#: aleph_bingo.lua
+msgid "A book from the Caribbean"
+msgstr "Un livre des Caraïbes"
+
+#: aleph_bingo.lua
+msgid "A book set in the Middle East"
+msgstr "Un livre qui se passe au Moyen-Orient"
+
+#: aleph_bingo.lua
+msgid "A Japanese novel"
+msgstr "Un roman japonais"
+
+#: aleph_bingo.lua
+msgid "A book from the Indian subcontinent"
+msgstr "Un livre du sous-continent indien"
+
+#: aleph_bingo.lua
+msgid "An Irish novel"
+msgstr "Un roman irlandais"
+
+#: aleph_bingo.lua
+msgid "A contemporary prizewinning translation"
+msgstr "Une traduction contemporaine primée"
+
+#: aleph_bingo.lua
+msgid "A book from Eastern Europe"
+msgstr "Un livre d'Europe de l'Est"
+
+#: aleph_bingo.lua
+msgid "A book from Australia or the Pacific"
+msgstr "Un livre d'Australie ou du Pacifique"
+
+#: aleph_bingo.lua
+msgid "A book translated from a language you don't speak"
+msgstr "Un livre traduit d'une langue que vous ne parlez pas"
+
+#: aleph_bingo.lua
+msgid "A book by a diaspora or immigrant writer"
+msgstr "Un livre d'un auteur immigré ou de la diaspora"
+
+#: aleph_bingo.lua
+msgid "A book set somewhere you would like to visit"
+msgstr "Un livre qui se passe dans un lieu que vous aimeriez visiter"
+
+#: aleph_bingo.lua
+msgid "A Chinese novel"
+msgstr "Un roman chinois"
+
+#: aleph_bingo.lua
+msgid "A Korean novel"
+msgstr "Un roman coréen"
+
+#: aleph_bingo.lua
+msgid "A book set on an island"
+msgstr "Un livre qui se passe sur une île"
+
+#: aleph_bingo.lua
+msgid "A book set where you live"
+msgstr "Un livre qui se passe là où vous vivez"
+
+#: aleph_bingo.lua
+msgid "A book with an unreliable narrator"
+msgstr "Un livre au narrateur peu fiable"
+
+#: aleph_bingo.lua
+msgid "A book told in the second person"
+msgstr "Un livre écrit à la deuxième personne"
+
+#: aleph_bingo.lua
+msgid "A novel told in letters"
+msgstr "Un roman épistolaire"
+
+#: aleph_bingo.lua
+msgid "A novel in verse"
+msgstr "Un roman en vers"
+
+#: aleph_bingo.lua
+msgid "A story told out of order"
+msgstr "Une histoire racontée dans le désordre"
+
+#: aleph_bingo.lua
+msgid "A book with several narrators"
+msgstr "Un livre à plusieurs narrateurs"
+
+#: aleph_bingo.lua
+msgid "A book under 150 pages"
+msgstr "Un livre de moins de 150 pages"
+
+#: aleph_bingo.lua
+msgid "A book over 700 pages"
+msgstr "Un livre de plus de 700 pages"
+
+#: aleph_bingo.lua
+msgid "An experimental literary novel"
+msgstr "Un roman littéraire expérimental"
+
+#: aleph_bingo.lua
+msgid "A novel about writing a novel"
+msgstr "Un roman sur l'écriture d'un roman"
+
+#: aleph_bingo.lua
+msgid "A stream-of-consciousness novel"
+msgstr "Un roman en flux de conscience"
+
+#: aleph_bingo.lua
+msgid "A book with footnotes that matter"
+msgstr "Un livre aux notes de bas de page qui comptent"
+
+#: aleph_bingo.lua
+msgid "A novella"
+msgstr "Une novella"
+
+#: aleph_bingo.lua
+msgid "A story that takes place in one day"
+msgstr "Une histoire qui se déroule en un jour"
+
+#: aleph_bingo.lua
+msgid "An anthology by many writers"
+msgstr "Une anthologie de plusieurs auteurs"
+
+#: aleph_bingo.lua
+msgid "An illustrated book"
+msgstr "Un livre illustré"
+
+#: aleph_bingo.lua
+msgid "A book with a nameless narrator"
+msgstr "Un livre au narrateur sans nom"
+
+#: aleph_bingo.lua
+msgid "A story within a story"
+msgstr "Une histoire dans l'histoire"
+
+#: aleph_bingo.lua
+msgid "A book written in fragments"
+msgstr "Un livre écrit en fragments"
+
+#: aleph_bingo.lua
+msgid "A debut novel"
+msgstr "Un premier roman"
+
+#: aleph_bingo.lua
+msgid "A book from a small press"
+msgstr "Un livre d'un petit éditeur"
+
+#: aleph_bingo.lua
+msgid "A work of autofiction"
+msgstr "Une autofiction"
+
+#: aleph_bingo.lua
+msgid "A book that mixes genres or forms"
+msgstr "Un livre qui mêle les genres ou les formes"
+
+#: aleph_bingo.lua
+msgid "A novel written under a constraint"
+msgstr "Un roman écrit sous contrainte"
+
+#: aleph_bingo.lua aleph_bingo_page.lua
+msgid "Free space"
+msgstr "Case libre"
+
+#: aleph_bingo.lua aleph_bingo_page.lua
+msgid "Reading bingo: %1"
+msgstr "Bingo de lecture : %1"
+
+#: aleph_bingo.lua aleph_bingo_page.lua
+msgid "Bingo!"
+msgstr "Bingo !"
+
+#: aleph_bingo_page.lua aleph_board_widgets.lua
+msgid "%1/%2 read"
+msgstr "%1/%2 lus"
+
+#: aleph_bingo_page.lua aleph_board_widgets.lua
+msgid "%1 bingo"
+msgid_plural "%1 bingos"
+msgstr[0] "%1 bingo"
+msgstr[1] "%1 bingos"
+
+#: aleph_bingo_page.lua aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Reading bingo"
+msgstr "Bingo de lecture"
+
+#: aleph_bingo_page.lua
+msgid "No card yet"
+msgstr "Pas encore de grille"
+
+#: aleph_bingo_page.lua
+msgid "A card of reading challenges: half genres, a quarter places and cultures, a quarter literary experiments. A finished book fills a square by itself when its tags or Calibre's #bingo column say which; otherwise Aleph asks. A full row or column is a bingo."
+msgstr "Une grille de défis de lecture : moitié genres, un quart lieux et cultures, un quart expériences littéraires. Un livre terminé remplit une case tout seul quand ses étiquettes ou la colonne #bingo de Calibre disent laquelle ; sinon, Aleph vous demande. Une ligne ou une colonne complète, c'est bingo."
+
+#: aleph_bingo_page.lua
+msgid "24 books (5 × 5)"
+msgstr "24 livres (5 × 5)"
+
+#: aleph_bingo_page.lua
+msgid "12 books (4 × 3)"
+msgstr "12 livres (4 × 3)"
+
+#: aleph_bingo_page.lua aleph_board_widgets.lua
+msgid "A row or a column = Bingo!"
+msgstr "Une ligne ou une colonne = Bingo !"
+
+#: aleph_bingo_page.lua aleph_board_widgets.lua
+msgid "5 in a row = Bingo!"
+msgstr "5 alignés = Bingo !"
+
+#: aleph_bingo_page.lua
+msgid "New card"
+msgstr "Nouvelle grille"
+
+#: aleph_bingo_page.lua
+msgid "Tap a square to choose its book or change its challenge."
+msgstr "Touchez une case pour choisir son livre ou changer son défi."
+
+#: aleph_bingo_page.lua
+msgid "Finished %1"
+msgstr "Terminé le %1"
+
+#: aleph_bingo_page.lua
+msgid "No finished books to choose from yet."
+msgstr "Pas encore de livres terminés parmi lesquels choisir."
+
+#: aleph_bingo_page.lua
+msgid "Choose a book"
+msgstr "Choisissez un livre"
+
+#: aleph_bingo_page.lua
+msgid "Choose another book…"
+msgstr "Choisir un autre livre…"
+
+#: aleph_bingo_page.lua
+msgid "Empty this square"
+msgstr "Vider cette case"
+
+#: aleph_bingo_page.lua
+msgid "Choose a book…"
+msgstr "Choisir un livre…"
+
+#: aleph_bingo_page.lua
+msgid "One you have finished"
+msgstr "Un livre que vous avez terminé"
+
+#: aleph_bingo_page.lua
+msgid "Another challenge"
+msgstr "Un autre défi"
+
+#: aleph_bingo_page.lua
+msgid "Write my own…"
+msgstr "Écrire le mien…"
+
+#: aleph_bingo_page.lua
+msgid "Your own challenge"
+msgstr "Votre propre défi"
+
+#: aleph_bingo_page.lua
+msgid "The books on this card are let go"
+msgstr "Les livres de cette grille sont libérés"
+
+#: aleph_bingo_page.lua
+msgid "Does %1 fill a square?"
+msgstr "%1 remplit-il une case ?"
+
+#: aleph_bingo_page.lua aleph_xr_story.lua
+msgid "Not now"
+msgstr "Pas maintenant"
+
+#: aleph_board_colour.lua aleph_bookmark_colors.lua
+msgid "Yellow"
+msgstr "Jaune"
+
+#: aleph_board_colour.lua aleph_bookmark_colors.lua
+msgid "Orange"
+msgstr "Orange"
+
+#: aleph_board_colour.lua aleph_bookmark_colors.lua
+msgid "Green"
+msgstr "Vert"
+
+#: aleph_board_colour.lua aleph_bookmark_colors.lua
+msgid "Blue"
+msgstr "Bleu"
+
+#: aleph_board_colour.lua aleph_bookmark_colors.lua
+msgid "Red"
+msgstr "Rouge"
+
+#: aleph_board_colour.lua aleph_bookmark_colors.lua
+msgid "Purple"
+msgstr "Violet"
+
+#: aleph_board_colour.lua
+msgid "Gold"
+msgstr "Doré"
+
+#: aleph_board_colour.lua
+msgid "Teal"
+msgstr "Bleu canard"
+
+#: aleph_board_colour.lua aleph_bookmark_colors.lua
+msgid "Pink"
+msgstr "Rose"
+
+#: aleph_board_colour.lua
+msgid "Brown"
+msgstr "Marron"
+
+#: aleph_board_colour.lua
+msgid "Dark blue"
+msgstr "Bleu foncé"
+
+#: aleph_board_data.lua
+msgctxt "Date: long weekday, day, long month"
+msgid "%1, %2 %3"
+msgstr "%1 %2 %3"
+
+#: aleph_board_data.lua
+msgid "Good morning"
+msgstr "Bonjour"
+
+#: aleph_board_data.lua
+msgid "Good afternoon"
+msgstr "Bon après-midi"
+
+#: aleph_board_data.lua
+msgid "Good evening"
+msgstr "Bonsoir"
+
+#: aleph_board_data.lua
+msgid "Good morning, %1"
+msgstr "Bonjour, %1"
+
+#: aleph_board_data.lua
+msgid "Good afternoon, %1"
+msgstr "Bon après-midi, %1"
+
+#: aleph_board_data.lua
+msgid "Good evening, %1"
+msgstr "Bonsoir, %1"
+
+#: aleph_board_data.lua aleph_board_widgets.lua aleph_bookends.lua
+msgid "%1 min"
+msgstr ""
+
+#: aleph_board_data.lua aleph_board_decor.lua aleph_board_widgets.lua
+msgid "%1 h"
+msgstr ""
+
+#: aleph_board_data.lua
+msgid "%1 h %2 min"
+msgstr ""
+
+#: aleph_board_data.lua
+msgid "%1m"
+msgstr ""
+
+#: aleph_board_data.lua aleph_bookends.lua
+msgid "%1h"
+msgstr ""
+
+#: aleph_board_data.lua aleph_bookends.lua
+msgid "%1h %2m"
+msgstr ""
+
+#: aleph_board_data.lua aleph_board_util.lua
+msgid "just now"
+msgstr "à l'instant"
+
+#: aleph_board_data.lua aleph_board_util.lua
+msgid "%1 min ago"
+msgstr "il y a %1 min"
+
+#: aleph_board_data.lua aleph_board_util.lua
+msgid "%1 h ago"
+msgstr "il y a %1 h"
+
+#: aleph_board_data.lua aleph_board_util.lua
+msgid "yesterday"
+msgstr "hier"
+
+#: aleph_board_data.lua
+msgid "Early %1 %2"
+msgstr "Début %1 %2"
+
+#: aleph_board_data.lua
+msgid "Mid %1 %2"
+msgstr "Mi-%1 %2"
+
+#: aleph_board_data.lua
+msgid "Late %1 %2"
+msgstr "Fin %1 %2"
+
+#: aleph_board_data.lua
+msgid "<1%"
+msgstr ""
+
+#: aleph_board_data.lua aleph_board_edit.lua aleph_board_widgets.lua aleph_browser.lua
+msgid "Today"
+msgstr "Aujourd'hui"
+
+#: aleph_board_data.lua
+msgid "Tomorrow"
+msgstr "Demain"
+
+#: aleph_board_data.lua
+msgid "New moon"
+msgstr "Nouvelle lune"
+
+#: aleph_board_data.lua
+msgid "Waxing crescent"
+msgstr "Premier croissant"
+
+#: aleph_board_data.lua
+msgid "First quarter"
+msgstr "Premier quartier"
+
+#: aleph_board_data.lua
+msgid "Waxing gibbous"
+msgstr "Gibbeuse croissante"
+
+#: aleph_board_data.lua
+msgid "Full moon"
+msgstr "Pleine lune"
+
+#: aleph_board_data.lua
+msgid "Waning gibbous"
+msgstr "Gibbeuse décroissante"
+
+#: aleph_board_data.lua
+msgid "Last quarter"
+msgstr "Dernier quartier"
+
+#: aleph_board_data.lua
+msgid "Waning crescent"
+msgstr "Dernier croissant"
+
+#: aleph_board_data.lua
+msgid "Full moon %1 %2 %3"
+msgstr "Pleine lune %1 %2 %3"
+
+#: aleph_board_data.lua
+msgid "New moon %1 %2 %3"
+msgstr "Nouvelle lune %1 %2 %3"
+
+#: aleph_board_data.lua
+msgid "Ampersand"
+msgstr "Esperluette"
+
+#: aleph_board_data.lua
+msgid "Book, to write"
+msgstr "Livre, écrire"
+
+#: aleph_board_data.lua
+msgid "Pilcrow"
+msgstr "Pied-de-mouche"
+
+#: aleph_board_data.lua
+msgid "Ain"
+msgstr ""
+
+#: aleph_board_data.lua
+msgid "Sharp s"
+msgstr "Eszett (ß)"
+
+#: aleph_board_data.lua
+msgid "Ka"
+msgstr ""
+
+#: aleph_board_data.lua
+msgid "Section sign"
+msgstr "Signe de section"
+
+#: aleph_board_data.lua
+msgid "To read"
+msgstr "Lire"
+
+#: aleph_board_data.lua
+msgid "A, in Bengali"
+msgstr "A, en bengali"
+
+#: aleph_board_data.lua
+msgid "At sign"
+msgstr "Arobase"
+
+#: aleph_board_data.lua
+msgid "Alef"
+msgstr ""
+
+#: aleph_board_data.lua
+msgid "Eth"
+msgstr ""
+
+#: aleph_board_data.lua
+msgid "Writing"
+msgstr "Écriture"
+
+#: aleph_board_data.lua
+msgid "Omega"
+msgstr "Oméga"
+
+#: aleph_board_data.lua
+msgid "Zhe"
+msgstr ""
+
+#: aleph_board_data.lua
+msgid "Long s"
+msgstr "S long"
+
+#: aleph_board_data.lua
+msgid "About a day to go"
+msgstr "Environ un jour restant"
+
+#: aleph_board_data.lua
+msgid "About %1 days to go"
+msgstr "Environ %1 jours restants"
+
+#: aleph_board_data.lua
+msgid "About %1 weeks to go"
+msgstr "Environ %1 semaines restantes"
+
+#: aleph_board_data.lua
+msgid "About %1 months to go"
+msgstr "Environ %1 mois restants"
+
+#: aleph_board_data.lua
+msgid "Earned today"
+msgstr "Obtenu aujourd'hui"
+
+#: aleph_board_data.lua
+msgid "Earned yesterday"
+msgstr "Obtenu hier"
+
+#: aleph_board_data.lua
+msgid "Earned %1"
+msgstr "Obtenu %1"
+
+#: aleph_board_data.lua
+msgid "Earned %1 %2"
+msgstr "Obtenu le %1 %2"
+
+#: aleph_board_decor.lua
+msgid "Reading with you"
+msgstr "Je lis avec vous"
+
+#: aleph_board_decor.lua
+msgid "%1 today"
+msgstr "%1 aujourd'hui"
+
+#: aleph_board_decor.lua
+msgid "Fast asleep"
+msgstr "Profondément endormi"
+
+#: aleph_board_decor.lua
+msgid "Wakes up when you read"
+msgstr "Se réveille quand vous lisez"
+
+#: aleph_board_decor.lua
+msgid "%1 day in a row!"
+msgid_plural "%1 days in a row!"
+msgstr[0] "%1 jour d'affilée !"
+msgstr[1] "%1 jours d'affilée !"
+
+#: aleph_board_decor.lua
+msgid "A new best"
+msgstr "Un nouveau record"
+
+#: aleph_board_decor.lua
+msgid "Your best is %1"
+msgstr "Votre record : %1"
+
+#: aleph_board_decor.lua
+msgid "Book finished!"
+msgstr "Livre terminé !"
+
+#: aleph_board_decor.lua
+msgid "Past bedtime"
+msgstr "L'heure du coucher est passée"
+
+#: aleph_board_decor.lua
+msgid "%1 read today"
+msgstr "%1 lus aujourd'hui"
+
+#: aleph_board_decor.lua
+msgid "Ready when you are"
+msgstr "Prêt quand vous l'êtes"
+
+#: aleph_board_decor.lua
+msgid "Open a book to start"
+msgstr "Ouvrez un livre pour commencer"
+
+#: aleph_board_decor.lua
+msgid "%1% lit"
+msgstr "Lumière à %1 %"
+
+#: aleph_board_decor.lua
+msgid "today"
+msgstr "aujourd'hui"
+
+#: aleph_board_decor.lua aleph_board_widgets.lua
+msgid "since %1"
+msgstr "depuis %1"
+
+#: aleph_board_decor.lua aleph_board_edit.lua
+msgid "Pages turned"
+msgstr "Pages tournées"
+
+#: aleph_board_decor.lua aleph_board_edit.lua
+msgid "Glyph of the day"
+msgstr "Glyphe du jour"
+
+#: aleph_board_decor.lua
+msgid "The fonts on this device have no glyph to show today."
+msgstr "Les polices de cet appareil n'ont aucun glyphe à montrer aujourd'hui."
+
+#: aleph_board_decor.lua
+msgid "No glyph today."
+msgstr "Pas de glyphe aujourd'hui."
+
+#: aleph_board_decor.lua aleph_board_edit.lua
+msgid "Tree rings"
+msgstr "Cernes d'arbre"
+
+#: aleph_board_decor.lua
+msgid "A ring grows for every month you read."
+msgstr "Un cerne pousse pour chaque mois de lecture."
+
+#: aleph_board_decor.lua
+msgid "%1, %2"
+msgstr ""
+
+#: aleph_board_decor.lua
+msgid "One ring a month"
+msgstr "Un cerne par mois"
+
+#: aleph_board_decor.lua
+msgid "Widest"
+msgstr "Le plus large"
+
+#: aleph_board_decor.lua
+msgid "Thinnest"
+msgstr "Le plus fin"
+
+#: aleph_board_decor.lua
+msgid "12 months"
+msgstr "12 mois"
+
+#: aleph_board_decor.lua
+msgid "Widest ring"
+msgstr "Cerne le plus large"
+
+#: aleph_board_decor.lua aleph_highlight.lua
+msgid "End"
+msgstr "Fin"
+
+#: aleph_board_decor.lua
+msgid "now"
+msgstr "maintenant"
+
+#: aleph_board_decor.lua
+msgid "Next stop"
+msgstr "Prochain arrêt"
+
+#: aleph_board_decor.lua
+msgid "Open a book and its chapters line up here."
+msgstr "Ouvrez un livre et ses chapitres s'alignent ici."
+
+#: aleph_board_decor.lua
+msgid "Open a book to start."
+msgstr "Ouvrez un livre pour commencer."
+
+#: aleph_board_decor.lua
+msgid "%1 stop to the end"
+msgid_plural "%1 stops to the end"
+msgstr[0] "%1 arrêt jusqu'à la fin"
+msgstr[1] "%1 arrêts jusqu'à la fin"
+
+#: aleph_board_decor.lua
+msgid "End of book in"
+msgstr "Fin du livre dans"
+
+#: aleph_board_decor.lua
+msgid "%1 stop"
+msgid_plural "%1 stops"
+msgstr[0] "%1 arrêt"
+msgstr[1] "%1 arrêts"
+
+#: aleph_board_decor.lua
+msgid "Common"
+msgstr "Commun"
+
+#: aleph_board_decor.lua
+msgid "Rare"
+msgstr "Rare"
+
+#: aleph_board_decor.lua
+msgid "Epic"
+msgstr "Épique"
+
+#: aleph_board_decor.lua
+msgid "Legendary"
+msgstr "Légendaire"
+
+#: aleph_board_decor.lua aleph_library_view.lua
+msgid "of %1"
+msgstr "sur %1"
+
+#: aleph_board_decor.lua aleph_board_host.lua aleph_highlight.lua aleph_library_view.lua aleph_list_data.lua aleph_search.lua aleph_text_pages.lua
+msgid "%1 of %2"
+msgstr "%1 sur %2"
+
+#: aleph_board_decor.lua
+msgid "Next badge"
+msgstr "Prochain badge"
+
+#: aleph_board_decor.lua
+msgid "Badges show up here with a newer BookOrbit server."
+msgstr "Les badges apparaissent ici avec un serveur BookOrbit plus récent."
+
+#: aleph_board_decor.lua
+msgid "Needs a newer server."
+msgstr "Nécessite un serveur plus récent."
+
+#: aleph_board_decor.lua
+msgid "Achievements are turned off in your BookOrbit settings."
+msgstr "Les succès sont désactivés dans vos réglages BookOrbit."
+
+#: aleph_board_decor.lua
+msgid "Achievements are off."
+msgstr "Les succès sont désactivés."
+
+#: aleph_board_decor.lua
+msgid "Read a little and your first badge shows up here."
+msgstr "Lisez un peu et votre premier badge apparaîtra ici."
+
+#: aleph_board_decor.lua
+msgid "No badges yet."
+msgstr "Pas encore de badge."
+
+#: aleph_board_decor.lua
+msgid "New badge"
+msgstr "Nouveau badge"
+
+#: aleph_board_decor.lua aleph_board_edit.lua
+msgid "Gathering dust"
+msgstr "Prend la poussière"
+
+#: aleph_board_decor.lua
+msgid "Books you download and never open collect dust here."
+msgstr "Les livres que vous téléchargez sans jamais les ouvrir prennent la poussière ici."
+
+#: aleph_board_decor.lua
+msgid "Unopened books collect dust here."
+msgstr "Les livres jamais ouverts prennent la poussière ici."
+
+#: aleph_board_decor.lua
+msgid "Never opened in %1 month"
+msgid_plural "Never opened in %1 months"
+msgstr[0] "Jamais ouvert en %1 mois"
+msgstr[1] "Jamais ouvert en %1 mois"
+
+#: aleph_board_decor.lua
+msgid "Never opened in %1 day"
+msgid_plural "Never opened in %1 days"
+msgstr[0] "Jamais ouvert en %1 jour"
+msgstr[1] "Jamais ouvert en %1 jours"
+
+#: aleph_board_decor.lua
+msgid "%1 month unopened"
+msgid_plural "%1 months unopened"
+msgstr[0] "%1 mois sans être ouvert"
+msgstr[1] "%1 mois sans être ouvert"
+
+#: aleph_board_decor.lua
+msgid "%1 day unopened"
+msgid_plural "%1 days unopened"
+msgstr[0] "%1 jour sans être ouvert"
+msgstr[1] "%1 jours sans être ouvert"
+
+#: aleph_board_decor.lua aleph_goodreads_send.lua aleph_gr.lua
+msgid "Open"
+msgstr "Ouvrir"
+
+#: aleph_board_decor.lua aleph_board_widgets.lua
+msgid "%1 book"
+msgid_plural "%1 books"
+msgstr[0] "%1 livre"
+msgstr[1] "%1 livres"
+
+#: aleph_board_decor.lua
+msgid "%1 more never opened, %2 MB in all"
+msgid_plural "%1 more never opened, %2 MB in all"
+msgstr[0] "%1 autre jamais ouvert, %2 Mo en tout"
+msgstr[1] "%1 autres jamais ouverts, %2 Mo en tout"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Finish forecast"
+msgstr "Prévision de fin"
+
+#: aleph_board_edit.lua
+msgid "When your book ends at your pace"
+msgstr "Quand vous finirez votre livre à votre rythme"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Year in reading"
+msgstr "Année de lecture"
+
+#: aleph_board_edit.lua
+msgid "One square a day for a whole year"
+msgstr "Un carré par jour pendant toute une année"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Time read"
+msgstr "Temps de lecture"
+
+#: aleph_board_edit.lua
+msgid "The hours you read each month this year"
+msgstr "Les heures lues chaque mois cette année"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Books and pages"
+msgstr "Livres et pages"
+
+#: aleph_board_edit.lua
+msgid "Books finished and pages read each month this year"
+msgstr "Livres terminés et pages lues chaque mois cette année"
+
+#: aleph_board_edit.lua
+msgid "Goal pace"
+msgstr "Rythme de l'objectif"
+
+#: aleph_board_edit.lua
+msgid "Ahead or behind on your yearly goal"
+msgstr "En avance ou en retard sur votre objectif annuel"
+
+#: aleph_board_edit.lua
+msgid "Brightness and warmth steppers"
+msgstr "Réglages de luminosité et de chaleur"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Word of the day"
+msgstr "Mot du jour"
+
+#: aleph_board_edit.lua
+msgid "A word you looked up, in context"
+msgstr "Un mot que vous avez cherché, en contexte"
+
+#: aleph_board_edit.lua
+msgid "Wi-Fi, light, night mode and more: you choose the buttons"
+msgstr "Wi-Fi, lumière, mode nuit et plus : vous choisissez les boutons"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Goals"
+msgstr "Objectifs"
+
+#: aleph_board_edit.lua
+msgid "Today, this week, this month and this year"
+msgstr "Aujourd'hui, cette semaine, ce mois-ci et cette année"
+
+#: aleph_board_edit.lua aleph_settings_page.lua
+msgid "Daily goal"
+msgstr "Objectif du jour"
+
+#: aleph_board_edit.lua
+msgid "Minutes read today"
+msgstr "Minutes lues aujourd'hui"
+
+#: aleph_board_edit.lua aleph_settings_page.lua
+msgid "Weekly goal"
+msgstr "Objectif de la semaine"
+
+#: aleph_board_edit.lua
+msgid "Days read this week"
+msgstr "Jours de lecture cette semaine"
+
+#: aleph_board_edit.lua aleph_settings_page.lua
+msgid "Monthly goal"
+msgstr "Objectif du mois"
+
+#: aleph_board_edit.lua
+msgid "Books finished this month"
+msgstr "Livres terminés ce mois-ci"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Monthly challenge"
+msgstr "Défi du mois"
+
+#: aleph_board_edit.lua
+msgid "One challenge a month, chosen for how you read"
+msgstr "Un défi par mois, choisi selon votre façon de lire"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Reading rhythm"
+msgstr "Rythme de lecture"
+
+#: aleph_board_edit.lua
+msgid "The last 14 days, and how steady you are"
+msgstr "Les 14 derniers jours, et votre régularité"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Hours read"
+msgstr "Heures de lecture"
+
+#: aleph_board_edit.lua
+msgid "All the hours you have read on this device"
+msgstr "Toutes les heures lues sur cet appareil"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Year projection"
+msgstr "Projection de l'année"
+
+#: aleph_board_edit.lua
+msgid "Books, pages and hours by the end of the year"
+msgstr "Livres, pages et heures d'ici la fin de l'année"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Diversity score"
+msgstr "Score de diversité"
+
+#: aleph_board_edit.lua
+msgid "How widely you read: genres, authors, eras, languages"
+msgstr "La variété de vos lectures : genres, auteurs, époques, langues"
+
+#: aleph_board_edit.lua
+msgid "A card of reading challenges, filled as you finish books"
+msgstr "Une grille de défis de lecture, remplie à mesure que vous terminez des livres"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Reading DNA"
+msgstr "ADN de lecteur"
+
+#: aleph_board_edit.lua
+msgid "What kind of reader you are, in five traits"
+msgstr "Quel lecteur vous êtes, en cinq traits"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Reading records"
+msgstr "Records de lecture"
+
+#: aleph_board_edit.lua
+msgid "Your longest and average sessions"
+msgstr "Vos séances les plus longues et la moyenne"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "When you read"
+msgstr "Quand vous lisez"
+
+#: aleph_board_edit.lua
+msgid "Your reading by hour of the day"
+msgstr "Vos lectures selon l'heure de la journée"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Finished this year"
+msgstr "Terminés cette année"
+
+#: aleph_board_edit.lua
+msgid "Covers of the books you finished"
+msgstr "Les couvertures des livres que vous avez terminés"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Pick back up"
+msgstr "À reprendre"
+
+#: aleph_board_edit.lua
+msgid "Books you put down a while ago"
+msgstr "Les livres laissés de côté il y a un moment"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua aleph_goodreads_send.lua (status) aleph_gr_api.lua
+msgid "Want to read"
+msgstr "À lire"
+
+#: aleph_board_edit.lua
+msgid "Books waiting for their turn"
+msgstr "Les livres qui attendent leur tour"
+
+#: aleph_board_edit.lua aleph_board_host.lua aleph_board_widgets.lua
+msgid "Continue reading"
+msgstr "Continuer la lecture"
+
+#: aleph_board_edit.lua
+msgid "Your current book with Resume"
+msgstr "Votre livre en cours avec Reprendre"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua aleph_reader_sheet.lua
+msgid "Also reading"
+msgstr "Aussi en cours"
+
+#: aleph_board_edit.lua
+msgid "The rest of your pile"
+msgstr "Le reste de votre pile"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua aleph_highlight_sheet.lua
+msgid "Highlight of the day"
+msgstr "Surlignage du jour"
+
+#: aleph_board_edit.lua
+msgid "One of your highlights, daily"
+msgstr "Un de vos surlignages, chaque jour"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Streak"
+msgstr "Série"
+
+#: aleph_board_edit.lua
+msgid "Days in a row, and your best"
+msgstr "Jours d'affilée, et votre record"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "This week"
+msgstr "Cette semaine"
+
+#: aleph_board_edit.lua
+msgid "Minutes read each day"
+msgstr "Minutes lues chaque jour"
+
+#: aleph_board_edit.lua
+msgid "Reading calendar"
+msgstr "Calendrier de lecture"
+
+#: aleph_board_edit.lua
+msgid "This month, one square a day"
+msgstr "Ce mois-ci, un carré par jour"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Up next in series"
+msgstr "Suite de la série"
+
+#: aleph_board_edit.lua
+msgid "The next book in each series you read"
+msgstr "Le livre suivant de chaque série que vous lisez"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Discover"
+msgstr "Découvrir"
+
+#: aleph_board_edit.lua
+msgid "Unread books to start, the next of each series"
+msgstr "Des livres non lus pour commencer, le suivant de chaque série"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua aleph_browser.lua
+msgid "Recently added"
+msgstr "Ajouts récents"
+
+#: aleph_board_edit.lua
+msgid "The newest books in your library"
+msgstr "Les livres les plus récents de votre bibliothèque"
+
+#: aleph_board_edit.lua
+msgid "All your books"
+msgstr "Tous vos livres"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgctxt "Widget"
+msgid "Read"
+msgstr "Lus"
+
+#: aleph_board_edit.lua
+msgid "How much of your library you have read"
+msgstr "La part de votre bibliothèque que vous avez lue"
+
+#: aleph_board_edit.lua
+msgid "Every series"
+msgstr "Toutes les séries"
+
+#: aleph_board_edit.lua
+msgid "Every author"
+msgstr "Tous les auteurs"
+
+#: aleph_board_edit.lua
+msgid "Your collections, and how many"
+msgstr "Vos collections, et leur nombre"
+
+#: aleph_board_edit.lua
+msgid "Books in progress, newest first"
+msgstr "Livres en cours, les plus récents d'abord"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "On device"
+msgstr "Sur l'appareil"
+
+#: aleph_board_edit.lua
+msgid "Books on this device, and space left"
+msgstr "Les livres sur cet appareil, et l'espace libre"
+
+#: aleph_board_edit.lua
+msgid "Search your library"
+msgstr "Rechercher dans votre bibliothèque"
+
+#: aleph_board_edit.lua aleph_bookends.lua
+msgid "Clock"
+msgstr "Horloge"
+
+#: aleph_board_edit.lua
+msgid "Time and date, each minute"
+msgstr "L'heure et la date, chaque minute"
+
+#: aleph_board_edit.lua aleph_weather.lua
+msgid "Weather"
+msgstr "Météo"
+
+#: aleph_board_edit.lua
+msgid "Today's weather where you are, with Wi-Fi on"
+msgstr "La météo du jour là où vous êtes, avec le Wi-Fi activé"
+
+#: aleph_board_edit.lua
+msgid "Your companion from the Silverfish plugin"
+msgstr "Votre compagnon de l'extension Silverfish"
+
+#: aleph_board_edit.lua
+msgid "Reading buddy"
+msgstr "Compagnon de lecture"
+
+#: aleph_board_edit.lua
+msgid "A cat that keeps you company"
+msgstr "Un chat qui vous tient compagnie"
+
+#: aleph_board_edit.lua
+msgid "Reading dog"
+msgstr "Chien lecteur"
+
+#: aleph_board_edit.lua
+msgid "A floppy-eared friend for every chapter"
+msgstr "Un ami aux oreilles tombantes pour chaque chapitre"
+
+#: aleph_board_edit.lua
+msgid "Reading rabbit"
+msgstr "Lapin lecteur"
+
+#: aleph_board_edit.lua
+msgid "A quiet companion with a curious nose"
+msgstr "Un compagnon discret au nez curieux"
+
+#: aleph_board_edit.lua
+msgid "Reading owl"
+msgstr "Chouette lectrice"
+
+#: aleph_board_edit.lua
+msgid "A feathered friend for one more page"
+msgstr "Un ami à plumes pour une page de plus"
+
+#: aleph_board_edit.lua
+msgid "Reading penguin"
+msgstr "Manchot lecteur"
+
+#: aleph_board_edit.lua
+msgid "A little bookworm in a feathered coat"
+msgstr "Un petit rat de bibliothèque en manteau de plumes"
+
+#: aleph_board_edit.lua
+msgid "Reading robot"
+msgstr "Robot lecteur"
+
+#: aleph_board_edit.lua
+msgid "Recharges with a good book"
+msgstr "Se recharge avec un bon livre"
+
+#: aleph_board_edit.lua
+msgid "Reading vampire"
+msgstr "Vampire lecteur"
+
+#: aleph_board_edit.lua
+msgid "A tiny night owl with a cape and fangs"
+msgstr "Un petit oiseau de nuit avec cape et crocs"
+
+#: aleph_board_edit.lua
+msgid "Reading dragon"
+msgstr "Dragon lecteur"
+
+#: aleph_board_edit.lua
+msgid "A little dragon guarding a hoard of stories"
+msgstr "Un petit dragon qui garde un trésor d'histoires"
+
+#: aleph_board_edit.lua
+msgid "Reading ghost"
+msgstr "Fantôme lecteur"
+
+#: aleph_board_edit.lua
+msgid "A friendly spirit between the pages"
+msgstr "Un esprit amical entre les pages"
+
+#: aleph_board_edit.lua
+msgid "Reading mimic"
+msgstr "Mimique lectrice"
+
+#: aleph_board_edit.lua
+msgid "A book that reads you back"
+msgstr "Un livre qui vous lit en retour"
+
+#: aleph_board_edit.lua
+msgid "Reading mummy"
+msgstr "Momie lectrice"
+
+#: aleph_board_edit.lua
+msgid "Three thousand years of catching up"
+msgstr "Trois mille ans de lectures en retard"
+
+#: aleph_board_edit.lua
+msgid "Reading witch"
+msgstr "Sorcière lectrice"
+
+#: aleph_board_edit.lua
+msgid "Never without her spellbook"
+msgstr "Jamais sans son grimoire"
+
+#: aleph_board_edit.lua
+msgid "Reading skeleton"
+msgstr "Squelette lecteur"
+
+#: aleph_board_edit.lua
+msgid "Reads to the bone"
+msgstr "Lit jusqu'à l'os"
+
+#: aleph_board_edit.lua
+msgid "Reading candle"
+msgstr "Bougie de lecture"
+
+#: aleph_board_edit.lua
+msgid "Burns the midnight oil"
+msgstr "Veille tard pour lire"
+
+#: aleph_board_edit.lua
+msgid "Reading alien"
+msgstr "Extraterrestre lecteur"
+
+#: aleph_board_edit.lua
+msgid "Came a long way for a good book"
+msgstr "Venu de loin pour un bon livre"
+
+#: aleph_board_edit.lua
+msgid "Chapter line"
+msgstr "Ligne des chapitres"
+
+#: aleph_board_edit.lua
+msgid "Your book as a line, chapters as stops"
+msgstr "Votre livre comme une ligne, les chapitres comme des arrêts"
+
+#: aleph_board_edit.lua
+msgid "Books you downloaded and never opened"
+msgstr "Les livres téléchargés et jamais ouverts"
+
+#: aleph_board_edit.lua
+msgid "A ring for every month you read"
+msgstr "Un cerne pour chaque mois de lecture"
+
+#: aleph_board_edit.lua
+msgid "Every page, on a counter"
+msgstr "Chaque page, sur un compteur"
+
+#: aleph_board_edit.lua
+msgid "One letter from your fonts"
+msgstr "Une lettre de vos polices"
+
+#: aleph_board_edit.lua
+msgid "Literary clock"
+msgstr "Horloge littéraire"
+
+#: aleph_board_edit.lua
+msgid "The time in a line from a book, each minute"
+msgstr "L'heure dans une phrase d'un livre, chaque minute"
+
+#: aleph_board_edit.lua
+msgid "Analog clock"
+msgstr "Horloge analogique"
+
+#: aleph_board_edit.lua
+msgid "A clock face, each minute"
+msgstr "Un cadran d'horloge, chaque minute"
+
+#: aleph_board_edit.lua
+msgid "Moon phase"
+msgstr "Phase de la lune"
+
+#: aleph_board_edit.lua
+msgid "Tonight's moon"
+msgstr "La lune de ce soir"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "New"
+msgstr "Nouveau"
+
+#: aleph_board_edit.lua aleph_browser.lua aleph_detail.lua aleph_list_data.lua
+msgid "Reading"
+msgstr "Lecture"
+
+#: aleph_board_edit.lua aleph_settings_page.lua
+msgid "Stats"
+msgstr "Statistiques"
+
+#: aleph_board_edit.lua aleph_board_store.lua
+msgid "Decor"
+msgstr "Décor"
+
+#: aleph_board_edit.lua
+msgid "There is not enough room on this page for that size."
+msgstr "Il n'y a pas assez de place sur cette page pour cette taille."
+
+#: aleph_board_edit.lua
+msgid "%1 is full. Remove a widget there first."
+msgstr "%1 est pleine. Retirez d'abord un widget de cette page."
+
+#: aleph_board_edit.lua
+msgid "Moved to %1."
+msgstr "Déplacé vers %1."
+
+#: aleph_board_edit.lua
+msgid "This page is full. Remove a widget first, or add it on another page."
+msgstr "Cette page est pleine. Retirez d'abord un widget, ou ajoutez-le sur une autre page."
+
+#: aleph_board_edit.lua aleph_board_host.lua aleph_browser.lua aleph_detail.lua aleph_page_browser.lua aleph_reader_sheet.lua
+msgid "Pages"
+msgstr "Pages"
+
+#: aleph_board_edit.lua
+msgid "Rename this page"
+msgstr "Renommer cette page"
+
+#: aleph_board_edit.lua
+msgid "Empty: its usual name"
+msgstr "Vide : son nom habituel"
+
+#: aleph_board_edit.lua
+msgid "Reset this page"
+msgstr "Réinitialiser cette page"
+
+#: aleph_board_edit.lua
+msgid "Back to how it started"
+msgstr "Revenir à son état d'origine"
+
+#: aleph_board_edit.lua
+msgid "Reset all pages"
+msgstr "Réinitialiser toutes les pages"
+
+#: aleph_board_edit.lua
+msgid "Every page back to how it started"
+msgstr "Toutes les pages reviennent à leur état d'origine"
+
+#: aleph_board_edit.lua
+msgid "Reset all pages?"
+msgstr "Réinitialiser toutes les pages ?"
+
+#: aleph_board_edit.lua
+msgid "Every page goes back to its starting layout."
+msgstr "Chaque page revient à sa disposition de départ."
+
+#: aleph_board_host.lua aleph_bookends_page.lua aleph_goodreads_import.lua aleph_library_view.lua aleph_pins.lua aleph_wallpaper.lua
+msgid "Done"
+msgstr "Terminé"
+
+#: aleph_board_host.lua
+msgid "%1 widget does not fit at this interface size"
+msgid_plural "%1 widgets do not fit at this interface size"
+msgstr[0] "%1 widget ne tient pas à cette taille d'interface"
+msgstr[1] "%1 widgets ne tiennent pas à cette taille d'interface"
+
+#: aleph_board_host.lua
+msgid "Tap a widget to move, resize or remove it"
+msgstr "Touchez un widget pour le déplacer, le redimensionner ou le retirer"
+
+#: aleph_board_host.lua
+msgid "Edit %1"
+msgstr "Modifier %1"
+
+#: aleph_board_host.lua
+msgid "Offline"
+msgstr "Hors ligne"
+
+#: aleph_board_host.lua
+msgid "saved %1"
+msgstr "enregistré %1"
+
+#: aleph_board_host.lua
+msgid "Add widget"
+msgstr "Ajouter un widget"
+
+#: aleph_board_host.lua
+msgid "Add wallpaper"
+msgstr "Ajouter un fond d'écran"
+
+#: aleph_board_host.lua aleph_browser.lua aleph_reader_sheet.lua
+msgid "All books"
+msgstr "Tous les livres"
+
+#: aleph_board_host.lua aleph_board_widgets.lua aleph_browser.lua aleph_detail.lua
+msgid "In progress"
+msgstr "En cours"
+
+#: aleph_board_host.lua
+msgid "Wide"
+msgstr "Large"
+
+#: aleph_board_host.lua
+msgid "Size"
+msgstr "Taille"
+
+#: aleph_board_host.lua aleph_bookends.lua aleph_pins.lua
+msgid "Page"
+msgstr "Page"
+
+#: aleph_board_host.lua aleph_bookends_page.lua aleph_settings_page.lua
+msgid "Colour"
+msgstr "Couleur"
+
+#: aleph_board_host.lua
+msgid "Add a widget"
+msgstr "Ajouter un widget"
+
+#: aleph_board_host.lua
+msgid "%1 widgets · %2 new"
+msgstr "%1 widgets · %2 nouveaux"
+
+#: aleph_board_store.lua aleph_detail.lua aleph_menu_sheet.lua aleph_settings_page.lua
+msgid "Home"
+msgstr "Accueil"
+
+#: aleph_board_store.lua
+msgid "Insights"
+msgstr "Statistiques"
+
+#: aleph_board_util.lua
+msgid "%1 days ago"
+msgstr "il y a %1 jours"
+
+#: aleph_board_widgets.lua
+msgid "Continue reading · %1 of %2"
+msgstr "Continuer la lecture · %1 sur %2"
+
+#: aleph_board_widgets.lua aleph_bookends.lua aleph_library_view.lua aleph_list_data.lua
+msgid "%1 left"
+msgstr "%1 restant"
+
+#: aleph_board_widgets.lua
+msgid "Three picks from your library"
+msgstr "Trois suggestions de votre bibliothèque"
+
+#: aleph_board_widgets.lua
+msgid "Pick a book to start"
+msgstr "Choisissez un livre pour commencer"
+
+#: aleph_board_widgets.lua
+msgid "Start here"
+msgstr "Commencez ici"
+
+#: aleph_board_widgets.lua
+msgid "Picks from your library"
+msgstr "Suggestions de votre bibliothèque"
+
+#: aleph_board_widgets.lua
+msgid "Start reading"
+msgstr "Commencer à lire"
+
+#: aleph_board_widgets.lua
+msgid "Shuffle"
+msgstr "Mélanger"
+
+#: aleph_board_widgets.lua
+msgid "Pick a book from your library to begin"
+msgstr "Choisissez un livre de votre bibliothèque pour commencer"
+
+#: aleph_board_widgets.lua aleph_detail.lua
+msgid "Resume"
+msgstr "Reprendre"
+
+#: aleph_board_widgets.lua
+msgid "Resume reading"
+msgstr "Reprendre la lecture"
+
+#: aleph_board_widgets.lua aleph_settings_page.lua
+msgid "Download"
+msgstr "Télécharger"
+
+#: aleph_board_widgets.lua aleph_xr_page.lua
+msgid "%1 / %2"
+msgstr ""
+
+#: aleph_board_widgets.lua aleph_settings_page.lua
+msgid "days"
+msgstr "jours"
+
+#: aleph_board_widgets.lua
+msgid "Read today"
+msgstr "Lu aujourd'hui"
+
+#: aleph_board_widgets.lua
+msgid "best %1"
+msgstr "record %1"
+
+#: aleph_board_widgets.lua
+msgid "Nothing yet"
+msgstr "Rien pour l'instant"
+
+#: aleph_board_widgets.lua aleph_settings_page.lua
+msgid "min"
+msgstr ""
+
+#: aleph_board_widgets.lua
+msgid "Not yet"
+msgstr "Pas encore"
+
+#: aleph_board_widgets.lua
+msgid "avg %1 min"
+msgstr "moy. %1 min"
+
+#: aleph_board_widgets.lua
+msgid "%1 goal"
+msgstr "objectif de %1"
+
+#: aleph_board_widgets.lua
+msgid "Set a reading goal in BookOrbit to track your pace."
+msgstr "Fixez un objectif de lecture dans BookOrbit pour suivre votre rythme."
+
+#: aleph_board_widgets.lua
+msgid "Set a goal in BookOrbit."
+msgstr "Fixez un objectif dans BookOrbit."
+
+#: aleph_board_widgets.lua
+msgid "First book starts it"
+msgstr "Le premier livre lance le compteur"
+
+#: aleph_board_widgets.lua
+msgid "Starting out"
+msgstr "Les débuts"
+
+#: aleph_board_widgets.lua
+msgid "Goal met · on pace for %1"
+msgstr "Objectif atteint · en voie d'atteindre %1"
+
+#: aleph_board_widgets.lua
+msgid "on pace for %1"
+msgstr "en voie d'atteindre %1"
+
+#: aleph_board_widgets.lua
+msgid "Goal met"
+msgstr "Objectif atteint"
+
+#: aleph_board_widgets.lua
+msgid "%1 to go · %2 ahead of pace"
+msgstr "encore %1 · %2 d'avance sur le rythme"
+
+#: aleph_board_widgets.lua
+msgid "%1 to go · %2 ahead"
+msgstr "encore %1 · %2 d'avance"
+
+#: aleph_board_widgets.lua
+msgid "%1 ahead of pace"
+msgstr "%1 d'avance sur le rythme"
+
+#: aleph_board_widgets.lua
+msgid "%1 ahead"
+msgstr "%1 d'avance"
+
+#: aleph_board_widgets.lua
+msgid "%1 to go · %2 behind pace"
+msgstr "encore %1 · %2 de retard sur le rythme"
+
+#: aleph_board_widgets.lua
+msgid "%1 to go · %2 behind"
+msgstr "encore %1 · %2 de retard"
+
+#: aleph_board_widgets.lua
+msgid "%1 behind pace"
+msgstr "%1 de retard sur le rythme"
+
+#: aleph_board_widgets.lua
+msgid "%1 behind"
+msgstr "%1 de retard"
+
+#: aleph_board_widgets.lua
+msgid " of %1 books"
+msgstr " sur %1 livres"
+
+#: aleph_board_widgets.lua
+msgid " of %1"
+msgstr " sur %1"
+
+#: aleph_board_widgets.lua
+msgid "Less"
+msgstr "Moins"
+
+#: aleph_board_widgets.lua aleph_bookmarks.lua aleph_highlight.lua aleph_page_browser.lua
+msgid "More"
+msgstr "Plus"
+
+#: aleph_board_widgets.lua
+msgid "Your reading days fill in here"
+msgstr "Vos jours de lecture se remplissent ici"
+
+#: aleph_board_widgets.lua
+msgid "Best day"
+msgstr "Meilleur jour"
+
+#: aleph_board_widgets.lua aleph_settings_page.lua
+msgid "%1 days"
+msgstr "%1 jours"
+
+#: aleph_board_widgets.lua
+msgid "Past %1 months"
+msgstr "%1 derniers mois"
+
+#: aleph_board_widgets.lua aleph_list_data.lua
+msgid "read"
+msgstr "lu"
+
+#: aleph_board_widgets.lua
+msgid "best streak"
+msgstr "meilleure série"
+
+#: aleph_board_widgets.lua
+msgid "a reading day"
+msgstr "un jour de lecture"
+
+#: aleph_board_widgets.lua
+msgid "%1 days read"
+msgstr "%1 jours de lecture"
+
+#: aleph_board_widgets.lua
+msgid "All %1"
+msgstr "Les %1"
+
+#: aleph_board_widgets.lua
+msgid "Books you start show up here."
+msgstr "Les livres que vous commencez apparaissent ici."
+
+#: aleph_board_widgets.lua
+msgid "Your highlights come back here, one a day."
+msgstr "Vos surlignages reviennent ici, un par jour."
+
+#: aleph_board_widgets.lua
+msgid "Unread books in your local library wait here."
+msgstr "Les livres non lus de votre bibliothèque locale attendent ici."
+
+#: aleph_board_widgets.lua
+msgid "Books you put down a while ago show up here."
+msgstr "Les livres laissés de côté il y a un moment apparaissent ici."
+
+#: aleph_board_widgets.lua
+msgid "Books you finish this year gather here."
+msgstr "Les livres que vous terminez cette année se rassemblent ici."
+
+#: aleph_board_widgets.lua
+msgid "Shelf"
+msgstr "Étagère"
+
+#: aleph_board_widgets.lua
+msgid "Finished in %1"
+msgstr "Terminés en %1"
+
+#: aleph_board_widgets.lua
+msgid "See all"
+msgstr "Tout voir"
+
+#: aleph_board_widgets.lua
+msgid "Loading…"
+msgstr "Chargement…"
+
+#: aleph_board_widgets.lua
+msgid "Connect to Wi-Fi to fill this shelf."
+msgstr "Connectez-vous au Wi-Fi pour remplir cette étagère."
+
+#: aleph_board_widgets.lua
+msgid "Nothing here yet."
+msgstr "Rien ici pour l'instant."
+
+#: aleph_board_widgets.lua aleph_settings_page.lua
+msgid "books"
+msgstr "livres"
+
+#: aleph_board_widgets.lua
+msgid "series"
+msgstr "séries"
+
+#: aleph_board_widgets.lua
+msgid "authors"
+msgstr "auteurs"
+
+#: aleph_board_widgets.lua
+msgid "collection"
+msgstr "collection"
+
+#: aleph_board_widgets.lua
+msgid "collections"
+msgstr "collections"
+
+#: aleph_board_widgets.lua
+msgid "in progress"
+msgstr "en cours"
+
+#: aleph_board_widgets.lua
+msgid "SmartScopes"
+msgstr ""
+
+#: aleph_board_widgets.lua
+msgid "scopes"
+msgstr "périmètres"
+
+#: aleph_board_widgets.lua
+msgid "book here"
+msgid_plural "books here"
+msgstr[0] "livre ici"
+msgstr[1] "livres ici"
+
+#: aleph_board_widgets.lua
+msgid "of your books"
+msgstr "de vos livres"
+
+#: aleph_board_widgets.lua
+msgid "Title, author"
+msgstr "Titre, auteur"
+
+#: aleph_board_widgets.lua
+msgid "Books"
+msgstr "Livres"
+
+#: aleph_board_widgets.lua
+msgid "%1 GB free"
+msgstr "%1 Go libres"
+
+#: aleph_board_widgets.lua
+msgid "Mornings"
+msgstr "Matins"
+
+#: aleph_board_widgets.lua
+msgid "Afternoons"
+msgstr "Après-midi"
+
+#: aleph_board_widgets.lua
+msgid "Evenings"
+msgstr "Soirées"
+
+#: aleph_board_widgets.lua
+msgid "Late nights"
+msgstr "Nuits"
+
+#: aleph_board_widgets.lua
+msgid "Read on this device and your hours show up here."
+msgstr "Lisez sur cet appareil et vos heures apparaîtront ici."
+
+#: aleph_board_widgets.lua
+msgid "Most at %1"
+msgstr "Surtout à %1"
+
+#: aleph_board_widgets.lua
+msgid "Your records appear as you read on this device."
+msgstr "Vos records apparaissent à mesure que vous lisez sur cet appareil."
+
+#: aleph_board_widgets.lua
+msgid "longest session"
+msgstr "séance la plus longue"
+
+#: aleph_board_widgets.lua
+msgid "pages an hour"
+msgstr "pages par heure"
+
+#: aleph_board_widgets.lua
+msgid "average session"
+msgstr "séance moyenne"
+
+#: aleph_board_widgets.lua
+msgid "sessions"
+msgstr "séances"
+
+#: aleph_board_widgets.lua
+msgid "day"
+msgid_plural "days"
+msgstr[0] "jour"
+msgstr[1] "jours"
+
+#: aleph_board_widgets.lua
+msgid "Week"
+msgstr "Semaine"
+
+#: aleph_board_widgets.lua
+msgid "book"
+msgid_plural "books"
+msgstr[0] "livre"
+msgstr[1] "livres"
+
+#: aleph_board_widgets.lua
+msgid "Set your daily, weekly, monthly and yearly goals in Settings > Profile."
+msgstr "Fixez vos objectifs du jour, de la semaine, du mois et de l'année dans Réglages > Profil."
+
+#: aleph_board_widgets.lua
+msgid "Set a daily goal in Settings > Profile."
+msgstr "Fixez un objectif du jour dans Réglages > Profil."
+
+#: aleph_board_widgets.lua
+msgid "%1 min to go"
+msgstr "encore %1 min"
+
+#: aleph_board_widgets.lua
+msgid "Set a weekly goal in Settings > Profile."
+msgstr "Fixez un objectif de la semaine dans Réglages > Profil."
+
+#: aleph_board_widgets.lua
+msgid "%1 day to go"
+msgid_plural "%1 days to go"
+msgstr[0] "encore %1 jour"
+msgstr[1] "encore %1 jours"
+
+#: aleph_board_widgets.lua
+msgid "Set a monthly goal in Settings > Profile."
+msgstr "Fixez un objectif du mois dans Réglages > Profil."
+
+#: aleph_board_widgets.lua
+msgid "%1 book to go"
+msgid_plural "%1 books to go"
+msgstr[0] "encore %1 livre"
+msgstr[1] "encore %1 livres"
+
+#: aleph_board_widgets.lua
+msgid "%1 day left"
+msgid_plural "%1 days left"
+msgstr[0] "%1 jour restant"
+msgstr[1] "%1 jours restants"
+
+#: aleph_board_widgets.lua
+msgctxt "Reading DNA"
+msgid "Length"
+msgstr "Longueur"
+
+#: aleph_board_widgets.lua
+msgctxt "Reading DNA"
+msgid "Variety"
+msgstr "Variété"
+
+#: aleph_board_widgets.lua
+msgctxt "Reading DNA"
+msgid "Rhythm"
+msgstr "Rythme"
+
+#: aleph_board_widgets.lua
+msgctxt "Reading DNA"
+msgid "Time"
+msgstr "Moment"
+
+#: aleph_board_widgets.lua
+msgctxt "Reading DNA"
+msgid "Speed"
+msgstr "Vitesse"
+
+#: aleph_board_widgets.lua
+msgid "Finish at least 5 books to see your reading DNA (%1 so far)."
+msgstr "Terminez au moins 5 livres pour voir votre ADN de lecteur (%1 pour l'instant)."
+
+#: aleph_board_widgets.lua
+msgid "Based on %1 book"
+msgid_plural "Based on %1 books"
+msgstr[0] "D'après %1 livre"
+msgstr[1] "D'après %1 livres"
+
+#: aleph_board_widgets.lua
+msgid "Your challenge appears as you read on this device."
+msgstr "Votre défi apparaît à mesure que vous lisez sur cet appareil."
+
+#: aleph_board_widgets.lua
+msgid "Complete!"
+msgstr "Réussi !"
+
+#: aleph_board_widgets.lua
+msgid "Start reading to see your rhythm take shape."
+msgstr "Commencez à lire pour voir votre rythme prendre forme."
+
+#: aleph_board_widgets.lua
+msgid "%1 active day"
+msgid_plural "%1 active days"
+msgstr[0] "%1 jour actif"
+msgstr[1] "%1 jours actifs"
+
+#: aleph_board_widgets.lua
+msgid "%1 · %2% consistency"
+msgstr "%1 · %2 % de régularité"
+
+#: aleph_board_widgets.lua
+msgid "avg %1/day"
+msgstr "moy. %1/jour"
+
+#: aleph_board_widgets.lua
+msgid "consistency"
+msgstr "régularité"
+
+#: aleph_board_widgets.lua
+msgid "Your hours appear as you read on this device."
+msgstr "Vos heures apparaissent à mesure que vous lisez sur cet appareil."
+
+#: aleph_board_widgets.lua
+msgid "hours"
+msgstr "heures"
+
+#: aleph_board_widgets.lua
+msgid "%1 h this year"
+msgstr "%1 h cette année"
+
+#: aleph_board_widgets.lua
+msgid "Your books and pages appear as you read on this device."
+msgstr "Vos livres et vos pages apparaissent à mesure que vous lisez sur cet appareil."
+
+#: aleph_board_widgets.lua
+msgid "%1 page"
+msgid_plural "%1 pages"
+msgstr[0] "%1 page"
+msgstr[1] "%1 pages"
+
+#: aleph_board_widgets.lua
+msgid "Your projection appears as you read on this device."
+msgstr "Votre projection apparaît à mesure que vous lisez sur cet appareil."
+
+#: aleph_board_widgets.lua
+msgid "Trending up"
+msgstr "En hausse"
+
+#: aleph_board_widgets.lua
+msgid "Trending down"
+msgstr "En baisse"
+
+#: aleph_board_widgets.lua
+msgid "Steady pace"
+msgstr "Rythme stable"
+
+#: aleph_board_widgets.lua
+msgid "%1 read · %2 days left"
+msgstr "%1 lus · %2 jours restants"
+
+#: aleph_board_widgets.lua
+msgid "pages"
+msgstr "pages"
+
+#: aleph_board_widgets.lua
+msgctxt "Diversity"
+msgid "Genre"
+msgstr "Genre"
+
+#: aleph_board_widgets.lua
+msgctxt "Diversity"
+msgid "Author"
+msgstr "Auteur"
+
+#: aleph_board_widgets.lua
+msgctxt "Diversity"
+msgid "Era"
+msgstr "Époque"
+
+#: aleph_board_widgets.lua
+msgctxt "Diversity"
+msgid "Language"
+msgstr "Langue"
+
+#: aleph_board_widgets.lua
+msgid "Finish at least 3 books to see your diversity score (%1 so far)."
+msgstr "Terminez au moins 3 livres pour voir votre score de diversité (%1 pour l'instant)."
+
+#: aleph_board_widgets.lua
+msgid "%1 book analyzed"
+msgid_plural "%1 books analyzed"
+msgstr[0] "%1 livre analysé"
+msgstr[1] "%1 livres analysés"
+
+#: aleph_board_widgets.lua
+msgid "Tap to make a card of 12 or 24 reading challenges."
+msgstr "Touchez pour créer une grille de 12 ou 24 défis de lecture."
+
+#: aleph_board_widgets.lua
+msgctxt "Bingo"
+msgid "read"
+msgstr "lus"
+
+#: aleph_board_widgets.lua
+msgid "This device has no frontlight."
+msgstr "Cet appareil n'a pas d'éclairage frontal."
+
+#: aleph_board_widgets.lua
+msgid "Brightness · Warmth"
+msgstr "Luminosité · Chaleur"
+
+#: aleph_board_widgets.lua aleph_browser.lua aleph_topbar.lua
+msgid "Brightness"
+msgstr "Luminosité"
+
+#: aleph_board_widgets.lua
+msgid "%1 left at ~%2 min a day"
+msgstr "%1 restant à ~%2 min par jour"
+
+#: aleph_board_widgets.lua
+msgid "Finish"
+msgstr "Fin"
+
+#: aleph_board_widgets.lua
+msgid "Read a little on this device and a finish date shows up here."
+msgstr "Lisez un peu sur cet appareil et une date de fin apparaîtra ici."
+
+#: aleph_board_widgets.lua
+msgid "Read a little"
+msgstr "Lisez un peu"
+
+#: aleph_board_widgets.lua
+msgid "Look up a word while reading and one comes back here each day."
+msgstr "Cherchez un mot pendant la lecture et l'un d'eux reviendra ici chaque jour."
+
+#: aleph_board_widgets.lua
+msgid "Look up a word while reading."
+msgstr "Cherchez un mot pendant la lecture."
+
+#: aleph_board_widgets.lua
+msgid "Could not draw this widget."
+msgstr "Impossible d'afficher ce widget."
+
+#: aleph_board_widgets.lua
+msgid "Enable Silverfish in KOReader."
+msgstr "Activez Silverfish dans KOReader."
+
+#: aleph_bookends.lua aleph_bookends_page.lua aleph_browser.lua
+msgid "Progress"
+msgstr "Progression"
+
+#: aleph_bookends.lua
+msgid "Page of pages"
+msgstr "Page sur pages"
+
+#: aleph_bookends.lua
+msgid "Pages left in chapter"
+msgstr "Pages restantes dans le chapitre"
+
+#: aleph_bookends.lua
+msgid "Time left in chapter"
+msgstr "Temps restant dans le chapitre"
+
+#: aleph_bookends.lua
+msgid "Time left in book"
+msgstr "Temps restant dans le livre"
+
+#: aleph_bookends.lua aleph_reader_sheet.lua
+msgid "Chapter"
+msgstr "Chapitre"
+
+#: aleph_bookends.lua
+msgid "Book title"
+msgstr "Titre du livre"
+
+#: aleph_bookends.lua aleph_browser.lua
+msgid "Author"
+msgstr "Auteur"
+
+#: aleph_bookends.lua
+msgid "Date"
+msgstr "Date"
+
+#: aleph_bookends.lua
+msgid "Battery"
+msgstr "Batterie"
+
+#: aleph_bookends.lua
+msgid "Front light"
+msgstr "Éclairage frontal"
+
+#: aleph_bookends.lua
+msgid "Read this sitting"
+msgstr "Lu cette séance"
+
+#: aleph_bookends.lua aleph_page_browser.lua
+msgid "Page %1 of %2"
+msgstr "Page %1 sur %2"
+
+#: aleph_bookends.lua
+msgid "Last page of chapter"
+msgstr "Dernière page du chapitre"
+
+#: aleph_bookends.lua
+msgid "1 page left in chapter"
+msgstr "1 page restante dans le chapitre"
+
+#: aleph_bookends.lua
+msgid "%1 pages left in chapter"
+msgstr "%1 pages restantes dans le chapitre"
+
+#: aleph_bookends.lua
+msgid "%1 left in chapter"
+msgstr "%1 restant dans le chapitre"
+
+#: aleph_bookends.lua aleph_list_data.lua aleph_reader_sheet.lua
+msgid "%1 read"
+msgstr "%1 lu"
+
+#: aleph_bookends_page.lua aleph_pins.lua
+msgid "Left"
+msgstr "Gauche"
+
+#: aleph_bookends_page.lua
+msgid "Middle"
+msgstr "Centre"
+
+#: aleph_bookends_page.lua aleph_pins.lua
+msgid "Right"
+msgstr "Droite"
+
+#: aleph_bookends_page.lua aleph_pins.lua
+msgid "Top"
+msgstr "Haut"
+
+#: aleph_bookends_page.lua aleph_pins.lua
+msgid "Bottom"
+msgstr "Bas"
+
+#: aleph_bookends_page.lua
+msgid "Show at the top"
+msgstr "Afficher en haut"
+
+#: aleph_bookends_page.lua
+msgid "Show at the bottom"
+msgstr "Afficher en bas"
+
+#: aleph_bookends_page.lua
+msgid "Distance from the top"
+msgstr "Distance depuis le haut"
+
+#: aleph_bookends_page.lua
+msgid "Distance from the bottom"
+msgstr "Distance depuis le bas"
+
+#: aleph_bookends_page.lua
+msgid "+ moves the line in, away from the edge"
+msgstr "+ éloigne la ligne du bord"
+
+#: aleph_bookends_page.lua aleph_settings_page.lua
+msgid "Look"
+msgstr "Apparence"
+
+#: aleph_bookends_page.lua
+msgid "No line"
+msgstr "Sans ligne"
+
+#: aleph_bookends_page.lua
+msgid "Chapters"
+msgstr "Chapitres"
+
+#: aleph_bookends_page.lua
+msgid "Line under the top"
+msgstr "Ligne sous le haut"
+
+#: aleph_bookends_page.lua
+msgid "Small"
+msgstr "Petit"
+
+#: aleph_bookends_page.lua
+msgid "Medium"
+msgstr "Moyen"
+
+#: aleph_bookends_page.lua
+msgid "Large"
+msgstr "Grand"
+
+#: aleph_bookends_page.lua aleph_settings_page.lua
+msgid "Text size"
+msgstr "Taille du texte"
+
+#: aleph_bookends_page.lua
+msgid "Light gray"
+msgstr "Gris clair"
+
+#: aleph_bookends_page.lua aleph_config.lua
+msgid "Gray"
+msgstr "Gris"
+
+#: aleph_bookends_page.lua
+msgid "Black"
+msgstr "Noir"
+
+#: aleph_bookends_page.lua
+msgid "Text colour"
+msgstr "Couleur du texte"
+
+#: aleph_bookends_page.lua
+msgid "Text weight"
+msgstr "Graisse du texte"
+
+#: aleph_bookends_page.lua
+msgid "Regular"
+msgstr "Normal"
+
+#: aleph_bookends_page.lua
+msgid "Bold"
+msgstr "Gras"
+
+#: aleph_bookends_page.lua
+msgid "The Bookends plugin is on: these lines stay hidden while it is. Turn it off in Plugin management."
+msgstr "L'extension Bookends est activée : ces lignes restent masquées tant qu'elle l'est. Désactivez-la dans Gestion des extensions."
+
+#: aleph_bookends_page.lua aleph_settings_page.lua
+msgid "Book margins"
+msgstr "Marges du livre"
+
+#: aleph_bookends_page.lua
+msgid "Stats at the top and bottom of book pages"
+msgstr "Des statistiques en haut et en bas des pages du livre"
+
+#: aleph_bookends_page.lua
+msgid "Hide KOReader's status bar"
+msgstr "Masquer la barre d'état de KOReader"
+
+#: aleph_bookends_page.lua
+msgid "Its bar at the foot of the page, while the bottom line shows"
+msgstr "Sa barre en bas de page, tant que la ligne du bas s'affiche"
+
+#: aleph_bookends_page.lua
+msgid "Page turner battery"
+msgstr "Batterie de la télécommande de pages"
+
+#: aleph_bookends_page.lua
+msgid "At the end of the bottom right, while a Bluetooth page turner reports it"
+msgstr "Tout à droite en bas, quand une télécommande Bluetooth l'indique"
+
+#: aleph_bookends_page.lua
+msgid "Progress, clock and battery on top; time left at the foot"
+msgstr "Progression, heure et batterie en haut ; temps restant en bas"
+
+#: aleph_bookends_page.lua
+msgid "%1 · %2"
+msgstr ""
+
+#: aleph_bookends_page.lua
+msgid "Tap in the order to show them, up to three"
+msgstr "Touchez-les dans l'ordre d'affichage, jusqu'à trois"
+
+#: aleph_bookends_page.lua
+msgid "Up to three in one place. Tap one to remove it first."
+msgstr "Trois au maximum au même endroit. Touchez-en un pour le retirer d'abord."
+
+#: aleph_bookends_page.lua
+msgid "Too light to read on the page: pick a darker colour."
+msgstr "Trop clair pour être lu sur la page : choisissez une couleur plus foncée."
+
+#: aleph_bookends_page.lua
+msgid "KOReader's status bar comes back with its own toggle (tap the foot of the page)."
+msgstr "La barre d'état de KOReader revient avec son propre interrupteur (touchez le bas de la page)."
+
+#: aleph_bookmark.lua
+msgid "Reset text"
+msgstr "Rétablir le texte"
+
+#: aleph_bookmark.lua
+msgid "Edit text"
+msgstr "Modifier le texte"
+
+#: aleph_bookmark.lua aleph_bookmark_colors.lua
+msgid "Remove bookmark"
+msgstr "Supprimer le signet"
+
+#: aleph_bookmark.lua
+msgid "Add note"
+msgstr "Ajouter une note"
+
+#: aleph_bookmark.lua
+msgid "Edit note"
+msgstr "Modifier la note"
+
+#: aleph_bookmark.lua
+msgid "Go to bookmark"
+msgstr "Aller au signet"
+
+#: aleph_bookmark.lua aleph_browser.lua aleph_goodreads.lua aleph_goodreads_import.lua aleph_goodreads_send.lua aleph_gr.lua aleph_settings_page.lua aleph_sync_chain.lua
+msgid "Close"
+msgstr "Fermer"
+
+#: aleph_bookmark_colors.lua
+msgid "Aqua"
+msgstr "Turquoise"
+
+#: aleph_bookmarks.lua
+msgid "Page order"
+msgstr "Ordre des pages"
+
+#: aleph_bookmarks.lua
+msgid "Newest first"
+msgstr "Plus récents d'abord"
+
+#: aleph_bookmarks.lua
+msgid "Oldest first"
+msgstr "Plus anciens d'abord"
+
+#: aleph_bookmarks.lua
+msgid "in %1"
+msgstr "dans %1"
+
+#: aleph_bookmarks.lua
+msgid "Page bookmark"
+msgstr "Signet de page"
+
+#: aleph_bookmarks.lua aleph_browser.lua aleph_menu_skin.lua aleph_xr_page.lua
+msgid "All"
+msgstr "Tous"
+
+#: aleph_bookmarks.lua aleph_browser.lua aleph_menu_skin.lua aleph_page_browser.lua aleph_text_pages.lua
+msgid "Highlights"
+msgstr "Surlignages"
+
+#: aleph_bookmarks.lua aleph_menu_skin.lua aleph_page_browser.lua aleph_reader_sheet.lua
+msgid "Bookmarks"
+msgstr "Signets"
+
+#: aleph_bookmarks.lua aleph_menu_skin.lua
+msgid "Notes"
+msgstr "Notes"
+
+#: aleph_bookmarks.lua
+msgid "Search: “%1”"
+msgstr "Recherche : « %1 »"
+
+#: aleph_bookmarks.lua
+msgid "Bookmarks (%1)"
+msgstr "Signets (%1)"
+
+#: aleph_bookmarks.lua
+msgid "Nothing matches these filters."
+msgstr "Rien ne correspond à ces filtres."
+
+#: aleph_bookmarks.lua aleph_highlight.lua
+msgid "Highlight"
+msgstr "Surlignage"
+
+#: aleph_bookmarks.lua aleph_highlight.lua
+msgid "Note"
+msgstr "Note"
+
+#: aleph_bookmarks.lua
+msgid "Bookmark"
+msgstr "Signet"
+
+#: aleph_bookmarks.lua
+msgid "page %1"
+msgstr "page %1"
+
+#: aleph_bookmarks.lua
+msgid "Edit"
+msgstr "Modifier"
+
+#: aleph_bookmarks.lua
+msgid "Go to in book"
+msgstr "Voir dans le livre"
+
+#: aleph_bookmarks.lua
+msgid "Search bookmarks"
+msgstr "Rechercher dans les signets"
+
+#: aleph_bookmarks.lua
+msgid "A word in a passage or note"
+msgstr "Un mot d'un passage ou d'une note"
+
+#: aleph_bookmarks.lua aleph_browser.lua aleph_color_wheel.lua aleph_confirm.lua aleph_input.lua
+msgid "Cancel"
+msgstr "Annuler"
+
+#: aleph_bookmarks.lua
+msgid "Now: “%1”"
+msgstr "Actuellement : « %1 »"
+
+#: aleph_bookmarks.lua
+msgid "In the passages, notes and chapters"
+msgstr "Dans les passages, les notes et les chapitres"
+
+#: aleph_bookmarks.lua
+msgid "Clear search"
+msgstr "Effacer la recherche"
+
+#: aleph_bookmarks.lua
+msgid "%1 shown"
+msgstr "%1 affichés"
+
+#: aleph_bookmarks.lua
+msgid "Find"
+msgstr "Chercher"
+
+#: aleph_bookmarks.lua aleph_dialog_sheet.lua aleph_menu_sheet.lua
+msgid "Go to"
+msgstr "Aller à"
+
+#: aleph_bookmarks.lua
+msgid "Current page"
+msgstr "Page actuelle"
+
+#: aleph_bookmarks.lua
+msgid "The bookmarks where you are reading"
+msgstr "Les signets là où vous lisez"
+
+#: aleph_bookmarks.lua
+msgid "Latest bookmark"
+msgstr "Dernier signet"
+
+#: aleph_bookmarks.lua
+msgid "The one made most recently"
+msgstr "Le plus récent"
+
+#: aleph_bookmarks.lua
+msgid "Export annotations"
+msgstr "Exporter les annotations"
+
+#: aleph_bookmarks.lua
+msgid "With KOReader's exporter"
+msgstr "Avec l'exportateur de KOReader"
+
+#: aleph_bookmarks.lua
+msgid "Select, edited text and more"
+msgstr "Sélection, texte modifié et plus"
+
+#: aleph_bookmarks.lua
+msgid "In KOReader's own list"
+msgstr "Dans la liste de KOReader"
+
+#: aleph_bookmarks.lua aleph_menu_skin.lua
+msgid "Show one style"
+msgstr "Afficher un style"
+
+#: aleph_browser.lua
+msgid "Title"
+msgstr "Titre"
+
+#: aleph_browser.lua aleph_detail.lua
+msgid "Added"
+msgstr "Ajout"
+
+#: aleph_browser.lua
+msgctxt "Sort by"
+msgid "Read"
+msgstr "Lecture"
+
+#: aleph_browser.lua aleph_detail.lua
+msgid "Unread"
+msgstr "Non lu"
+
+#: aleph_browser.lua aleph_detail.lua aleph_gr_api.lua
+msgid "Finished"
+msgstr "Terminé"
+
+#: aleph_browser.lua aleph_detail.lua aleph_list_data.lua
+msgid "On hold"
+msgstr "En pause"
+
+#: aleph_browser.lua
+msgid "Title Z–A"
+msgstr "Titre Z–A"
+
+#: aleph_browser.lua
+msgid "Title A–Z"
+msgstr "Titre A–Z"
+
+#: aleph_browser.lua
+msgid "Author Z–A"
+msgstr "Auteur Z–A"
+
+#: aleph_browser.lua
+msgid "Author A–Z"
+msgstr "Auteur A–Z"
+
+#: aleph_browser.lua
+msgid "Last name Z–A"
+msgstr "Nom de famille Z–A"
+
+#: aleph_browser.lua
+msgid "Last name A–Z"
+msgstr "Nom de famille A–Z"
+
+#: aleph_browser.lua
+msgid "Series, last first"
+msgstr "Série, du dernier au premier"
+
+#: aleph_browser.lua
+msgid "Series order"
+msgstr "Ordre de la série"
+
+#: aleph_browser.lua
+msgid "Added (oldest)"
+msgstr "Ajout (plus ancien)"
+
+#: aleph_browser.lua
+msgid "Read (oldest)"
+msgstr "Lecture (plus ancienne)"
+
+#: aleph_browser.lua aleph_detail.lua
+msgid "Last read"
+msgstr "Dernière lecture"
+
+#: aleph_browser.lua
+msgid "Least read first"
+msgstr "Les moins avancés d'abord"
+
+#: aleph_browser.lua
+msgid "Most read first"
+msgstr "Les plus avancés d'abord"
+
+#: aleph_browser.lua
+msgid "Whole library"
+msgstr "Toute la bibliothèque"
+
+#: aleph_browser.lua
+msgid "Scanning your library…"
+msgstr "Analyse de votre bibliothèque…"
+
+#: aleph_browser.lua
+msgid "Books appear here as they are found."
+msgstr "Les livres apparaissent ici au fur et à mesure."
+
+#: aleph_browser.lua
+msgid "No books yet"
+msgstr "Pas encore de livres"
+
+#: aleph_browser.lua
+msgid "Choose the folders that hold your books."
+msgstr "Choisissez les dossiers qui contiennent vos livres."
+
+#: aleph_browser.lua
+msgid "Library folders"
+msgstr "Dossiers de la bibliothèque"
+
+#: aleph_browser.lua
+msgid "Nothing matches “%1”"
+msgstr "Rien ne correspond à « %1 »"
+
+#: aleph_browser.lua
+msgid "Check the spelling, or try fewer or different words."
+msgstr "Vérifiez l'orthographe, ou essayez moins de mots ou d'autres mots."
+
+#: aleph_browser.lua
+msgid "Nothing matches these filters"
+msgstr "Rien ne correspond à ces filtres"
+
+#: aleph_browser.lua
+msgid "Clear a filter to see more."
+msgstr "Retirez un filtre pour en voir plus."
+
+#: aleph_browser.lua
+msgid "Clear filters"
+msgstr "Effacer les filtres"
+
+#: aleph_browser.lua
+msgid "%1 results for “%2”"
+msgstr "%1 résultats pour « %2 »"
+
+#: aleph_browser.lua
+msgid "%1 selected"
+msgstr "%1 sélectionnés"
+
+#: aleph_browser.lua
+msgid "Tap covers to add or remove"
+msgstr "Touchez les couvertures pour ajouter ou retirer"
+
+#: aleph_browser.lua
+msgid "Tap books to add or remove"
+msgstr "Touchez les livres pour ajouter ou retirer"
+
+#: aleph_browser.lua aleph_library_view.lua
+msgid "Reading order"
+msgstr "Ordre de lecture"
+
+#: aleph_browser.lua
+msgid "Books %1 – %2"
+msgstr "Livres %1 – %2"
+
+#: aleph_browser.lua
+msgid "Collection"
+msgstr "Collection"
+
+#: aleph_browser.lua
+msgid "No collections yet. Create them in the file browser."
+msgstr "Pas encore de collections. Créez-les dans le gestionnaire de fichiers."
+
+#: aleph_browser.lua
+msgid "Hold a collection to rename or delete it."
+msgstr "Maintenez une collection pour la renommer ou la supprimer."
+
+#: aleph_browser.lua
+msgid "Any genre"
+msgstr "Tous genres"
+
+#: aleph_browser.lua
+msgid "Genre"
+msgstr "Genre"
+
+#: aleph_browser.lua
+msgid "Any"
+msgstr "Tous"
+
+#: aleph_browser.lua
+msgid "Format"
+msgstr "Format"
+
+#: aleph_browser.lua
+msgid "Any language"
+msgstr "Toutes langues"
+
+#: aleph_browser.lua aleph_detail.lua
+msgid "Language"
+msgstr "Langue"
+
+#: aleph_browser.lua
+msgid "No languages found. They come from each book's metadata."
+msgstr "Aucune langue trouvée. Elles viennent des métadonnées de chaque livre."
+
+#: aleph_browser.lua
+msgid "Any length"
+msgstr "Toutes longueurs"
+
+#: aleph_browser.lua
+msgid "No page counts found. They come from a Calibre page-count column, or from KOReader once a book has been opened."
+msgstr "Aucun nombre de pages trouvé. Il vient d'une colonne de pages de Calibre, ou de KOReader une fois le livre ouvert."
+
+#: aleph_browser.lua
+msgid "Any year"
+msgstr "Toutes années"
+
+#: aleph_browser.lua
+msgid "Released"
+msgstr "Parution"
+
+#: aleph_browser.lua
+msgid "No release dates found. They come from each book's publication date (Calibre's Published column)."
+msgstr "Aucune date de parution trouvée. Elles viennent de la date de publication de chaque livre (colonne Publié de Calibre)."
+
+#: aleph_browser.lua
+msgid "Newest"
+msgstr "Plus récents"
+
+#: aleph_browser.lua
+msgid "Oldest"
+msgstr "Plus anciens"
+
+#: aleph_browser.lua
+msgid "Most read"
+msgstr "Plus lus"
+
+#: aleph_browser.lua
+msgid "Least read"
+msgstr "Moins lus"
+
+#: aleph_browser.lua
+msgid "Sort and filter"
+msgstr "Trier et filtrer"
+
+#: aleph_browser.lua
+msgid "First name"
+msgstr "Prénom"
+
+#: aleph_browser.lua
+msgid "Last name"
+msgstr "Nom de famille"
+
+#: aleph_browser.lua
+msgid "For this list only"
+msgstr "Pour cette liste seulement"
+
+#: aleph_browser.lua
+msgid "Saved for the library"
+msgstr "Enregistré pour la bibliothèque"
+
+#: aleph_browser.lua
+msgid "No description in this book's local metadata."
+msgstr "Pas de description dans les métadonnées locales de ce livre."
+
+#: aleph_browser.lua aleph_detail.lua
+msgid "Book"
+msgstr "Livre"
+
+#: aleph_browser.lua
+msgid "Not rated"
+msgstr "Non noté"
+
+#: aleph_browser.lua aleph_detail.lua
+msgctxt "Open the book"
+msgid "Read"
+msgstr "Lire"
+
+#: aleph_browser.lua aleph_topbar_book.lua
+msgid "Book information"
+msgstr "Informations sur le livre"
+
+#: aleph_browser.lua
+msgid "On this device · %1"
+msgstr "Sur cet appareil · %1"
+
+#: aleph_browser.lua aleph_goodreads_send.lua (status) aleph_library_view.lua aleph_list_data.lua
+msgid "Read"
+msgstr "Lu"
+
+#: aleph_browser.lua
+msgid "This book is open in the reader. Close it first, then delete it here."
+msgstr "Ce livre est ouvert dans la liseuse. Fermez-le d'abord, puis supprimez-le ici."
+
+#: aleph_browser.lua
+msgid ""
+"“%1” will be deleted from this device, with everything KOReader keeps about it: highlights, notes, bookmarks, the last page read, its status and rating.\n"
+"\n"
+"Your reading statistics are kept, and a finished book still counts toward this year.\n"
+"\n"
+"This cannot be undone."
+msgstr ""
+"« %1 » sera supprimé de cet appareil, avec tout ce que KOReader garde sur lui : surlignages, notes, signets, dernière page lue, statut et note.\n"
+"\n"
+"Vos statistiques de lecture sont conservées, et un livre terminé compte toujours pour cette année.\n"
+"\n"
+"Cette action est irréversible."
+
+#: aleph_browser.lua
+msgid ""
+"The file of “%1” will be deleted from this device.\n"
+"\n"
+"Its highlights, notes, bookmarks, last page, status and rating are kept: put the same file back in the same folder and KOReader finds them again. Your reading statistics are kept, and a finished book still counts toward this year.\n"
+"\n"
+"The file itself cannot be brought back."
+msgstr ""
+"Le fichier de « %1 » sera supprimé de cet appareil.\n"
+"\n"
+"Ses surlignages, notes, signets, dernière page, statut et note sont conservés : remettez le même fichier dans le même dossier et KOReader les retrouvera. Vos statistiques de lecture sont conservées, et un livre terminé compte toujours pour cette année.\n"
+"\n"
+"Le fichier lui-même ne pourra pas être récupéré."
+
+#: aleph_browser.lua
+msgid "Delete the book and its data?"
+msgstr "Supprimer le livre et ses données ?"
+
+#: aleph_browser.lua
+msgid "Delete the book file?"
+msgstr "Supprimer le fichier du livre ?"
+
+#: aleph_browser.lua aleph_highlight.lua
+msgid "Delete"
+msgstr "Supprimer"
+
+#: aleph_browser.lua aleph_reader_sheet.lua
+msgid "This book is no longer on this device."
+msgstr "Ce livre n'est plus sur cet appareil."
+
+#: aleph_browser.lua
+msgid ""
+"Could not delete the book.\n"
+"%1"
+msgstr ""
+"Impossible de supprimer le livre.\n"
+"%1"
+
+#: aleph_browser.lua
+msgid "Deleted “%1”."
+msgstr "« %1 » supprimé."
+
+#: aleph_browser.lua
+msgid ""
+"Read on %1, imported from Goodreads.\n"
+"\n"
+"This book is not on this device. It counts toward the books you finished that year. Remove it from the record if it should not."
+msgstr ""
+"Lu le %1, importé de Goodreads.\n"
+"\n"
+"Ce livre n'est pas sur cet appareil. Il compte parmi les livres terminés cette année-là. Retirez-le du registre s'il ne doit pas compter."
+
+#: aleph_browser.lua
+msgid ""
+"Finished on %1.\n"
+"\n"
+"This book is no longer on this device. It still counts toward the books you finished this year. Remove it from the record if it should not."
+msgstr ""
+"Terminé le %1.\n"
+"\n"
+"Ce livre n'est plus sur cet appareil. Il compte toujours parmi les livres terminés cette année. Retirez-le du registre s'il ne doit pas compter."
+
+#: aleph_browser.lua
+msgid "Remove from record"
+msgstr "Retirer du registre"
+
+#: aleph_browser.lua
+msgid "Favorites is KOReader's own collection: it cannot be renamed or deleted."
+msgstr "Favoris est la collection de KOReader : elle ne peut être ni renommée ni supprimée."
+
+#: aleph_browser.lua
+msgid "Rename collection"
+msgstr "Renommer la collection"
+
+#: aleph_browser.lua
+msgid "Could not rename the collection."
+msgstr "Impossible de renommer la collection."
+
+#: aleph_browser.lua
+msgid "Rename"
+msgstr "Renommer"
+
+#: aleph_browser.lua
+msgid "Delete \"%1\"?"
+msgstr "Supprimer « %1 » ?"
+
+#: aleph_browser.lua
+msgid "The collection goes; its books stay on the device and in the library."
+msgstr "La collection disparaît ; ses livres restent sur l'appareil et dans la bibliothèque."
+
+#: aleph_browser.lua
+msgid "Could not delete the collection."
+msgstr "Impossible de supprimer la collection."
+
+#: aleph_browser.lua
+msgid "Rename this collection or delete it. Deleting it keeps its books."
+msgstr "Renommez cette collection ou supprimez-la. La supprimer garde ses livres."
+
+#: aleph_browser.lua
+msgid "This collection comes from Calibre"
+msgstr "Cette collection vient de Calibre"
+
+#: aleph_browser.lua
+msgid ""
+"Aleph fills \"%1\" from Calibre's #collections column. Renamed or deleted here, it comes back with its books the next time Aleph reads Calibre's column (when Home opens), alongside any new name.\n"
+"\n"
+"To change it for good, rename it or clear it in Calibre's #collections column and send the books again."
+msgstr ""
+"Aleph remplit « %1 » à partir de la colonne #collections de Calibre. Renommée ou supprimée ici, elle revient avec ses livres la prochaine fois qu'Aleph lit la colonne de Calibre (à l'ouverture de l'Accueil), à côté de tout nouveau nom.\n"
+"\n"
+"Pour la changer pour de bon, renommez-la ou videz-la dans la colonne #collections de Calibre et renvoyez les livres."
+
+#: aleph_browser.lua
+msgid "Change here anyway"
+msgstr "Modifier ici quand même"
+
+#: aleph_browser.lua aleph_menu_sheet.lua
+msgid "1 book"
+msgstr "1 livre"
+
+#: aleph_browser.lua aleph_list_data.lua aleph_menu_sheet.lua
+msgid "%1 books"
+msgstr "%1 livres"
+
+#: aleph_browser.lua
+msgid "Reading status"
+msgstr "Statut de lecture"
+
+#: aleph_browser.lua
+msgid "Add to collection"
+msgstr "Ajouter à la collection"
+
+#: aleph_browser.lua
+msgid "No collections yet. Create the first one below."
+msgstr "Pas encore de collections. Créez la première ci-dessous."
+
+#: aleph_browser.lua
+msgid "New collection…"
+msgstr "Nouvelle collection…"
+
+#: aleph_browser.lua
+msgid "Select all (%1)"
+msgstr "Tout sélectionner (%1)"
+
+#: aleph_browser.lua
+msgid "Tap books to add them"
+msgstr "Touchez les livres pour les ajouter"
+
+#: aleph_browser.lua
+msgid "Could not save the status for %1."
+msgstr "Impossible d'enregistrer le statut de %1."
+
+#: aleph_browser.lua
+msgid "%1 set to %2"
+msgstr "%1 marqués %2"
+
+#: aleph_browser.lua
+msgid "Could not change the collection."
+msgstr "Impossible de modifier la collection."
+
+#: aleph_browser.lua
+msgid "New collection"
+msgstr "Nouvelle collection"
+
+#: aleph_browser.lua
+msgid "Could not create the collection."
+msgstr "Impossible de créer la collection."
+
+#: aleph_browser.lua
+msgid "Could not save the rating."
+msgstr "Impossible d'enregistrer la note."
+
+#: aleph_browser.lua
+msgid "Could not save the status."
+msgstr "Impossible d'enregistrer le statut."
+
+#: aleph_browser.lua
+msgid "Delete book"
+msgstr "Supprimer le livre"
+
+#: aleph_browser.lua
+msgid "Delete book, keep its data"
+msgstr "Supprimer le livre, garder ses données"
+
+#: aleph_browser.lua
+msgid "Delete book and its data"
+msgstr "Supprimer le livre et ses données"
+
+#: aleph_browser.lua
+msgid "Highlights (%1)"
+msgstr "Surlignages (%1)"
+
+#: aleph_browser.lua
+msgid "More by %1"
+msgstr "Plus de %1"
+
+#: aleph_browser.lua aleph_goodreads_send.lua
+msgid "Send to Goodreads"
+msgstr "Envoyer à Goodreads"
+
+#: aleph_browser.lua
+msgid "Could not send to Goodreads."
+msgstr "Impossible d'envoyer à Goodreads."
+
+#: aleph_browser.lua
+msgid "Opening book information…"
+msgstr "Ouverture des informations du livre…"
+
+#: aleph_browser.lua
+msgid "Could not open book information."
+msgstr "Impossible d'ouvrir les informations du livre."
+
+#: aleph_browser.lua
+msgid "Highlights · %1"
+msgstr "Surlignages · %1"
+
+#: aleph_browser.lua
+msgid "No local highlights."
+msgstr "Aucun surlignage local."
+
+#: aleph_browser.lua
+msgid "This book is no longer on this device. Refresh the library."
+msgstr "Ce livre n'est plus sur cet appareil. Actualisez la bibliothèque."
+
+#: aleph_browser.lua
+msgid "Search title, author or series"
+msgstr "Chercher un titre, un auteur ou une série"
+
+#: aleph_browser.lua
+msgid "Title, author or series"
+msgstr "Titre, auteur ou série"
+
+#: aleph_browser.lua
+msgid "All genres"
+msgstr "Tous les genres"
+
+#: aleph_browser.lua
+msgid "No genres found. Genres come from each book's tags (EPUB subjects, or a Calibre metadata.opf next to the book). Use Refresh local library to read them."
+msgstr "Aucun genre trouvé. Les genres viennent des étiquettes de chaque livre (sujets EPUB, ou un metadata.opf de Calibre à côté du livre). Utilisez Actualiser la bibliothèque locale pour les lire."
+
+#: aleph_browser.lua
+msgid "Everyone"
+msgstr "Tout le monde"
+
+#: aleph_browser.lua
+msgid "Reading now"
+msgstr "En cours de lecture"
+
+#: aleph_browser.lua
+msgid "All series"
+msgstr "Toutes les séries"
+
+#: aleph_browser.lua
+msgid "Most books"
+msgstr "Le plus de livres"
+
+#: aleph_browser.lua
+msgid "Saved for this list"
+msgstr "Enregistré pour cette liste"
+
+#: aleph_browser.lua
+msgid "%1 author"
+msgstr "%1 auteur"
+
+#: aleph_browser.lua
+msgid "%1 authors"
+msgstr "%1 auteurs"
+
+#: aleph_browser.lua
+msgid "%1 series"
+msgstr "%1 séries"
+
+#: aleph_browser.lua
+msgid "most books first"
+msgstr "le plus de livres d'abord"
+
+#: aleph_browser.lua
+msgid "by last name, %1"
+msgstr "par nom de famille, %1"
+
+#: aleph_browser.lua
+msgid "Name Z–A"
+msgstr "Nom Z–A"
+
+#: aleph_browser.lua
+msgid "First name A–Z"
+msgstr "Prénom A–Z"
+
+#: aleph_browser.lua
+msgid "Name A–Z"
+msgstr "Nom A–Z"
+
+#: aleph_browser.lua
+msgid "Nothing matches this filter"
+msgstr "Rien ne correspond à ce filtre"
+
+#: aleph_browser.lua
+msgid "Show everyone to see more."
+msgstr "Affichez tout le monde pour en voir plus."
+
+#: aleph_browser.lua
+msgid "Clear filter"
+msgstr "Effacer le filtre"
+
+#: aleph_browser.lua
+msgid "No authors yet"
+msgstr "Pas encore d'auteurs"
+
+#: aleph_browser.lua
+msgid "Authors appear here as books with author metadata are added."
+msgstr "Les auteurs apparaissent ici à mesure que des livres avec des métadonnées d'auteur sont ajoutés."
+
+#: aleph_browser.lua
+msgid "No series yet"
+msgstr "Pas encore de séries"
+
+#: aleph_browser.lua
+msgid "Series appear here as books that belong to one are added."
+msgstr "Les séries apparaissent ici à mesure que des livres qui en font partie sont ajoutés."
+
+#: aleph_browser.lua
+msgid "The menu could not open."
+msgstr "Le menu n'a pas pu s'ouvrir."
+
+#: aleph_browser.lua
+msgid "No books opened yet."
+msgstr "Aucun livre ouvert pour l'instant."
+
+#: aleph_browser.lua
+msgid "Settings could not open."
+msgstr "Les réglages n'ont pas pu s'ouvrir."
+
+#: aleph_browser.lua
+msgid "Powered by BookOrbit ↗"
+msgstr "Propulsé par BookOrbit ↗"
+
+#: aleph_browser.lua
+msgid "Choose one of the local shelf widgets in Add widget → Library."
+msgstr "Choisissez un des widgets d'étagère locale dans Ajouter un widget → Bibliothèque."
+
+#: aleph_browser.lua
+msgid "Library scan stopped; the previous index was kept."
+msgstr "Analyse de la bibliothèque arrêtée ; l'index précédent a été gardé."
+
+#: aleph_browser.lua
+msgid "Indexed %1 books. %2 files could not be read."
+msgstr "%1 livres indexés. %2 fichiers n'ont pas pu être lus."
+
+#: aleph_browser.lua aleph_topbar.lua
+msgid "Warmth"
+msgstr "Chaleur"
+
+#: aleph_browser.lua
+msgid "KOSyncthing+ was not found. Rescanning the library."
+msgstr "KOSyncthing+ est introuvable. Nouvelle analyse de la bibliothèque."
+
+#: aleph_color_wheel.lua
+msgid "Pick a color"
+msgstr "Choisissez une couleur"
+
+#: aleph_color_wheel.lua
+msgid "Tap the wheel, then the bar"
+msgstr "Touchez la roue, puis la barre"
+
+#: aleph_color_wheel.lua
+msgid "Use"
+msgstr "Utiliser"
+
+#: aleph_config.lua
+msgid "Page color"
+msgstr "Couleur de la page"
+
+#: aleph_config.lua
+msgid "Too dark for a page: pick a lighter colour. Night mode makes pages dark."
+msgstr "Trop sombre pour une page : choisissez une couleur plus claire. Le mode nuit assombrit les pages."
+
+#: aleph_config.lua
+msgid "Background"
+msgstr "Fond"
+
+#: aleph_config.lua
+msgid "White"
+msgstr "Blanc"
+
+#: aleph_config.lua
+msgid "Paper"
+msgstr "Papier"
+
+#: aleph_config.lua
+msgid "Sepia"
+msgstr "Sépia"
+
+#: aleph_config.lua
+msgid "Custom"
+msgstr "Personnalisé"
+
+#: aleph_config.lua
+msgid "The color of the page and its margins. Custom opens a color wheel."
+msgstr "La couleur de la page et de ses marges. Personnalisé ouvre une roue chromatique."
+
+#: aleph_confirm.lua aleph_conflicts.lua aleph_input.lua
+msgid "OK"
+msgstr ""
+
+#: aleph_conflicts.lua
+msgid "ZenOS is also on"
+msgstr "ZenOS est aussi activé"
+
+#: aleph_conflicts.lua
+msgid ""
+"Aleph and ZenOS replace the same parts of KOReader: the home screen, the reader's menus, the page browser, the dictionary and the status bars. Running both can make KOReader freeze or crash, most often when a book is closed.\n"
+"\n"
+"To use Aleph, turn ZenOS off in Plugin management and restart KOReader."
+msgstr ""
+"Aleph et ZenOS remplacent les mêmes parties de KOReader : l'écran d'accueil, les menus de lecture, le navigateur de pages, le dictionnaire et les barres d'état. Les utiliser ensemble peut figer ou faire planter KOReader, le plus souvent à la fermeture d'un livre.\n"
+"\n"
+"Pour utiliser Aleph, désactivez ZenOS dans Gestion des extensions et redémarrez KOReader."
+
+#: aleph_conflicts.lua
+msgid "%1 is also on"
+msgstr "%1 est aussi activé"
+
+#: aleph_conflicts.lua
+msgid ""
+"Aleph and %1 both put their own home screen over KOReader's file browser. Running both can make KOReader slow, freeze or crash, most often when a book is closed.\n"
+"\n"
+"To use Aleph, turn %1 off in Plugin management and restart KOReader."
+msgstr ""
+"Aleph et %1 placent chacun leur propre écran d'accueil sur le gestionnaire de fichiers de KOReader. Les utiliser ensemble peut ralentir, figer ou faire planter KOReader, le plus souvent à la fermeture d'un livre.\n"
+"\n"
+"Pour utiliser Aleph, désactivez %1 dans Gestion des extensions et redémarrez KOReader."
+
+#: aleph_conflicts.lua aleph_settings_page.lua
+msgid " and "
+msgstr " et "
+
+#: aleph_conflicts.lua
+msgid "%1 are also on"
+msgstr "%1 sont aussi activés"
+
+#: aleph_conflicts.lua
+msgid ""
+"These plugins replace the same screens as Aleph, starting with its home screen. Running them together can make KOReader slow, freeze or crash, most often when a book is closed.\n"
+"\n"
+"To use Aleph, turn %1 off in Plugin management and restart KOReader."
+msgstr ""
+"Ces extensions remplacent les mêmes écrans qu'Aleph, à commencer par son écran d'accueil. Les utiliser ensemble peut ralentir, figer ou faire planter KOReader, le plus souvent à la fermeture d'un livre.\n"
+"\n"
+"Pour utiliser Aleph, désactivez %1 dans Gestion des extensions et redémarrez KOReader."
+
+#: aleph_conflicts.lua
+msgid "Don't show again"
+msgstr "Ne plus afficher"
+
+#: aleph_dates.lua
+msgctxt "Date: short month, day"
+msgid "%1 %2"
+msgstr "%2 %1"
+
+#: aleph_dates.lua
+msgctxt "Date: short month, year"
+msgid "%1 %2"
+msgstr "%1 %2"
+
+#: aleph_dates.lua
+msgctxt "Date: short month, day, year"
+msgid "%1 %2, %3"
+msgstr "%2 %1 %3"
+
+#: aleph_dates.lua
+msgctxt "Date: day, long month, year"
+msgid "%1 %2 %3"
+msgstr "%1 %2 %3"
+
+#: aleph_dates.lua
+msgctxt "Date: day, short month, year"
+msgid "%1 %2 %3"
+msgstr "%1 %2 %3"
+
+#: aleph_dates.lua
+msgctxt "Date: day, short month"
+msgid "%1 %2"
+msgstr "%1 %2"
+
+#: aleph_dates.lua
+msgctxt "Date: day, long month"
+msgid "%1 %2"
+msgstr "%1 %2"
+
+#: aleph_dates.lua
+msgctxt "Date: short weekday, day, short month"
+msgid "%1 %2 %3"
+msgstr "%1 %2 %3"
+
+#: aleph_detail.lua
+msgid "another copy of the file"
+msgstr "une autre copie du fichier"
+
+#: aleph_detail.lua
+msgid "Not started here"
+msgstr "Pas commencé ici"
+
+#: aleph_detail.lua aleph_library_view.lua
+msgid "Not started"
+msgstr "Pas commencé"
+
+#: aleph_detail.lua
+msgid "Author unknown"
+msgstr "Auteur inconnu"
+
+#: aleph_detail.lua aleph_highlight.lua
+msgid "Details"
+msgstr "Détails"
+
+#: aleph_detail.lua
+msgid "Read again"
+msgstr "Relire"
+
+#: aleph_detail.lua
+msgid "Pages in KOReader"
+msgstr "Pages dans KOReader"
+
+#: aleph_detail.lua
+msgid "On this device"
+msgstr "Sur cet appareil"
+
+#: aleph_detail.lua
+msgid "Similar books"
+msgstr "Livres similaires"
+
+#: aleph_detail.lua
+msgid "More by"
+msgstr "Plus de"
+
+#: aleph_detail.lua
+msgid "of"
+msgstr "sur"
+
+#: aleph_detail.lua aleph_xr_page.lua
+msgid "Read all"
+msgstr "Tout lire"
+
+#: aleph_detail.lua aleph_text_pages.lua
+msgid "No description in this book's metadata."
+msgstr "Pas de description dans les métadonnées de ce livre."
+
+#: aleph_dialog_sheet.lua aleph_topmenu_page.lua
+msgid "Filter"
+msgstr "Filtrer"
+
+#: aleph_dialog_sheet.lua
+msgid "Export"
+msgstr "Exporter"
+
+#: aleph_dialog_sheet.lua
+msgid "Tools"
+msgstr "Outils"
+
+#: aleph_dialog_sheet.lua
+msgid "Options"
+msgstr "Options"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Short"
+msgstr "Courts"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Medium"
+msgstr "Moyens"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Long"
+msgstr "Longs"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Focused"
+msgstr "Concentré"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Balanced"
+msgstr "Équilibré"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Eclectic"
+msgstr "Éclectique"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Bursty"
+msgstr "Par à-coups"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Moderate"
+msgstr "Modéré"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Steady"
+msgstr "Régulier"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Night Owl"
+msgstr "Oiseau de nuit"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Early Bird"
+msgstr "Lève-tôt"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Afternoon"
+msgstr "Après-midi"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Evening"
+msgstr "Soirée"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Slow Savorer"
+msgstr "Savoure lentement"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Steady Pacer"
+msgstr "Rythme sûr"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Speed Demon"
+msgstr "Bolide"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Night Owl Epic Specialist"
+msgstr "Oiseau de nuit des grandes épopées"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Steady Eclectic Explorer"
+msgstr "Explorateur éclectique régulier"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Disciplined Genre Hopper"
+msgstr "Butineur de genres discipliné"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Early Bird Marathon Reader"
+msgstr "Marathonien lève-tôt"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Rapid Explorer"
+msgstr "Explorateur rapide"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Patient Specialist"
+msgstr "Spécialiste patient"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Deep Specialist"
+msgstr "Spécialiste approfondi"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Weekend Binge Reader"
+msgstr "Marathonien du week-end"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Curious Explorer"
+msgstr "Explorateur curieux"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Steady Habit Reader"
+msgstr "Lecteur aux habitudes régulières"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Avid Reader"
+msgstr "Lecteur avide"
+
+#: aleph_goodreads.lua
+msgid "A wrong code was sent (%1 tries left)."
+msgstr "Un code erroné a été envoyé (%1 essais restants)."
+
+#: aleph_goodreads.lua
+msgid "What arrived was not a cookie. Sign in to goodreads.com in that browser and send again."
+msgstr "Ce qui est arrivé n'était pas un cookie. Connectez-vous à goodreads.com dans ce navigateur et renvoyez-le."
+
+#: aleph_goodreads.lua
+msgid "A computer reached this e-reader at %1. Waiting for the cookie…"
+msgstr "Un ordinateur a contacté cette liseuse à %1. En attente du cookie…"
+
+#: aleph_goodreads.lua
+msgid "Cookie received and saved. Goodreads is signed in again."
+msgstr "Cookie reçu et enregistré. La connexion à Goodreads est rétablie."
+
+#: aleph_goodreads.lua
+msgid "Too many wrong codes: stopped listening. Open this screen again for a new code."
+msgstr "Trop de codes erronés : écoute arrêtée. Rouvrez cet écran pour un nouveau code."
+
+#: aleph_goodreads.lua
+msgid "Stopped listening after %1 minutes. Open this screen again to try once more."
+msgstr "Écoute arrêtée après %1 minutes. Rouvrez cet écran pour réessayer."
+
+#: aleph_goodreads.lua
+msgid "Could not listen on the network: %1"
+msgstr "Impossible d'écouter sur le réseau : %1"
+
+#: aleph_goodreads.lua
+msgid "Waiting… (listens for %1 minutes)"
+msgstr "En attente… (écoute pendant %1 minutes)"
+
+#: aleph_goodreads.lua
+msgid "Receive Goodreads cookie"
+msgstr "Recevoir le cookie Goodreads"
+
+#: aleph_goodreads.lua
+msgid "On your computer, sign in to goodreads.com, then open the Aleph Goodreads cookie extension and enter:"
+msgstr "Sur votre ordinateur, connectez-vous à goodreads.com, puis ouvrez l'extension Aleph Goodreads cookie et saisissez :"
+
+#: aleph_goodreads.lua aleph_settings_page.lua
+msgid "Address"
+msgstr "Adresse"
+
+#: aleph_goodreads.lua
+msgid "Code"
+msgstr "Code"
+
+#: aleph_goodreads.lua
+msgid "The address could not be found: check that Wi-Fi is connected."
+msgstr "Adresse introuvable : vérifiez que le Wi-Fi est connecté."
+
+#: aleph_goodreads.lua
+msgid "The computer must be on the same network. The cookie crosses it unencrypted, so use this on a network you trust. Keep this screen open until it arrives."
+msgstr "L'ordinateur doit être sur le même réseau. Le cookie le traverse sans chiffrement : utilisez ceci sur un réseau de confiance. Gardez cet écran ouvert jusqu'à son arrivée."
+
+#: aleph_goodreads.lua aleph_sync_chain.lua
+msgid "Stop"
+msgstr "Arrêter"
+
+#: aleph_goodreads_import.lua
+msgid "This file is not Goodreads' library export: its first row should have columns such as Title, Author and Exclusive Shelf."
+msgstr "Ce fichier n'est pas l'export de bibliothèque Goodreads : sa première ligne devrait avoir des colonnes comme Title, Author et Exclusive Shelf."
+
+#: aleph_goodreads_import.lua
+msgid "This Excel workbook could not be read. Use the CSV file Goodreads exported, or save the workbook as CSV."
+msgstr "Ce classeur Excel n'a pas pu être lu. Utilisez le fichier CSV exporté par Goodreads, ou enregistrez le classeur en CSV."
+
+#: aleph_goodreads_import.lua
+msgid "This file was saved as Unicode text. Use the CSV file Goodreads exported, or save it as CSV UTF-8."
+msgstr "Ce fichier a été enregistré en texte Unicode. Utilisez le fichier CSV exporté par Goodreads, ou enregistrez-le en CSV UTF-8."
+
+#: aleph_goodreads_import.lua
+msgid "This file is empty."
+msgstr "Ce fichier est vide."
+
+#: aleph_goodreads_import.lua
+msgid "This file could not be read."
+msgstr "Ce fichier n'a pas pu être lu."
+
+#: aleph_goodreads_import.lua
+msgid "Choose Goodreads' export"
+msgstr "Choisissez l'export Goodreads"
+
+#: aleph_goodreads_import.lua
+msgid "Finished dates"
+msgstr "Dates de fin"
+
+#: aleph_goodreads_import.lua
+msgid "%1 books finished on another day here than on Goodreads"
+msgstr "%1 livres terminés ici un autre jour que sur Goodreads"
+
+#: aleph_goodreads_import.lua
+msgid "All from this device"
+msgstr "Toutes de cet appareil"
+
+#: aleph_goodreads_import.lua
+msgid "All from Goodreads"
+msgstr "Toutes de Goodreads"
+
+#: aleph_goodreads_import.lua
+msgid "Here: %1"
+msgstr "Ici : %1"
+
+#: aleph_goodreads_import.lua
+msgid "Goodreads: %1"
+msgstr ""
+
+#: aleph_goodreads_import.lua aleph_settings_page.lua
+msgid "Import from Goodreads"
+msgstr "Importer depuis Goodreads"
+
+#: aleph_goodreads_import.lua
+msgid "Choose file…"
+msgstr "Choisir un fichier…"
+
+#: aleph_goodreads_import.lua
+msgid "%1 books in %2."
+msgstr "%1 livres dans %2."
+
+#: aleph_goodreads_import.lua
+msgid "On this device: %1 found."
+msgstr "Sur cet appareil : %1 trouvés."
+
+#: aleph_goodreads_import.lua
+msgid "  · %1 get a status (Finished, Reading or On hold)"
+msgstr "  · %1 reçoivent un statut (Terminé, En cours ou En pause)"
+
+#: aleph_goodreads_import.lua
+msgid "  · %1 get a rating"
+msgstr "  · %1 reçoivent une note"
+
+#: aleph_goodreads_import.lua
+msgid "  · %1 get Goodreads' finished date"
+msgstr "  · %1 reçoivent la date de fin de Goodreads"
+
+#: aleph_goodreads_import.lua
+msgid "  · %1 keep the status set here, which differs"
+msgstr "  · %1 gardent le statut défini ici, qui diffère"
+
+#: aleph_goodreads_import.lua
+msgid "  · %1 were finished on another day here than on Goodreads: %2 keep this device's day, %3 take Goodreads'"
+msgstr "  · %1 ont été terminés ici un autre jour que sur Goodreads : %2 gardent le jour de cet appareil, %3 prennent celui de Goodreads"
+
+#: aleph_goodreads_import.lua
+msgid "Read, not on this device: %1 go on the record of finished books, in the year they were read."
+msgstr "Lus, pas sur cet appareil : %1 rejoignent le registre des livres terminés, l'année où ils ont été lus."
+
+#: aleph_goodreads_import.lua
+msgid "%1 read books have no Date Read on Goodreads and are left out."
+msgstr "%1 livres lus n'ont pas de Date Read sur Goodreads et sont laissés de côté."
+
+#: aleph_goodreads_import.lua
+msgid "Only what is empty here is filled in, and the finished days you chose to take from Goodreads."
+msgstr "Seul ce qui est vide ici est rempli, plus les jours de fin que vous avez choisi de prendre de Goodreads."
+
+#: aleph_goodreads_import.lua
+msgid "Only what is empty here is filled in; nothing on this device is overwritten."
+msgstr "Seul ce qui est vide ici est rempli ; rien n'est écrasé sur cet appareil."
+
+#: aleph_goodreads_import.lua
+msgid "Choose finished dates (%1)"
+msgstr "Choisir les dates de fin (%1)"
+
+#: aleph_goodreads_import.lua
+msgid "Import"
+msgstr "Importer"
+
+#: aleph_goodreads_import.lua
+msgid "Other file…"
+msgstr "Autre fichier…"
+
+#: aleph_goodreads_import.lua
+msgid "Goodreads: %1 books updated, %2 added to the record."
+msgstr "Goodreads : %1 livres mis à jour, %2 ajoutés au registre."
+
+#: aleph_goodreads_import.lua
+msgid ""
+"On goodreads.com, open My Books, then Import and export, and press Export Library. Copy the file it gives you (goodreads_library_export.csv) to this device, for example next to your books, then come back here.\n"
+"\n"
+"Aleph fills in the status, finished date and rating of the books on this device that have none, and adds the books you read elsewhere to the record of finished books."
+msgstr ""
+"Sur goodreads.com, ouvrez My Books, puis Import and export, et appuyez sur Export Library. Copiez le fichier obtenu (goodreads_library_export.csv) sur cet appareil, par exemple à côté de vos livres, puis revenez ici.\n"
+"\n"
+"Aleph remplit le statut, la date de fin et la note des livres de cet appareil qui n'en ont pas, et ajoute les livres lus ailleurs au registre des livres terminés."
+
+#: aleph_goodreads_send.lua
+msgid "Could not see what Goodreads has for this book, so nothing was sent. Try again in a moment."
+msgstr "Impossible de voir ce que Goodreads a pour ce livre, rien n'a donc été envoyé. Réessayez dans un instant."
+
+#: aleph_goodreads_send.lua aleph_gr.lua
+msgid "Goodreads is not signed in. Send the sign-in from your computer first (Settings → Library → Goodreads sign-in)."
+msgstr "Goodreads n'est pas connecté. Envoyez d'abord la connexion depuis votre ordinateur (Réglages → Bibliothèque → Connexion à Goodreads)."
+
+#: aleph_goodreads_send.lua
+msgid "Looking for the book on Goodreads…"
+msgstr "Recherche du livre sur Goodreads…"
+
+#: aleph_goodreads_send.lua
+msgid "Goodreads could not be reached. Check the connection and try again."
+msgstr "Goodreads est injoignable. Vérifiez la connexion et réessayez."
+
+#: aleph_goodreads_send.lua
+msgid "Search on Goodreads"
+msgstr "Chercher sur Goodreads"
+
+#: aleph_goodreads_send.lua
+msgid "Searching Goodreads…"
+msgstr "Recherche sur Goodreads…"
+
+#: aleph_goodreads_send.lua
+msgid "Which book is it on Goodreads?"
+msgstr "Quel est ce livre sur Goodreads ?"
+
+#: aleph_goodreads_send.lua
+msgid "Nothing found. Search with other words below."
+msgstr "Rien trouvé. Cherchez avec d'autres mots ci-dessous."
+
+#: aleph_goodreads_send.lua
+msgid "Search with other words…"
+msgstr "Chercher avec d'autres mots…"
+
+#: aleph_goodreads_send.lua
+msgid "This book is On hold here, and the Goodreads account has no Did not finish shelf to put it on."
+msgstr "Ce livre est En pause ici, et le compte Goodreads n'a pas d'étagère Did not finish où le mettre."
+
+#: aleph_goodreads_send.lua aleph_gr.lua
+msgid "Goodreads book: %1"
+msgstr "Livre Goodreads : %1"
+
+#: aleph_goodreads_send.lua
+msgid "Status: %1"
+msgstr "Statut : %1"
+
+#: aleph_goodreads_send.lua
+msgid "Date read: %1"
+msgstr "Date de lecture : %1"
+
+#: aleph_goodreads_send.lua
+msgid "Date read: today"
+msgstr "Date de lecture : aujourd'hui"
+
+#: aleph_goodreads_send.lua
+msgid "Rating: %1 stars"
+msgstr "Note : %1 étoiles"
+
+#: aleph_goodreads_send.lua
+msgid "Rating: not sent (Goodreads takes ratings for read books)"
+msgstr "Note : non envoyée (Goodreads n'accepte les notes que pour les livres lus)"
+
+#: aleph_goodreads_send.lua
+msgid "What Goodreads has for this book is replaced. A book that is already Read there is not shelved again, so it does not count as read twice; its rating is sent."
+msgstr "Ce que Goodreads a pour ce livre est remplacé. Un livre déjà Lu là-bas n'est pas remis sur l'étagère, il ne compte donc pas deux fois ; sa note est envoyée."
+
+#: aleph_goodreads_send.lua
+msgid "Send"
+msgstr "Envoyer"
+
+#: aleph_goodreads_send.lua
+msgid "Not this book? Choose another…"
+msgstr "Pas ce livre ? Choisissez-en un autre…"
+
+#: aleph_goodreads_send.lua aleph_gr.lua
+msgid "Sending to Goodreads…"
+msgstr "Envoi à Goodreads…"
+
+#: aleph_goodreads_send.lua
+msgid ""
+"Goodreads did not take it.\n"
+"%1"
+msgstr ""
+"Goodreads ne l'a pas accepté.\n"
+"%1"
+
+#: aleph_goodreads_send.lua
+msgid "Status sent, but the rating was not: %1"
+msgstr "Statut envoyé, mais pas la note : %1"
+
+#: aleph_goodreads_send.lua
+msgid "Already Read on Goodreads: rating %1 stars"
+msgstr "Déjà Lu sur Goodreads : note de %1 étoiles"
+
+#: aleph_goodreads_send.lua
+msgid "Already Read on Goodreads: nothing to add"
+msgstr "Déjà Lu sur Goodreads : rien à ajouter"
+
+#: aleph_goodreads_send.lua
+msgid "Sent to Goodreads: %1, %2 stars"
+msgstr "Envoyé à Goodreads : %1, %2 étoiles"
+
+#: aleph_goodreads_send.lua
+msgid "Sent to Goodreads: %1"
+msgstr "Envoyé à Goodreads : %1"
+
+#: aleph_goodreads_track.lua aleph_gr.lua aleph_reader_sheet.lua aleph_settings_page.lua
+msgid "Goodreads"
+msgstr ""
+
+#: aleph_goodreads_track.lua
+msgid ""
+"Goodreads has this book as \"%1\", so your progress is not sent.\n"
+"\n"
+"Mark it Currently reading?"
+msgstr ""
+"Goodreads a ce livre en « %1 », votre progression n'est donc pas envoyée.\n"
+"\n"
+"Le marquer Currently reading ?"
+
+#: aleph_goodreads_send.lua (status) aleph_goodreads_track.lua aleph_gr_api.lua
+msgid "Currently reading"
+msgstr "En cours de lecture"
+
+#: aleph_goodreads_track.lua
+msgid "Keep as is"
+msgstr "Laisser tel quel"
+
+#: aleph_goodreads_track.lua aleph_gr.lua
+msgid "Goodreads no longer accepts the sign-in. Renew it in Aleph's Settings > Library > Goodreads sign-in."
+msgstr "Goodreads n'accepte plus la connexion. Renouvelez-la dans Réglages d'Aleph > Bibliothèque > Connexion à Goodreads."
+
+#: aleph_gr.lua
+msgid "Goodreads is now part of Aleph"
+msgstr "Goodreads fait maintenant partie d'Aleph"
+
+#: aleph_gr.lua
+msgid ""
+"Aleph now keeps Goodreads up to date itself, with the plugin's sign-in, settings and book links. With both on, things could be sent twice.\n"
+"\n"
+"Turn the Goodreads plugin off? It stops when KOReader starts again. It can be turned back on in Tools → Plugin management."
+msgstr ""
+"Aleph tient désormais Goodreads à jour lui-même, avec la connexion, les réglages et les liens de livres de l'extension. Avec les deux activés, des choses pourraient être envoyées deux fois.\n"
+"\n"
+"Désactiver l'extension Goodreads ? Elle s'arrête au prochain démarrage de KOReader. Elle peut être réactivée dans Outils → Gestion des extensions."
+
+#: aleph_gr.lua
+msgid "Turn off"
+msgstr "Désactiver"
+
+#: aleph_gr.lua
+msgid "KOReader needs to restart to turn the Goodreads plugin off."
+msgstr "KOReader doit redémarrer pour désactiver l'extension Goodreads."
+
+#: aleph_gr.lua
+msgid "Restart KOReader to turn the Goodreads plugin off."
+msgstr "Redémarrez KOReader pour désactiver l'extension Goodreads."
+
+#: aleph_gr.lua
+msgid ""
+"The Goodreads plugin by advokatb is on. Goodreads is part of Aleph now and uses the plugin's sign-in, settings and book links, so the plugin is no longer needed.\n"
+"\n"
+"While it is on, Aleph sends nothing to Goodreads on its own, so nothing is sent twice. Turn the plugin off? It stops when KOReader starts again."
+msgstr ""
+"L'extension Goodreads d'advokatb est activée. Goodreads fait maintenant partie d'Aleph et utilise la connexion, les réglages et les liens de livres de l'extension : elle n'est donc plus nécessaire.\n"
+"\n"
+"Tant qu'elle est activée, Aleph n'envoie rien à Goodreads de lui-même, pour que rien ne soit envoyé deux fois. Désactiver l'extension ? Elle s'arrête au prochain démarrage de KOReader."
+
+#: aleph_gr.lua
+msgid "Sent to Goodreads"
+msgstr "Envoyé à Goodreads"
+
+#: aleph_gr.lua
+msgid "This book is not linked to Goodreads yet. Its page in Aleph finds it: ⋯ → Send to Goodreads."
+msgstr "Ce livre n'est pas encore lié à Goodreads. Sa page dans Aleph le trouve : ⋯ → Envoyer à Goodreads."
+
+#: aleph_gr.lua
+msgid "Book page"
+msgstr "Page du livre"
+
+#: aleph_gr.lua
+msgid "On Goodreads: %1"
+msgstr "Sur Goodreads : %1"
+
+#: aleph_gr.lua
+msgid "on no shelf"
+msgstr "sur aucune étagère"
+
+#: aleph_gr.lua
+msgid "Progress sent: %1"
+msgstr "Progression envoyée : %1"
+
+#: aleph_gr.lua
+msgid "This book is tracked: its progress and status are sent as you read."
+msgstr "Ce livre est suivi : sa progression et son statut sont envoyés pendant la lecture."
+
+#: aleph_gr.lua
+msgid "This book is not tracked: nothing is sent on its own."
+msgstr "Ce livre n'est pas suivi : rien n'est envoyé de lui-même."
+
+#: aleph_gr.lua
+msgid "Send progress now"
+msgstr "Envoyer la progression maintenant"
+
+#: aleph_gr.lua
+msgid "Track this book"
+msgstr "Suivre ce livre"
+
+#: aleph_gr.lua
+msgid "Stop tracking this book"
+msgstr "Ne plus suivre ce livre"
+
+#: aleph_gr.lua
+msgid "No internet: it is sent when Goodreads can be reached"
+msgstr "Pas d'internet : ce sera envoyé quand Goodreads sera joignable"
+
+#: aleph_gr.lua
+msgid "This book is tracked now"
+msgstr "Ce livre est maintenant suivi"
+
+#: aleph_gr.lua
+msgid "This book is not tracked now"
+msgstr "Ce livre n'est plus suivi"
+
+#: aleph_goodreads_send.lua (status) aleph_gr_api.lua
+msgid "Did not finish"
+msgstr "Abandonné"
+
+#: aleph_gr_api.lua
+msgid "Paused"
+msgstr "En pause"
+
+#: aleph_gr_api.lua
+msgid "Unknown status"
+msgstr "Statut inconnu"
+
+#: aleph_gr_legacy.lua
+msgid "Could not parse the Goodreads response. The site may have changed."
+msgstr "Impossible de comprendre la réponse de Goodreads. Le site a peut-être changé."
+
+#: aleph_gr_legacy.lua
+msgid "No network connection"
+msgstr "Pas de connexion réseau"
+
+#: aleph_gr_legacy.lua
+msgid "Network error: %1"
+msgstr "Erreur réseau : %1"
+
+#: aleph_gr_legacy.lua
+msgid "Error updating rating"
+msgstr "Erreur lors de la mise à jour de la note"
+
+#: aleph_highlight.lua
+msgid "More…"
+msgstr "Plus…"
+
+#: aleph_highlight.lua aleph_reader_sheet.lua
+msgid "Style"
+msgstr "Style"
+
+#: aleph_highlight.lua
+msgid "%1 styles"
+msgstr "%1 styles"
+
+#: aleph_highlight.lua
+msgid "New highlight"
+msgstr "Nouveau surlignage"
+
+#: aleph_highlight.lua
+msgid "%1–%2 of %3 · swipe for more"
+msgstr "%1–%2 sur %3 · balayez pour en voir plus"
+
+#: aleph_highlight.lua
+msgid "Color"
+msgstr "Couleur"
+
+#: aleph_highlight.lua
+msgid "Invert has no color. Hold a name to rename it, a swatch to change it."
+msgstr "Inverser n'a pas de couleur. Maintenez un nom pour le renommer, une pastille pour la changer."
+
+#: aleph_highlight.lua
+msgid "Hold a name to rename it. Hold a swatch to change the color."
+msgstr "Maintenez un nom pour le renommer. Maintenez une pastille pour changer la couleur."
+
+#: aleph_highlight.lua
+msgid "Highlight style"
+msgstr "Style de surlignage"
+
+#: aleph_highlight.lua
+msgid "Rename color"
+msgstr "Renommer la couleur"
+
+#: aleph_highlight.lua aleph_pins.lua
+msgid "Pin"
+msgstr "Épingler"
+
+#: aleph_highlight.lua
+msgid "Start"
+msgstr "Début"
+
+#: aleph_highlight.lua
+msgid "Letter"
+msgstr "Lettre"
+
+#: aleph_highlight.lua
+msgid "Word"
+msgstr "Mot"
+
+#: aleph_highlight.lua
+msgid "The text of this highlight was edited, so its ends cannot be moved."
+msgstr "Le texte de ce surlignage a été modifié, ses extrémités ne peuvent donc pas être déplacées."
+
+#: aleph_highlight.lua aleph_library_view.lua aleph_text_pages.lua aleph_toc.lua
+msgid "Back"
+msgstr "Retour"
+
+#: aleph_highlight.lua
+msgctxt "Highlight"
+msgid "Style"
+msgstr "Style"
+
+#: aleph_highlight.lua
+msgctxt "Highlight"
+msgid "Color"
+msgstr "Couleur"
+
+#: aleph_highlight.lua
+msgid "Style & color"
+msgstr "Style et couleur"
+
+#: aleph_highlight_sheet.lua aleph_reader_sheet.lua
+msgid "Book details"
+msgstr "Détails du livre"
+
+#: aleph_integrations.lua
+msgid "Install or enable Silverfish 1.1.0 or newer in KOReader to use this widget."
+msgstr "Installez ou activez Silverfish 1.1.0 ou plus récent dans KOReader pour utiliser ce widget."
+
+#: aleph_integrations.lua
+msgid "Syncing now…"
+msgstr "Synchronisation…"
+
+#: aleph_integrations.lua
+msgid "Syncthing is running."
+msgstr "Syncthing est en marche."
+
+#: aleph_integrations.lua
+msgid "Syncthing is already starting."
+msgstr "Syncthing démarre déjà."
+
+#: aleph_integrations.lua
+msgid "Syncthing is stopping."
+msgstr "Syncthing s'arrête."
+
+#: aleph_integrations.lua
+msgid "Starting Syncthing…"
+msgstr "Démarrage de Syncthing…"
+
+#: aleph_integrations.lua
+msgid "Could not start Syncthing."
+msgstr "Impossible de démarrer Syncthing."
+
+#: aleph_integrations.lua
+msgid "Turn on Reading insights or KOReader's Reading statistics plugin (Plugin management) to open this from here."
+msgstr "Activez Reading insights ou l'extension Statistiques de lecture de KOReader (Gestion des extensions) pour ouvrir ceci d'ici."
+
+#: aleph_library_view.lua aleph_search.lua aleph_xr_page.lua
+msgid "Page %1"
+msgstr "Page %1"
+
+#: aleph_library_view.lua
+msgid "First"
+msgstr "Première"
+
+#: aleph_library_view.lua
+msgid "Last"
+msgstr "Dernière"
+
+#: aleph_library_view.lua
+msgid "Sort by"
+msgstr "Trier par"
+
+#: aleph_library_view.lua aleph_xr_story.lua
+msgid "Show"
+msgstr "Afficher"
+
+#: aleph_library_view.lua
+msgid "Reset to defaults"
+msgstr "Rétablir les valeurs par défaut"
+
+#: aleph_library_view.lua
+msgid "Jump to"
+msgstr "Aller à"
+
+#: aleph_library_view.lua aleph_list_data.lua
+msgid " · %1 left"
+msgstr " · encore %1"
+
+#: aleph_library_view.lua aleph_list_data.lua
+msgid "%1 of %2 read"
+msgstr "%1 sur %2 lus"
+
+#: aleph_library_view.lua
+msgid "%1 in progress"
+msgstr "%1 en cours"
+
+#: aleph_library_view.lua
+msgid "Up next · Book %1"
+msgstr "À suivre · Livre %1"
+
+#: aleph_library_view.lua
+msgid "Up next"
+msgstr "À suivre"
+
+#: aleph_library_view.lua
+msgid "Continue"
+msgstr "Continuer"
+
+#: aleph_library_view.lua
+msgid "Start book %1"
+msgstr "Commencer le livre %1"
+
+#: aleph_library_view.lua
+msgid "Start book"
+msgstr "Commencer le livre"
+
+#: aleph_light_sheet.lua
+msgid "Frontlight"
+msgstr "Éclairage frontal"
+
+#: aleph_list_data.lua
+msgid "%1 and others"
+msgstr "%1 et d'autres"
+
+#: aleph_list_data.lua
+msgid "All %1 read"
+msgstr "Les %1 lus"
+
+#: aleph_list_data.lua
+msgid "all %1"
+msgstr "les %1"
+
+#: aleph_list_data.lua
+msgid "%1 reading"
+msgstr "%1 en cours"
+
+#: aleph_list_data.lua
+msgid "Reading %1 of %2"
+msgstr "Lecture du %1 sur %2"
+
+#: aleph_local.lua
+msgid "Favorites"
+msgstr "Favoris"
+
+#: aleph_local.lua
+msgid "Before 1900"
+msgstr "Avant 1900"
+
+#: aleph_local.lua
+msgid "%1s"
+msgstr "Années %1"
+
+#: aleph_menu_sheet.lua aleph_text_pages.lua
+msgid "Genres"
+msgstr "Genres"
+
+#: aleph_menu_sheet.lua
+msgid "Dashboard"
+msgstr "Tableau de bord"
+
+#: aleph_menu_sheet.lua
+msgid "Here"
+msgstr "Ici"
+
+#: aleph_menu_sheet.lua
+msgid "%1 on this device"
+msgstr "%1 sur cet appareil"
+
+#: aleph_menu_sheet.lua
+msgid "Customize"
+msgstr "Personnaliser"
+
+#: aleph_menu_sheet.lua
+msgid "Edit this board"
+msgstr "Modifier ce tableau"
+
+#: aleph_menu_sheet.lua
+msgid "Your board"
+msgstr "Votre tableau"
+
+#: aleph_menu_sheet.lua
+msgid "Books you opened"
+msgstr "Livres ouverts"
+
+#: aleph_menu_sheet.lua
+msgid "Files"
+msgstr "Fichiers"
+
+#: aleph_menu_sheet.lua
+msgid "Close Aleph"
+msgstr "Fermer Aleph"
+
+#: aleph_menu_sheet.lua
+msgid "Opening, layout, goal, interface size"
+msgstr "Ouverture, disposition, objectif, taille de l'interface"
+
+#: aleph_menu_sheet.lua aleph_owner.lua
+msgid "Owner information"
+msgstr "Informations du propriétaire"
+
+#: aleph_menu_sheet.lua aleph_settings_page.lua
+msgid "About"
+msgstr "À propos"
+
+#: aleph_menu_sheet.lua aleph_settings_page.lua
+msgid "Version %1 · legal notices"
+msgstr "Version %1 · mentions légales"
+
+#: aleph_menu_skin.lua aleph_toc.lua
+msgid "Table of contents"
+msgstr "Table des matières"
+
+#: aleph_more_stats.lua
+msgid "Quick Read"
+msgstr "Lecture rapide"
+
+#: aleph_more_stats.lua
+msgid "Finish a book under 200 pages this month"
+msgstr "Terminez un livre de moins de 200 pages ce mois-ci"
+
+#: aleph_more_stats.lua
+msgid "Genre Explorer"
+msgstr "Explorateur de genres"
+
+#: aleph_more_stats.lua
+msgid "Finish a book in a genre new to you this month"
+msgstr "Terminez un livre d'un genre nouveau pour vous ce mois-ci"
+
+#: aleph_more_stats.lua
+msgid "Clear the Backlog"
+msgstr "Videz la pile"
+
+#: aleph_more_stats.lua
+msgid "Finish a book you have been reading for a while"
+msgstr "Terminez un livre que vous lisez depuis un moment"
+
+#: aleph_more_stats.lua
+msgid "Streak Builder"
+msgstr "Bâtisseur de série"
+
+#: aleph_more_stats.lua
+msgid "Read 5 days in a row this month"
+msgstr "Lisez 5 jours d'affilée ce mois-ci"
+
+#: aleph_more_stats.lua
+msgid "New Voice"
+msgstr "Nouvelle voix"
+
+#: aleph_more_stats.lua
+msgid "Finish a book by an author new to you this month"
+msgstr "Terminez un livre d'un auteur nouveau pour vous ce mois-ci"
+
+#: aleph_more_stats.lua
+msgid "Page Turner"
+msgstr "Tourne-pages"
+
+#: aleph_more_stats.lua
+msgid "Read 500 pages this month"
+msgstr "Lisez 500 pages ce mois-ci"
+
+#: aleph_more_stats.lua
+msgctxt "Diversity"
+msgid "Deep Specialist"
+msgstr "Spécialiste approfondi"
+
+#: aleph_more_stats.lua
+msgctxt "Diversity"
+msgid "Comfortable Reader"
+msgstr "Lecteur à l'aise"
+
+#: aleph_more_stats.lua
+msgctxt "Diversity"
+msgid "Curious Explorer"
+msgstr "Explorateur curieux"
+
+#: aleph_more_stats.lua
+msgctxt "Diversity"
+msgid "Literary Adventurer"
+msgstr "Aventurier littéraire"
+
+#: aleph_night.lua
+msgid "night mode %1–%2"
+msgstr "mode nuit %1–%2"
+
+#: aleph_night.lua
+msgid "Off while the night-profile patch is installed"
+msgstr "Désactivé tant que le patch night-profile est installé"
+
+#: aleph_night.lua aleph_settings_page.lua
+msgid "Off"
+msgstr "Désactivé"
+
+#: aleph_night.lua aleph_settings_page.lua
+msgid "On"
+msgstr "Activé"
+
+#: aleph_night.lua
+msgid "light %1%"
+msgstr "lumière %1 %"
+
+#: aleph_night.lua
+msgid "warmth %1"
+msgstr "chaleur %1"
+
+#: aleph_night.lua
+msgid "bolder text"
+msgstr "texte plus gras"
+
+#: aleph_opening.lua
+msgid "Opening"
+msgstr "Ouverture"
+
+#: aleph_owner.lua
+msgid "Email"
+msgstr "E-mail"
+
+#: aleph_owner.lua
+msgid "Phone"
+msgstr "Téléphone"
+
+#: aleph_owner.lua
+msgid "Your contact details, in case this device is lost"
+msgstr "Vos coordonnées, au cas où cet appareil serait perdu"
+
+#: aleph_owner.lua
+msgid "If this device is lost"
+msgstr "Si cet appareil est perdu"
+
+#: aleph_owner.lua
+msgid "If you find this e-reader, please contact:"
+msgstr "Si vous trouvez cette liseuse, merci de contacter :"
+
+#: aleph_owner.lua
+msgid "Nothing here yet. Add your name and a way to reach you below."
+msgstr "Rien ici pour l'instant. Ajoutez ci-dessous votre nom et un moyen de vous joindre."
+
+#: aleph_owner.lua aleph_settings_page.lua aleph_weather.lua
+msgid "Not set"
+msgstr "Non défini"
+
+#: aleph_owner.lua aleph_settings_page.lua
+msgid "Change"
+msgstr "Modifier"
+
+#: aleph_owner.lua
+msgid "Kept on this device only."
+msgstr "Gardé sur cet appareil seulement."
+
+#: aleph_page_browser.lua
+msgid "Reading settings"
+msgstr "Réglages de lecture"
+
+#: aleph_page_browser.lua
+msgid "Contents"
+msgstr "Table des matières"
+
+#: aleph_page_browser.lua aleph_pins.lua aleph_settings_page.lua
+msgid "Pinned pages"
+msgstr "Pages épinglées"
+
+#: aleph_page_browser.lua
+msgid "Go to page…"
+msgstr "Aller à la page…"
+
+#: aleph_page_browser.lua
+msgid "Type a page number"
+msgstr "Saisissez un numéro de page"
+
+#: aleph_page_browser.lua aleph_reader_sheet.lua
+msgid "This book"
+msgstr "Ce livre"
+
+#: aleph_page_browser.lua
+msgid "Its page in Aleph"
+msgstr "Sa page dans Aleph"
+
+#: aleph_page_browser.lua
+msgid "Home, library and settings"
+msgstr "Accueil, bibliothèque et réglages"
+
+#: aleph_page_browser.lua
+msgid "KOReader menu"
+msgstr "Menu de KOReader"
+
+#: aleph_page_browser.lua
+msgid "All of KOReader's settings and tools"
+msgstr "Tous les réglages et outils de KOReader"
+
+#: aleph_pins.lua
+msgid "Bring back this book's pins?"
+msgstr "Récupérer les épingles de ce livre ?"
+
+#: aleph_pins.lua
+msgid "This book had %1 pin before its settings were reset. Bring it back?"
+msgid_plural "This book had %1 pins before its settings were reset. Bring them back?"
+msgstr[0] "Ce livre avait %1 épingle avant la réinitialisation de ses réglages. La récupérer ?"
+msgstr[1] "Ce livre avait %1 épingles avant la réinitialisation de ses réglages. Les récupérer ?"
+
+#: aleph_pins.lua
+msgid "Bring back"
+msgstr "Récupérer"
+
+#: aleph_pins.lua
+msgid "Forget them"
+msgstr "Les oublier"
+
+#: aleph_pins.lua
+msgid "%1 pin brought back"
+msgid_plural "%1 pins brought back"
+msgstr[0] "%1 épingle récupérée"
+msgstr[1] "%1 épingles récupérées"
+
+#: aleph_pins.lua
+msgid "This page is already pinned."
+msgstr "Cette page est déjà épinglée."
+
+#: aleph_pins.lua
+msgid "The picture could not be pinned."
+msgstr "L'image n'a pas pu être épinglée."
+
+#: aleph_pins.lua
+msgid "Picture pinned"
+msgstr "Image épinglée"
+
+#: aleph_pins.lua
+msgid "Page pinned"
+msgstr "Page épinglée"
+
+#: aleph_pins.lua
+msgid "Preparing the page…"
+msgstr "Préparation de la page…"
+
+#: aleph_pins.lua
+msgid "The pinned page could not be shown."
+msgstr "La page épinglée n'a pas pu être affichée."
+
+#: aleph_pins.lua
+msgid "Top left"
+msgstr "En haut à gauche"
+
+#: aleph_pins.lua
+msgid "Top right"
+msgstr "En haut à droite"
+
+#: aleph_pins.lua
+msgid "Bottom left"
+msgstr "En bas à gauche"
+
+#: aleph_pins.lua
+msgid "Bottom right"
+msgstr "En bas à droite"
+
+#: aleph_pins.lua
+msgid "(moved)"
+msgstr "(déplacé)"
+
+#: aleph_pins.lua
+msgid "The picture's file is missing."
+msgstr "Le fichier de l'image est introuvable."
+
+#: aleph_pins.lua
+msgid "This page could not be drawn."
+msgstr "Cette page n'a pas pu être dessinée."
+
+#: aleph_pins.lua
+msgid "Picture"
+msgstr "Image"
+
+#: aleph_pins.lua
+msgid "Remove pin"
+msgstr "Retirer l'épingle"
+
+#: aleph_pins.lua
+msgid "The pin is removed from this book. The page itself is not changed."
+msgstr "L'épingle est retirée de ce livre. La page elle-même ne change pas."
+
+#: aleph_pins.lua
+msgid "Nothing is pinned in this book. Hold text and tap Pin."
+msgstr "Rien n'est épinglé dans ce livre. Maintenez un texte et touchez Épingler."
+
+#: aleph_pins.lua
+msgid "Where the pin badge sits on the page"
+msgstr "Où se place le badge d'épingle sur la page"
+
+#: aleph_pins.lua
+msgid "Move it"
+msgstr "Le déplacer"
+
+#: aleph_pins.lua
+msgid "Drawer on the left"
+msgstr "Tiroir à gauche"
+
+#: aleph_pins.lua
+msgid "On the right"
+msgstr "À droite"
+
+#: aleph_pins.lua
+msgid "Tap to view, the arrow to go to the page, hold to remove."
+msgstr "Touchez pour voir, la flèche pour aller à la page, maintenez pour retirer."
+
+#: aleph_pins.lua
+msgid "View image"
+msgstr "Voir l'image"
+
+#: aleph_pins.lua
+msgid "Pin image"
+msgstr "Épingler l'image"
+
+#: aleph_pins.lua
+msgid "Unpin"
+msgstr "Désépingler"
+
+#: aleph_reader_sheet.lua
+msgid "%1 · page bookmarked"
+msgstr "%1 · page marquée"
+
+#: aleph_reader_sheet.lua
+msgid "Reading · %1"
+msgstr "Lecture · %1"
+
+#: aleph_reader_sheet.lua
+msgid "%1, page %2 of %3"
+msgstr "%1, page %2 sur %3"
+
+#: aleph_reader_sheet.lua
+msgid "%1 · last page"
+msgstr "%1 · dernière page"
+
+#: aleph_reader_sheet.lua
+msgid "%1 · 1 page left"
+msgstr "%1 · 1 page restante"
+
+#: aleph_reader_sheet.lua
+msgid "%1 · %2 pages left"
+msgstr "%1 · %2 pages restantes"
+
+#: aleph_reader_sheet.lua
+msgid "Bluetooth"
+msgstr ""
+
+#: aleph_reader_sheet.lua
+msgid "Sync now"
+msgstr "Synchroniser maintenant"
+
+#: aleph_reader_sheet.lua
+msgid "Bookmark this page"
+msgstr "Marquer cette page"
+
+#: aleph_reader_sheet.lua
+msgid "%1 highlights, %2 bookmarks"
+msgstr "%1 surlignages, %2 signets"
+
+#: aleph_reader_sheet.lua
+msgid "Aleph Home"
+msgstr "Accueil d'Aleph"
+
+#: aleph_reader_sheet.lua
+msgid "X-Ray plugin"
+msgstr "Extension X-Ray"
+
+#: aleph_reader_sheet.lua aleph_settings_page.lua aleph_xr.lua aleph_xr_page.lua aleph_xray.lua
+msgid "X-Ray"
+msgstr ""
+
+#: aleph_reader_sheet.lua
+msgid "Characters, places, terms and more"
+msgstr "Personnages, lieux, termes et plus"
+
+#: aleph_reader_sheet.lua
+msgid "The names of this book, up to this page"
+msgstr "Les noms de ce livre, jusqu'à cette page"
+
+#: aleph_reader_sheet.lua
+msgid "No other books in progress. Books you start show here, newest first."
+msgstr "Aucun autre livre en cours. Les livres que vous commencez s'affichent ici, les plus récents d'abord."
+
+#: aleph_reader_sheet.lua
+msgid "The library in Aleph"
+msgstr "La bibliothèque dans Aleph"
+
+#: aleph_reader_sheet.lua
+msgid "Also reading · %1"
+msgstr "Aussi en lecture · %1"
+
+#: aleph_reader_sheet.lua
+msgid "This book is not in Aleph's library yet. Refresh the library to add it."
+msgstr "Ce livre n'est pas encore dans la bibliothèque d'Aleph. Actualisez la bibliothèque pour l'ajouter."
+
+#: aleph_remote_progress.lua
+msgid "%1% on %2"
+msgstr "%1 % sur %2"
+
+#: aleph_search.lua
+msgid "%1, page %2"
+msgstr "%1, page %2"
+
+#: aleph_search.lua
+msgid "Annotations (%1)"
+msgstr "Annotations (%1)"
+
+#: aleph_search.lua
+msgid "Text (%1)"
+msgstr "Texte (%1)"
+
+#: aleph_search.lua
+msgid "1 result"
+msgstr "1 résultat"
+
+#: aleph_search.lua
+msgid "%1 results"
+msgstr "%1 résultats"
+
+#: aleph_search.lua
+msgid "No highlights or notes with these words."
+msgstr "Aucun surlignage ni note avec ces mots."
+
+#: aleph_search.lua
+msgid "These words are not in the text."
+msgstr "Ces mots ne sont pas dans le texte."
+
+#: aleph_search.lua
+msgid "Result %1 of %2"
+msgstr "Résultat %1 sur %2"
+
+#: aleph_search.lua
+msgid "Go to most recent page"
+msgstr "Aller à la page la plus récente"
+
+#: aleph_search.lua
+msgid "Return to page %1"
+msgstr "Revenir à la page %1"
+
+#: aleph_search.lua
+msgid "From page %1 to %2"
+msgstr "De la page %1 à la %2"
+
+#: aleph_search.lua
+msgid "Search this book"
+msgstr "Chercher dans ce livre"
+
+#: aleph_search.lua
+msgid "Words to find"
+msgstr "Mots à trouver"
+
+#: aleph_settings_page.lua
+msgid "Reader"
+msgstr "Lecture"
+
+#: aleph_settings_page.lua
+msgid "On, 1 portrait"
+msgstr "Activé, 1 portrait"
+
+#: aleph_settings_page.lua
+msgid "On, %1 portraits"
+msgstr "Activé, %1 portraits"
+
+#: aleph_settings_page.lua
+msgid "no shortcut"
+msgstr "pas de raccourci"
+
+#: aleph_settings_page.lua
+msgid "Opens when the file browser starts"
+msgstr "S'ouvre au démarrage du gestionnaire de fichiers"
+
+#: aleph_settings_page.lua
+msgid "Open it from KOReader's menu"
+msgstr "Ouvrez-le depuis le menu de KOReader"
+
+#: aleph_settings_page.lua
+msgid "Aleph's reader menu"
+msgstr "Menu de lecture d'Aleph"
+
+#: aleph_settings_page.lua
+msgid "KOReader's reader menu"
+msgstr "Menu de lecture de KOReader"
+
+#: aleph_settings_page.lua
+msgid "page browser on swipe up"
+msgstr "navigateur de pages en balayant vers le haut"
+
+#: aleph_settings_page.lua
+msgid "Off · the names of a book, as you read"
+msgstr "Désactivé · les noms d'un livre, au fil de la lecture"
+
+#: aleph_settings_page.lua
+msgid "names underlined"
+msgstr "noms soulignés"
+
+#: aleph_settings_page.lua
+msgid "descriptions with AI"
+msgstr "descriptions par IA"
+
+#: aleph_settings_page.lua
+msgid "%1 layout, %2 size"
+msgstr "disposition %1, taille %2"
+
+#: aleph_settings_page.lua
+msgid "%1 books a year"
+msgstr "%1 livres par an"
+
+#: aleph_settings_page.lua
+msgid "No folders yet"
+msgstr "Pas encore de dossiers"
+
+#: aleph_settings_page.lua
+msgid "%1 folders"
+msgstr "%1 dossiers"
+
+#: aleph_settings_page.lua
+msgid "covers filled"
+msgstr "couvertures remplies"
+
+#: aleph_settings_page.lua
+msgid "covers stretched"
+msgstr "couvertures étirées"
+
+#: aleph_settings_page.lua
+msgid "extra filters"
+msgstr "filtres en plus"
+
+#: aleph_settings_page.lua
+msgid "top"
+msgstr "haut"
+
+#: aleph_settings_page.lua
+msgid "bottom"
+msgstr "bas"
+
+#: aleph_settings_page.lua
+msgid "Nothing shown"
+msgstr "Rien d'affiché"
+
+#: aleph_settings_page.lua
+msgid "Stats at the %1 of pages"
+msgstr "Statistiques en %1 des pages"
+
+#: aleph_settings_page.lua
+msgid "Kept by the separate Quick Top Bar plugin"
+msgstr "Géré par l'extension séparée Quick Top Bar"
+
+#: aleph_settings_page.lua
+msgid "KOReader's own top menu"
+msgstr "Le menu du haut de KOReader"
+
+#: aleph_settings_page.lua
+msgid "Controls and Apps tabs · every app shown"
+msgstr "Onglets Commandes et Apps · toutes les apps affichées"
+
+#: aleph_settings_page.lua
+msgid "Controls and Apps tabs · %1 apps hidden"
+msgstr "Onglets Commandes et Apps · %1 apps masquées"
+
+#: aleph_settings_page.lua
+msgid "Profile"
+msgstr "Profil"
+
+#: aleph_settings_page.lua
+msgid "Opening Aleph"
+msgstr "Ouvrir Aleph"
+
+#: aleph_settings_page.lua
+msgid "What each widget and Quick settings button opens"
+msgstr "Ce qu'ouvre chaque widget et chaque bouton des Réglages rapides"
+
+#: aleph_settings_page.lua aleph_topmenu_page.lua
+msgid "Top menu"
+msgstr "Menu du haut"
+
+#: aleph_settings_page.lua
+msgid "Author portraits"
+msgstr "Portraits d'auteurs"
+
+#: aleph_settings_page.lua
+msgid "Font"
+msgstr "Police"
+
+#: aleph_settings_page.lua
+msgid "Night profile"
+msgstr "Profil de nuit"
+
+#: aleph_settings_page.lua
+msgid "Shortcut"
+msgstr "Raccourci"
+
+#: aleph_settings_page.lua
+msgid "Help"
+msgstr "Aide"
+
+#: aleph_settings_page.lua
+msgid "Your name"
+msgstr "Votre nom"
+
+#: aleph_settings_page.lua
+msgid "Annual reading goal"
+msgstr "Objectif de lecture annuel"
+
+#: aleph_settings_page.lua
+msgid "Tap the number to type one"
+msgstr "Touchez le nombre pour en saisir un"
+
+#: aleph_settings_page.lua
+msgid "Goals widget"
+msgstr "Widget Objectifs"
+
+#: aleph_settings_page.lua
+msgid "Your name is shown in the greeting on Home."
+msgstr "Votre nom s'affiche dans le message d'accueil."
+
+#: aleph_settings_page.lua
+msgid "This device has no touchscreen. KOReader's keyboard shortcuts can open Aleph: its action is \"Aleph: open\"."
+msgstr "Cet appareil n'a pas d'écran tactile. Les raccourcis clavier de KOReader peuvent ouvrir Aleph : son action est « Aleph : ouvrir »."
+
+#: aleph_settings_page.lua
+msgid "Pick one"
+msgstr "Choisissez-en un"
+
+#: aleph_settings_page.lua
+msgid "Opens Aleph from any book"
+msgstr "Ouvre Aleph depuis n'importe quel livre"
+
+#: aleph_settings_page.lua
+msgid "Opens Aleph from the file browser and from any book"
+msgstr "Ouvre Aleph depuis le gestionnaire de fichiers et depuis n'importe quel livre"
+
+#: aleph_settings_page.lua
+msgid "Pick a gesture to open Aleph"
+msgstr "Choisissez un geste pour ouvrir Aleph"
+
+#: aleph_settings_page.lua
+msgid "No shortcut"
+msgstr "Pas de raccourci"
+
+#: aleph_settings_page.lua aleph_shortcut.lua
+msgid "another action"
+msgstr "une autre action"
+
+#: aleph_settings_page.lua
+msgid "KOReader's menu only"
+msgstr "Seulement le menu de KOReader"
+
+#: aleph_settings_page.lua
+msgid "Top-left hold and top-right tap work in books only. Other choices also work in the file browser. A gesture that already does something is named before it is replaced. The \"Aleph: this book\" action can be given a gesture in KOReader's Taps and gestures."
+msgstr "L'appui long en haut à gauche et la touche en haut à droite ne fonctionnent que dans les livres. Les autres choix fonctionnent aussi dans le gestionnaire de fichiers. Un geste qui fait déjà quelque chose est nommé avant d'être remplacé. L'action « Aleph : ce livre » peut recevoir un geste dans Touches et gestes de KOReader."
+
+#: aleph_settings_page.lua
+msgid "bottom right"
+msgstr "en bas à droite"
+
+#: aleph_settings_page.lua
+msgid "Show the file browser"
+msgstr "Afficher le gestionnaire de fichiers"
+
+#: aleph_settings_page.lua
+msgid "Open Aleph from KOReader's menu"
+msgstr "Ouvrir Aleph depuis le menu de KOReader"
+
+#: aleph_settings_page.lua
+msgid "Open Aleph"
+msgstr "Ouvrir Aleph"
+
+#: aleph_settings_page.lua
+msgid "At startup, and whenever you close a book"
+msgstr "Au démarrage, et chaque fois que vous fermez un livre"
+
+#: aleph_settings_page.lua
+msgid "When KOReader starts"
+msgstr "Au démarrage de KOReader"
+
+#: aleph_settings_page.lua
+msgid "Gesture"
+msgstr "Geste"
+
+#: aleph_settings_page.lua
+msgid "Reader menu at the bottom"
+msgstr "Menu de lecture en bas"
+
+#: aleph_settings_page.lua
+msgid "This book, style, contents, bookmarks and your other books; off for KOReader's own"
+msgstr "Ce livre, style, table des matières, signets et vos autres livres ; désactivé pour celui de KOReader"
+
+#: aleph_settings_page.lua
+msgid "Page browser on swipe up"
+msgstr "Navigateur de pages en balayant vers le haut"
+
+#: aleph_settings_page.lua
+msgid "Swipe up from the bottom edge of a book for pages, contents, bookmarks and more"
+msgstr "Balayez vers le haut depuis le bord inférieur d'un livre pour les pages, la table des matières, les signets et plus"
+
+#: aleph_settings_page.lua
+msgid "Badge: %1 · drawer on the %2"
+msgstr "Badge : %1 · tiroir à %2"
+
+#: aleph_settings_page.lua
+msgid "left"
+msgstr "gauche"
+
+#: aleph_settings_page.lua
+msgid "right"
+msgstr "droite"
+
+#: aleph_settings_page.lua
+msgid "Choose a colour when bookmarking"
+msgstr "Choisir une couleur en marquant une page"
+
+#: aleph_settings_page.lua
+msgid "The list of colours drops from the ribbon; off: the colour used last"
+msgstr "La liste des couleurs descend du ruban ; désactivé : la dernière couleur utilisée"
+
+#: aleph_settings_page.lua
+msgid "Search like a Kindle"
+msgstr "Recherche comme sur Kindle"
+
+#: aleph_settings_page.lua
+msgid "Every result on a page, then ‹ › through them and back to your page; off: KOReader's search"
+msgstr "Tous les résultats sur une page, puis ‹ › pour les parcourir et revenir à votre page ; désactivé : la recherche de KOReader"
+
+#: aleph_settings_page.lua
+msgid "Way back after a jump"
+msgstr "Retour après un saut"
+
+#: aleph_settings_page.lua
+msgid "After the contents, Go to page, a link or a bookmark: Go to most recent page at the foot"
+msgstr "Après la table des matières, Aller à la page, un lien ou un signet : Aller à la page la plus récente en bas"
+
+#: aleph_settings_page.lua
+msgid "Controls and Apps tabs"
+msgstr "Onglets Commandes et Apps"
+
+#: aleph_settings_page.lua
+msgid "The separate Quick Top Bar plugin is enabled; turn it off in Plugin management to use this one"
+msgstr "L'extension séparée Quick Top Bar est activée ; désactivez-la dans Gestion des extensions pour utiliser celle-ci"
+
+#: aleph_settings_page.lua
+msgid "Quick controls and your apps at the start of KOReader's top menu"
+msgstr "Commandes rapides et vos apps au début du menu du haut de KOReader"
+
+#: aleph_settings_page.lua aleph_topmenu_page.lua
+msgid "Apps tab"
+msgstr "Onglet Apps"
+
+#: aleph_settings_page.lua aleph_topmenu_page.lua
+msgid "Apps"
+msgstr "Apps"
+
+#: aleph_settings_page.lua
+msgid "%1 hidden · show, hide, order, icons"
+msgstr "%1 masquées · afficher, masquer, ordonner, icônes"
+
+#: aleph_settings_page.lua
+msgid "Show, hide, order and change icons"
+msgstr "Afficher, masquer, ordonner et changer les icônes"
+
+#: aleph_settings_page.lua
+msgid "Knob"
+msgstr "Bouton"
+
+#: aleph_settings_page.lua
+msgid "Bar"
+msgstr "Barre"
+
+#: aleph_settings_page.lua
+msgid "Notched"
+msgstr "Crantée"
+
+#: aleph_settings_page.lua
+msgid "Dots"
+msgstr "Points"
+
+#: aleph_settings_page.lua
+msgid "Same as Home"
+msgstr "Comme l'Accueil"
+
+#: aleph_settings_page.lua
+msgid "The whole top menu, with its icons"
+msgstr "Tout le menu du haut, avec ses icônes"
+
+#: aleph_settings_page.lua aleph_wallpaper.lua
+msgid "%1%"
+msgstr "%1 %"
+
+#: aleph_settings_page.lua
+msgid "Outline around icons"
+msgstr "Contour autour des icônes"
+
+#: aleph_settings_page.lua
+msgid "Controls tab icon"
+msgstr "Icône de l'onglet Commandes"
+
+#: aleph_settings_page.lua
+msgid "Apps tab icon"
+msgstr "Icône de l'onglet Apps"
+
+#: aleph_settings_page.lua
+msgid "Wi-Fi icon"
+msgstr "Icône Wi-Fi"
+
+#: aleph_settings_page.lua
+msgid "Brightness slider"
+msgstr "Curseur de luminosité"
+
+#: aleph_settings_page.lua
+msgid "Warmth slider"
+msgstr "Curseur de chaleur"
+
+#: aleph_settings_page.lua
+msgid "Customize Home"
+msgstr "Personnaliser l'Accueil"
+
+#: aleph_settings_page.lua
+msgid "Move, resize, add and remove widgets"
+msgstr "Déplacer, redimensionner, ajouter et retirer des widgets"
+
+#: aleph_settings_page.lua aleph_wallpaper.lua
+msgid "Outline"
+msgstr "Contour"
+
+#: aleph_settings_page.lua
+msgid "Soft"
+msgstr "Doux"
+
+#: aleph_settings_page.lua
+msgid "Ink"
+msgstr "Encre"
+
+#: aleph_settings_page.lua
+msgid "Accents"
+msgstr "Accents"
+
+#: aleph_settings_page.lua
+msgid "Tinted"
+msgstr "Teinté"
+
+#: aleph_settings_page.lua
+msgid "Starting layout"
+msgstr "Disposition de départ"
+
+#: aleph_settings_page.lua
+msgid "Replaces your pages with a starter set"
+msgstr "Remplace vos pages par un ensemble de départ"
+
+#: aleph_settings_page.lua
+msgid "Tile style"
+msgstr "Style des tuiles"
+
+#: aleph_settings_page.lua
+msgid "Interface size"
+msgstr "Taille de l'interface"
+
+#: aleph_settings_page.lua
+msgid "Text and controls across Aleph"
+msgstr "Texte et commandes dans tout Aleph"
+
+#: aleph_settings_page.lua
+msgid "Home, widgets, the library and Aleph's windows"
+msgstr "Accueil, widgets, la bibliothèque et les fenêtres d'Aleph"
+
+#: aleph_settings_page.lua
+msgid "Aleph dialogs"
+msgstr "Dialogues d'Aleph"
+
+#: aleph_settings_page.lua
+msgid "Opening a book, search, highlights and KOReader's own windows use Aleph's style"
+msgstr "L'ouverture d'un livre, la recherche, les surlignages et les fenêtres de KOReader prennent le style d'Aleph"
+
+#: aleph_settings_page.lua
+msgid "Reset Home"
+msgstr "Réinitialiser l'Accueil"
+
+#: aleph_settings_page.lua
+msgid "Back to the starting layout and outline tiles"
+msgstr "Retour à la disposition de départ et aux tuiles à contour"
+
+#: aleph_settings_page.lua
+msgid "The Night Profile patch (2-night-profile.lua) is installed: it does the same, so this stays off while it is there. Delete it from koreader/patches and restart KOReader to use the settings here."
+msgstr "Le patch Night Profile (2-night-profile.lua) est installé : il fait la même chose, donc ceci reste désactivé tant qu'il est là. Supprimez-le de koreader/patches et redémarrez KOReader pour utiliser ces réglages."
+
+#: aleph_settings_page.lua
+msgid "When night mode turns on: your night light and bolder text. When it turns off: your day light back"
+msgstr "Quand le mode nuit s'active : votre lumière de nuit et un texte plus gras. Quand il se désactive : votre lumière de jour revient"
+
+#: aleph_settings_page.lua
+msgid "Turn night mode on by itself"
+msgstr "Activer le mode nuit tout seul"
+
+#: aleph_settings_page.lua
+msgid "On at the first time, off at the second. Switched by hand, it stays until the next one"
+msgstr "Activé à la première heure, désactivé à la seconde. Changé à la main, il reste ainsi jusqu'à la suivante"
+
+#: aleph_settings_page.lua
+msgid "From"
+msgstr "De"
+
+#: aleph_settings_page.lua
+msgid "To"
+msgstr "À"
+
+#: aleph_settings_page.lua
+msgid "By the clock"
+msgstr "Selon l'heure"
+
+#: aleph_settings_page.lua
+msgid "Change the light"
+msgstr "Changer la lumière"
+
+#: aleph_settings_page.lua
+msgid "A light that is off stays off"
+msgstr "Une lumière éteinte reste éteinte"
+
+#: aleph_settings_page.lua
+msgid "Night brightness"
+msgstr "Luminosité de nuit"
+
+#: aleph_settings_page.lua
+msgid "Night warmth"
+msgstr "Chaleur de nuit"
+
+#: aleph_settings_page.lua
+msgid "Use the light as it is now"
+msgstr "Utiliser la lumière actuelle"
+
+#: aleph_settings_page.lua
+msgid "Takes the brightness and warmth set right now as the night ones"
+msgstr "Prend la luminosité et la chaleur actuelles comme celles de nuit"
+
+#: aleph_settings_page.lua
+msgid "Remember changes made at night"
+msgstr "Retenir les changements faits la nuit"
+
+#: aleph_settings_page.lua
+msgid "Light changed while night mode is on becomes the night light next time"
+msgstr "La lumière changée en mode nuit devient la lumière de nuit la prochaine fois"
+
+#: aleph_settings_page.lua
+msgid "Text"
+msgstr "Texte"
+
+#: aleph_settings_page.lua
+msgid "Bolder text at night"
+msgstr "Texte plus gras la nuit"
+
+#: aleph_settings_page.lua
+msgid "Books KOReader lays out itself (EPUB and the like), so light letters on black stay crisp"
+msgstr "Les livres que KOReader met en page lui-même (EPUB et similaires), pour que les lettres claires sur noir restent nettes"
+
+#: aleph_settings_page.lua
+msgid "Folders"
+msgstr "Dossiers"
+
+#: aleph_settings_page.lua
+msgid "Add folder"
+msgstr "Ajouter un dossier"
+
+#: aleph_settings_page.lua
+msgid "Books in it and below it are indexed"
+msgstr "Les livres qu'il contient et ceux de ses sous-dossiers sont indexés"
+
+#: aleph_settings_page.lua
+msgid "Cancel library scan"
+msgstr "Annuler l'analyse de la bibliothèque"
+
+#: aleph_settings_page.lua
+msgid "Refresh local library"
+msgstr "Actualiser la bibliothèque locale"
+
+#: aleph_settings_page.lua
+msgid "Look for new, moved and removed books"
+msgstr "Chercher les livres nouveaux, déplacés et supprimés"
+
+#: aleph_settings_page.lua
+msgid "Covers"
+msgstr "Couvertures"
+
+#: aleph_settings_page.lua aleph_wallpaper.lua
+msgid "Whole"
+msgstr "Entière"
+
+#: aleph_settings_page.lua aleph_wallpaper.lua
+msgid "Fill"
+msgstr "Remplir"
+
+#: aleph_settings_page.lua
+msgid "Stretch"
+msgstr "Étirer"
+
+#: aleph_settings_page.lua
+msgid "Each cover at its own shape."
+msgstr "Chaque couverture à sa propre forme."
+
+#: aleph_settings_page.lua
+msgid "Every cover the same size; the edges of other shapes are trimmed."
+msgstr "Toutes les couvertures de la même taille ; les bords des autres formes sont rognés."
+
+#: aleph_settings_page.lua
+msgid "Every cover the same size; other shapes are stretched to fit."
+msgstr "Toutes les couvertures de la même taille ; les autres formes sont étirées pour tenir."
+
+#: aleph_settings_page.lua
+msgid "Extra filters"
+msgstr "Filtres en plus"
+
+#: aleph_settings_page.lua
+msgid "Language, pages and release date"
+msgstr "Langue, pages et date de parution"
+
+#: aleph_settings_page.lua
+msgid "In the library's Sort and filter"
+msgstr "Dans Trier et filtrer de la bibliothèque"
+
+#: aleph_settings_page.lua
+msgid "Off: reads every book's details the first time"
+msgstr "Désactivé : lit les détails de chaque livre la première fois"
+
+#: aleph_settings_page.lua
+msgid "Collections from Calibre"
+msgstr "Collections de Calibre"
+
+#: aleph_settings_page.lua
+msgid "Books join the collections in Calibre's #collections column"
+msgstr "Les livres rejoignent les collections de la colonne #collections de Calibre"
+
+#: aleph_settings_page.lua
+msgid "Status, finished dates and ratings from Goodreads' library export"
+msgstr "Statuts, dates de fin et notes de l'export de bibliothèque Goodreads"
+
+#: aleph_settings_page.lua
+msgid "Goodreads sign-in"
+msgstr "Connexion à Goodreads"
+
+#: aleph_settings_page.lua
+msgid "Signed in"
+msgstr "Connecté"
+
+#: aleph_settings_page.lua
+msgid "Not signed in"
+msgstr "Non connecté"
+
+#: aleph_settings_page.lua
+msgid "The Goodreads plugin is still on"
+msgstr "L'extension Goodreads est toujours activée"
+
+#: aleph_settings_page.lua
+msgid "Aleph sends to Goodreads itself now. Turn the plugin off so nothing is sent twice"
+msgstr "Aleph envoie maintenant lui-même à Goodreads. Désactivez l'extension pour que rien ne soit envoyé deux fois"
+
+#: aleph_settings_page.lua
+msgid "Keep Goodreads up to date"
+msgstr "Garder Goodreads à jour"
+
+#: aleph_settings_page.lua
+msgid "Reading, progress, finished and stars, sent in the background"
+msgstr "En cours, progression, terminé et étoiles, envoyés en arrière-plan"
+
+#: aleph_settings_page.lua
+msgid "Off: only Send to Goodreads from a book's page"
+msgstr "Désactivé : seulement Envoyer à Goodreads depuis la page d'un livre"
+
+#: aleph_settings_page.lua
+msgid "Track every book"
+msgstr "Suivre tous les livres"
+
+#: aleph_settings_page.lua
+msgid "Every book linked to Goodreads is sent"
+msgstr "Chaque livre lié à Goodreads est envoyé"
+
+#: aleph_settings_page.lua
+msgid "Only books tracked one by one (Goodreads in the reader's menu)"
+msgstr "Seulement les livres suivis un par un (Goodreads dans le menu de lecture)"
+
+#: aleph_settings_page.lua
+msgid "Send the percentage"
+msgstr "Envoyer le pourcentage"
+
+#: aleph_settings_page.lua
+msgid "At most once a minute while reading"
+msgstr "Au plus une fois par minute pendant la lecture"
+
+#: aleph_settings_page.lua
+msgid "Send the stars"
+msgstr "Envoyer les étoiles"
+
+#: aleph_settings_page.lua
+msgid "With Read, and when they change on a Read book"
+msgstr "Avec Lu, et quand elles changent sur un livre Lu"
+
+#: aleph_settings_page.lua
+msgid "Waiting to send"
+msgstr "En attente d'envoi"
+
+#: aleph_settings_page.lua
+msgid "%1 waiting, %2 failed"
+msgstr "%1 en attente, %2 en échec"
+
+#: aleph_settings_page.lua
+msgid "%1 waiting for the internet"
+msgstr "%1 en attente d'internet"
+
+#: aleph_settings_page.lua
+msgid "Show author portraits"
+msgstr "Afficher les portraits d'auteurs"
+
+#: aleph_settings_page.lua
+msgid "Looked up as authors are shown in the Authors list"
+msgstr "Cherchés à mesure que les auteurs s'affichent dans la liste Auteurs"
+
+#: aleph_settings_page.lua
+msgid "Turning this on uses the internet. Only an author's name is sent, to Open Library and Wikipedia, and the photos are saved on this device. Authors without a photo keep showing their covers."
+msgstr "Activer ceci utilise internet. Seul le nom d'un auteur est envoyé, à Open Library et Wikipédia, et les photos sont enregistrées sur cet appareil. Les auteurs sans photo gardent leurs couvertures."
+
+#: aleph_settings_page.lua
+msgid "Stop downloading"
+msgstr "Arrêter le téléchargement"
+
+#: aleph_settings_page.lua
+msgid "%1 of %2 looked up"
+msgstr "%1 sur %2 cherchés"
+
+#: aleph_settings_page.lua
+msgid "Download all portraits"
+msgstr "Télécharger tous les portraits"
+
+#: aleph_settings_page.lua
+msgid "%1 authors not looked up yet"
+msgstr "%1 auteurs pas encore cherchés"
+
+#: aleph_settings_page.lua
+msgid "Every author has been looked up"
+msgstr "Tous les auteurs ont été cherchés"
+
+#: aleph_settings_page.lua
+msgid "Remove downloaded portraits"
+msgstr "Supprimer les portraits téléchargés"
+
+#: aleph_settings_page.lua
+msgid "%1 saved on this device"
+msgstr "%1 enregistrés sur cet appareil"
+
+#: aleph_settings_page.lua
+msgid "The people and places of a book and where they were mentioned so far. Off: nothing of it is loaded"
+msgstr "Les personnes et les lieux d'un livre et où ils ont été mentionnés jusqu'ici. Désactivé : rien n'en est chargé"
+
+#: aleph_settings_page.lua
+msgid "Saved · ends in %1"
+msgstr "Enregistrée · se termine par %1"
+
+#: aleph_settings_page.lua
+msgid "In a book"
+msgstr "Dans un livre"
+
+#: aleph_settings_page.lua aleph_xr_page.lua
+msgid "Underline names"
+msgstr "Souligner les noms"
+
+#: aleph_settings_page.lua
+msgid "A thin line under each name; tap one to open it. Turn off if pages turn slower"
+msgstr "Un trait fin sous chaque nom ; touchez-en un pour l'ouvrir. Désactivez si les pages tournent plus lentement"
+
+#: aleph_settings_page.lua
+msgid "Show the whole book"
+msgstr "Afficher tout le livre"
+
+#: aleph_settings_page.lua
+msgid "Names and mentions from pages not read yet too. Off: only up to the page you are on"
+msgstr "Les noms et mentions des pages pas encore lues aussi. Désactivé : seulement jusqu'à la page où vous êtes"
+
+#: aleph_settings_page.lua
+msgid "Descriptions with AI (optional)"
+msgstr "Descriptions par IA (facultatif)"
+
+#: aleph_settings_page.lua
+msgid "Asked from a book's X-Ray, never by itself, with your own key. Names: sends the book's title and a few words around each name (with Detailed descriptions, longer passages and the chapter summaries). Story: sends the text of the chapters you have read. Never a page not read yet."
+msgstr "Demandées depuis le X-Ray d'un livre, jamais d'elles-mêmes, avec votre propre clé. Noms : envoie le titre du livre et quelques mots autour de chaque nom (avec Descriptions détaillées, des passages plus longs et les résumés des chapitres). Histoire : envoie le texte des chapitres que vous avez lus. Jamais une page pas encore lue."
+
+#: aleph_settings_page.lua
+msgid "Key"
+msgstr "Clé"
+
+#: aleph_settings_page.lua
+msgid "Model"
+msgstr "Modèle"
+
+#: aleph_settings_page.lua
+msgid "Detailed descriptions"
+msgstr "Descriptions détaillées"
+
+#: aleph_settings_page.lua
+msgid "Main characters in 3–4 sentences, from longer passages and the chapter summaries. Uses several times more of your AI allowance"
+msgstr "Les personnages principaux en 3–4 phrases, à partir de passages plus longs et des résumés des chapitres. Utilise plusieurs fois plus de votre quota d'IA"
+
+#: aleph_settings_page.lua
+msgid "Off: a sentence or two for each name, from a few words around it"
+msgstr "Désactivé : une phrase ou deux pour chaque nom, à partir de quelques mots autour"
+
+#: aleph_settings_page.lua
+msgid "Offer a recap after a break"
+msgstr "Proposer un résumé après une pause"
+
+#: aleph_settings_page.lua
+msgid "Opening a book not read for this long asks whether to summarise the story so far"
+msgstr "Ouvrir un livre non lu depuis ce délai propose de résumer l'histoire jusqu'ici"
+
+#: aleph_settings_page.lua
+msgid "Never"
+msgstr "Jamais"
+
+#: aleph_settings_page.lua
+msgid "1 week"
+msgstr "1 semaine"
+
+#: aleph_settings_page.lua
+msgid "2 weeks"
+msgstr "2 semaines"
+
+#: aleph_settings_page.lua
+msgid "1 month"
+msgstr "1 mois"
+
+#: aleph_settings_page.lua
+msgid "An OpenAI-style chat address (…/v1/chat/completions)"
+msgstr "Une adresse de chat de type OpenAI (…/v1/chat/completions)"
+
+#: aleph_settings_page.lua
+msgid "Based on BookOrbit's plugin"
+msgstr "D'après l'extension de BookOrbit"
+
+#: aleph_settings_page.lua
+msgid "Version %1"
+msgstr "Version %1"
+
+#: aleph_settings_page.lua
+msgid "Legal notices"
+msgstr "Mentions légales"
+
+#: aleph_settings_page.lua
+msgid "Licence, credits and what was changed"
+msgstr "Licence, crédits et modifications"
+
+#: aleph_settings_page.lua
+msgid "Troubleshooting"
+msgstr "Dépannage"
+
+#: aleph_settings_page.lua
+msgid "Troubleshooting log"
+msgstr "Journal de dépannage"
+
+#: aleph_settings_page.lua
+msgid "On: each step of opening a book is written to crash.log"
+msgstr "Activé : chaque étape de l'ouverture d'un livre est écrite dans crash.log"
+
+#: aleph_settings_page.lua
+msgid "Off: only failures are written to crash.log"
+msgstr "Désactivé : seules les erreurs sont écrites dans crash.log"
+
+#: aleph_settings_page.lua
+msgid "Button navigation"
+msgstr "Navigation par boutons"
+
+#: aleph_settings_page.lua
+msgid "On: Up, Down, Left, Right and Press move and tap. Reopen Home to apply"
+msgstr "Activé : Haut, Bas, Gauche, Droite et Appui déplacent et touchent. Rouvrez l'Accueil pour appliquer"
+
+#: aleph_settings_page.lua
+msgid "Automatic: on devices with direction keys"
+msgstr "Automatique : sur les appareils à touches de direction"
+
+#: aleph_settings_page.lua
+msgid "KOReader's own"
+msgstr "Celle de KOReader"
+
+#: aleph_settings_page.lua
+msgid "Aleph %1"
+msgstr ""
+
+#: aleph_settings_page.lua
+msgid "Choose where to open Aleph"
+msgstr "Choisissez où ouvrir Aleph"
+
+#: aleph_settings_page.lua
+msgid "Home and widgets"
+msgstr "Accueil et widgets"
+
+#: aleph_settings_page.lua
+msgid "Type a whole number of books, 1 or more."
+msgstr "Saisissez un nombre entier de livres, 1 ou plus."
+
+#: aleph_settings_page.lua
+msgid "Books to finish this year"
+msgstr "Livres à terminer cette année"
+
+#: aleph_settings_page.lua
+msgid "Type a whole number from 0 (off) to %1."
+msgstr "Saisissez un nombre entier de 0 (désactivé) à %1."
+
+#: aleph_settings_page.lua
+msgid "0 turns it off; at most %1"
+msgstr "0 le désactive ; au plus %1"
+
+#: aleph_settings_page.lua
+msgid "Provider key"
+msgstr "Clé du fournisseur"
+
+#: aleph_settings_page.lua
+msgid "Download author portraits"
+msgstr "Télécharger les portraits d'auteurs"
+
+#: aleph_settings_page.lua
+msgid "This looks up %1 authors on Open Library and Wikipedia, about one a second (around %2 minutes), and needs Wi-Fi to stay on. Only the names are sent. You can stop it any time, and the Authors list shows portraits as they arrive."
+msgstr "Ceci cherche %1 auteurs sur Open Library et Wikipédia, environ un par seconde (près de %2 minutes), et le Wi-Fi doit rester allumé. Seuls les noms sont envoyés. Vous pouvez l'arrêter à tout moment, et la liste Auteurs affiche les portraits à mesure qu'ils arrivent."
+
+#: aleph_settings_page.lua
+msgid "Author portraits: %1 found, %2 looked up"
+msgstr "Portraits d'auteurs : %1 trouvés, %2 cherchés"
+
+#: aleph_settings_page.lua
+msgid "Remove portraits"
+msgstr "Supprimer les portraits"
+
+#: aleph_settings_page.lua
+msgid "The downloaded portraits are deleted from this device. They can be downloaded again."
+msgstr "Les portraits téléchargés sont supprimés de cet appareil. Ils peuvent être retéléchargés."
+
+#: aleph_settings_page.lua
+msgid "Turn on KOReader's Gestures plugin first: Settings, Taps and gestures."
+msgstr "Activez d'abord l'extension Gestes de KOReader : Réglages, Touches et gestes."
+
+#: aleph_settings_page.lua
+msgid "Use this gesture for Aleph?"
+msgstr "Utiliser ce geste pour Aleph ?"
+
+#: aleph_settings_page.lua
+msgid "%1."
+msgstr ""
+
+#: aleph_settings_page.lua
+msgid "Use it"
+msgstr "L'utiliser"
+
+#: aleph_settings_page.lua
+msgid "Start Home from this layout?"
+msgstr "Démarrer l'Accueil avec cette disposition ?"
+
+#: aleph_settings_page.lua
+msgid "Your pages are replaced by this layout's pages."
+msgstr "Vos pages sont remplacées par celles de cette disposition."
+
+#: aleph_settings_page.lua
+msgid "Replace"
+msgstr "Remplacer"
+
+#: aleph_settings_page.lua
+msgid "Night light set from the light now"
+msgstr "Lumière de nuit réglée sur la lumière actuelle"
+
+#: aleph_settings_page.lua
+msgid "Reset Home?"
+msgstr "Réinitialiser l'Accueil ?"
+
+#: aleph_settings_page.lua
+msgid "Your pages and tile style go back to how they started."
+msgstr "Vos pages et le style des tuiles reviennent à leur état de départ."
+
+#: aleph_settings_page.lua
+msgid "%1 stars"
+msgstr "%1 étoiles"
+
+#: aleph_settings_page.lua
+msgid "failed"
+msgstr "échec"
+
+#: aleph_settings_page.lua
+msgid "Send now"
+msgstr "Envoyer maintenant"
+
+#: aleph_settings_page.lua
+msgid "Drop the failed ones"
+msgstr "Abandonner ceux en échec"
+
+#: aleph_settings_page.lua
+msgid "Remove this folder?"
+msgstr "Retirer ce dossier ?"
+
+#: aleph_settings_page.lua
+msgid "Its books leave the library index. The files stay where they are."
+msgstr "Ses livres quittent l'index de la bibliothèque. Les fichiers restent où ils sont."
+
+#: aleph_settings_page.lua
+msgid "Turn on the extra filters?"
+msgstr "Activer les filtres en plus ?"
+
+#: aleph_settings_page.lua
+msgid ""
+"Language, Pages and Released will be added to the library's Sort and filter.\n"
+"\n"
+"To find each book's page count and release date, Aleph opens every book once and reads its details. The first time this takes a lot of time, memory and battery, more so with a big library (yours has %1 books): it can take several minutes, and the device may feel slow until it finishes. Keep it plugged in if you can. After that, a book is only read again when its file changes."
+msgstr ""
+"Langue, Pages et Parution seront ajoutés à Trier et filtrer de la bibliothèque.\n"
+"\n"
+"Pour connaître le nombre de pages et la date de parution de chaque livre, Aleph ouvre chaque livre une fois et lit ses détails. La première fois, cela prend beaucoup de temps, de mémoire et de batterie, encore plus avec une grande bibliothèque (la vôtre a %1 livres) : cela peut prendre plusieurs minutes, et l'appareil peut sembler lent jusqu'à la fin. Gardez-le branché si possible. Ensuite, un livre n'est relu que si son fichier change."
+
+#: aleph_settings_page.lua
+msgid "Turn on"
+msgstr "Activer"
+
+#: aleph_shortcut.lua
+msgid "In books: hold the top-left corner"
+msgstr "Dans les livres : appui long en haut à gauche"
+
+#: aleph_shortcut.lua
+msgid "Tap the bottom-right corner"
+msgstr "Toucher le coin en bas à droite"
+
+#: aleph_shortcut.lua
+msgid "Two-finger tap, top right"
+msgstr "Touche à deux doigts, en haut à droite"
+
+#: aleph_shortcut.lua
+msgid "In books: tap the top-right corner"
+msgstr "Dans les livres : toucher le coin en haut à droite"
+
+#: aleph_shortcut.lua
+msgid "Free"
+msgstr "Libre"
+
+#: aleph_shortcut.lua
+msgid "Replaces %1"
+msgstr "Remplace %1"
+
+#: aleph_shortcut.lua
+msgid "Replaces %1 and %2"
+msgstr "Remplace %1 et %2"
+
+#: aleph_shortcut.lua
+msgid "In books, replaces %1"
+msgstr "Dans les livres, remplace %1"
+
+#: aleph_shortcut.lua
+msgid "In the file browser, replaces %1"
+msgstr "Dans le gestionnaire de fichiers, remplace %1"
+
+#: aleph_shortcut.lua
+msgid "Opens Aleph"
+msgstr "Ouvre Aleph"
+
+#: aleph_silverfish.lua
+msgid "Your reading companion"
+msgstr "Votre compagnon de lecture"
+
+#: aleph_silverfish.lua
+msgid "Open Silverfish"
+msgstr "Ouvrir Silverfish"
+
+#: aleph_sync_chain.lua
+msgid "the cloud"
+msgstr "le cloud"
+
+#: aleph_sync_chain.lua
+msgid "Synced with %1."
+msgstr "Synchronisé avec %1."
+
+#: aleph_sync_chain.lua
+msgid "The cloud sync did not finish in time. Check the connection, and the cloud settings in Syncery."
+msgstr "La synchronisation cloud n'a pas fini à temps. Vérifiez la connexion et les réglages cloud de Syncery."
+
+#: aleph_sync_chain.lua
+msgid "The exchange did not finish in time. Try again with both e-readers on the same Wi-Fi."
+msgstr "L'échange n'a pas fini à temps. Réessayez avec les deux liseuses sur le même Wi-Fi."
+
+#: aleph_sync_chain.lua
+msgid "Syncthing has no shared folders yet. Set them up in KOSyncthing+ first."
+msgstr "Syncthing n'a pas encore de dossiers partagés. Configurez-les d'abord dans KOSyncthing+."
+
+#: aleph_sync_chain.lua
+msgid "Tap Sync on %1 too."
+msgstr "Touchez aussi Synchroniser sur %1."
+
+#: aleph_sync_chain.lua
+msgid " or "
+msgstr " ou "
+
+#: aleph_sync_chain.lua
+msgid "the other e-reader"
+msgstr "l'autre liseuse"
+
+#: aleph_sync_chain.lua
+msgid "Syncthing stopped."
+msgstr "Syncthing s'est arrêté."
+
+#: aleph_sync_chain.lua
+msgid "The other e-reader did not show up. Start Sync on it while this one is waiting, with both on the same Wi-Fi."
+msgstr "L'autre liseuse ne s'est pas manifestée. Lancez la synchronisation dessus pendant que celle-ci attend, les deux sur le même Wi-Fi."
+
+#: aleph_sync_chain.lua
+msgid "Could not start Syncthing: %1"
+msgstr "Impossible de démarrer Syncthing : %1"
+
+#: aleph_sync_chain.lua
+msgid "Syncthing did not start. Open KOSyncthing+ to see why."
+msgstr "Syncthing n'a pas démarré. Ouvrez KOSyncthing+ pour voir pourquoi."
+
+#: aleph_sync_chain.lua
+msgid "Starting Syncthing"
+msgstr "Démarrage de Syncthing"
+
+#: aleph_sync_chain.lua
+msgid "Saving this e-reader's positions"
+msgstr "Enregistrement des positions de cette liseuse"
+
+#: aleph_sync_chain.lua
+msgid "Looking for another device nearby"
+msgstr "Recherche d'un autre appareil à proximité"
+
+#: aleph_sync_chain.lua
+msgid "Looking for your other e-reader"
+msgstr "Recherche de votre autre liseuse"
+
+#: aleph_sync_chain.lua
+msgid "Exchanging reading data"
+msgstr "Échange des données de lecture"
+
+#: aleph_sync_chain.lua
+msgid "Sending and receiving through the cloud"
+msgstr "Envoi et réception par le cloud"
+
+#: aleph_sync_chain.lua
+msgid "Looking for a newer position"
+msgstr "Recherche d'une position plus récente"
+
+#: aleph_sync_chain.lua
+msgid "Updating the library"
+msgstr "Mise à jour de la bibliothèque"
+
+#: aleph_sync_chain.lua
+msgid "Already syncing…"
+msgstr "Synchronisation déjà en cours…"
+
+#: aleph_sync_chain.lua
+msgid "Stopped."
+msgstr "Arrêté."
+
+#: aleph_sync_chain.lua
+msgid "Sync e-readers"
+msgstr "Synchroniser les liseuses"
+
+#: aleph_text_pages.lua
+msgid "About this book"
+msgstr "À propos de ce livre"
+
+#: aleph_text_pages.lua
+msgid "None in this book yet"
+msgstr "Aucun dans ce livre pour l'instant"
+
+#: aleph_text_pages.lua
+msgid "1 in this book"
+msgstr "1 dans ce livre"
+
+#: aleph_text_pages.lua
+msgid "%1 in this book"
+msgstr "%1 dans ce livre"
+
+#: aleph_text_pages.lua
+msgid "Highlights you make in this book show here, with their notes."
+msgstr "Les surlignages que vous faites dans ce livre s'affichent ici, avec leurs notes."
+
+#: aleph_text_pages.lua
+msgid "Genres & tags"
+msgstr "Genres et étiquettes"
+
+#: aleph_text_pages.lua
+msgid "From the book's tags (Calibre's Tags column). Tap one to see its books."
+msgstr "D'après les étiquettes du livre (colonne Étiquettes de Calibre). Touchez-en une pour voir ses livres."
+
+#: aleph_text_pages.lua
+msgid "No tags on this book yet. Tags added in Calibre show here."
+msgstr "Pas encore d'étiquettes sur ce livre. Les étiquettes ajoutées dans Calibre s'affichent ici."
+
+#: aleph_toast.lua
+msgid "Retry"
+msgstr "Réessayer"
+
+#: aleph_toast.lua
+msgid "Tap anywhere to stop"
+msgstr "Touchez n'importe où pour arrêter"
+
+#: aleph_toast.lua
+msgid "Tap to stop"
+msgstr "Touchez pour arrêter"
+
+#: aleph_toc.lua
+msgid "Untitled"
+msgstr "Sans titre"
+
+#: aleph_topbar.lua
+msgid "Restart"
+msgstr "Redémarrer"
+
+#: aleph_topbar.lua
+msgid "Restart KOReader?"
+msgstr "Redémarrer KOReader ?"
+
+#: aleph_topbar.lua
+msgid "Open books and settings are saved first."
+msgstr "Les livres ouverts et les réglages sont d'abord enregistrés."
+
+#: aleph_topbar.lua
+msgid "Exit"
+msgstr "Quitter"
+
+#: aleph_topbar_book.lua
+msgid "Read: %s"
+msgstr "Lu : %s"
+
+#: aleph_topbar_book.lua
+msgid "Remaining: %s"
+msgstr "Restant : %s"
+
+#: aleph_topbar_icons.lua
+msgid "Default icon"
+msgstr "Icône par défaut"
+
+#: aleph_topbar_menu_style.lua
+msgid "%d / %d"
+msgstr ""
+
+#: aleph_topbar_panel.lua
+msgid "Page %d of %d"
+msgstr "Page %d sur %d"
+
+#: aleph_topbar_panel.lua
+msgid "No apps to show"
+msgstr "Aucune app à afficher"
+
+#: aleph_topbar_panel.lua
+msgid "Choose apps in Tools → TopBar → Show apps."
+msgstr "Choisissez les apps dans Outils → TopBar → Show apps."
+
+#: aleph_topmenu_page.lua
+msgid "Names with “%1”: %2"
+msgstr "Noms avec « %1 » : %2"
+
+#: aleph_topmenu_page.lua
+msgid "Filter icons by name"
+msgstr "Filtrer les icônes par nom"
+
+#: aleph_topmenu_page.lua
+msgid "Icon name"
+msgstr "Nom de l'icône"
+
+#: aleph_topmenu_page.lua
+msgid "Top menu · %1 of %2 shown"
+msgstr "Menu du haut · %1 sur %2 affichées"
+
+#: aleph_topmenu_page.lua
+msgid "Show and icons"
+msgstr "Affichage et icônes"
+
+#: aleph_topmenu_page.lua
+msgid "Order"
+msgstr "Ordre"
+
+#: aleph_topmenu_page.lua
+msgid "The arrows move an app up or down the Apps tab."
+msgstr "Les flèches montent ou descendent une app dans l'onglet Apps."
+
+#: aleph_topmenu_page.lua
+msgid "Tap an app to show or hide it in the Apps tab. The pencil changes its icon."
+msgstr "Touchez une app pour l'afficher ou la masquer dans l'onglet Apps. Le crayon change son icône."
+
+#: aleph_topmenu_page.lua
+msgid "Not available now"
+msgstr "Indisponible pour l'instant"
+
+#: aleph_topmenu_page.lua
+msgid "Turn on the Controls and Apps tabs first."
+msgstr "Activez d'abord les onglets Commandes et Apps."
+
+#: aleph_topmenu_page.lua
+msgid "Change icon"
+msgstr "Changer l'icône"
+
+#: aleph_topmenu_page.lua
+msgid "Hide app"
+msgstr "Masquer l'app"
+
+#: aleph_topmenu_page.lua
+msgid "Shown again from Aleph's settings, Top menu"
+msgstr "Réaffichée depuis les réglages d'Aleph, Menu du haut"
+
+#: aleph_wallpaper.lua
+msgid "Choose a picture"
+msgstr "Choisissez une image"
+
+#: aleph_wallpaper.lua
+msgid ""
+"The picture could not be copied.\n"
+"%1"
+msgstr ""
+"L'image n'a pas pu être copiée.\n"
+"%1"
+
+#: aleph_wallpaper.lua
+msgid "Wallpaper"
+msgstr "Fond d'écran"
+
+#: aleph_wallpaper.lua
+msgid "A picture behind the widgets on every page of Home. Choose one from this device (JPG, PNG, WebP…); it is copied, so it stays if the file is moved."
+msgstr "Une image derrière les widgets sur chaque page de l'Accueil. Choisissez-en une sur cet appareil (JPG, PNG, WebP…) ; elle est copiée, elle reste donc si le fichier est déplacé."
+
+#: aleph_wallpaper.lua
+msgid "Choose a picture…"
+msgstr "Choisir une image…"
+
+#: aleph_wallpaper.lua
+msgid "Fit"
+msgstr "Ajustement"
+
+#: aleph_wallpaper.lua
+msgid "Wallpaper opacity"
+msgstr "Opacité du fond d'écran"
+
+#: aleph_wallpaper.lua
+msgid "Lower fades it, so text stays easy to read"
+msgstr "Plus bas l'estompe, pour que le texte reste lisible"
+
+#: aleph_wallpaper.lua
+msgid "Widget opacity"
+msgstr "Opacité des widgets"
+
+#: aleph_wallpaper.lua
+msgid "Lower lets the wallpaper show through the widgets"
+msgstr "Plus bas laisse voir le fond d'écran à travers les widgets"
+
+#: aleph_wallpaper.lua
+msgid "Text over the wallpaper"
+msgstr "Texte sur le fond d'écran"
+
+#: aleph_wallpaper.lua
+msgctxt "Text colour"
+msgid "Auto"
+msgstr "Auto"
+
+#: aleph_wallpaper.lua
+msgctxt "Text colour"
+msgid "Dark"
+msgstr "Foncé"
+
+#: aleph_wallpaper.lua
+msgctxt "Text colour"
+msgid "Light"
+msgstr "Clair"
+
+#: aleph_wallpaper.lua
+msgid "An edge in the other colour, for a busy picture"
+msgstr "Un bord de l'autre couleur, pour une image chargée"
+
+#: aleph_wallpaper.lua
+msgid "Change picture"
+msgstr "Changer d'image"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Clear"
+msgstr "Dégagé"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Mainly clear"
+msgstr "Plutôt dégagé"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Partly cloudy"
+msgstr "Partiellement nuageux"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Overcast"
+msgstr "Couvert"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Fog"
+msgstr "Brouillard"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Light drizzle"
+msgstr "Bruine légère"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Drizzle"
+msgstr "Bruine"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Heavy drizzle"
+msgstr "Forte bruine"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Freezing drizzle"
+msgstr "Bruine verglaçante"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Light rain"
+msgstr "Pluie faible"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Rain"
+msgstr "Pluie"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Heavy rain"
+msgstr "Forte pluie"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Freezing rain"
+msgstr "Pluie verglaçante"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Light snow"
+msgstr "Neige faible"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Snow"
+msgstr "Neige"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Heavy snow"
+msgstr "Forte neige"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Snow grains"
+msgstr "Neige en grains"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Showers"
+msgstr "Averses"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Heavy showers"
+msgstr "Fortes averses"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Snow showers"
+msgstr "Averses de neige"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Thunderstorm"
+msgstr "Orage"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Thunderstorm, hail"
+msgstr "Orage, grêle"
+
+#: aleph_weather.lua
+msgid "Tap to choose your town."
+msgstr "Touchez pour choisir votre ville."
+
+#: aleph_weather.lua
+msgid "Updating…"
+msgstr "Mise à jour…"
+
+#: aleph_weather.lua
+msgid "Not updated yet."
+msgstr "Pas encore mis à jour."
+
+#: aleph_weather.lua
+msgid "Connect to Wi-Fi to see the weather."
+msgstr "Connectez-vous au Wi-Fi pour voir la météo."
+
+#: aleph_weather.lua
+msgid "H %1  L %2"
+msgstr "Max %1  Min %2"
+
+#: aleph_weather.lua
+msgid "Updated %1"
+msgstr "Mis à jour à %1"
+
+#: aleph_weather.lua
+msgid "Which place?"
+msgstr "Quel lieu ?"
+
+#: aleph_weather.lua
+msgid "Your town"
+msgstr "Votre ville"
+
+#: aleph_weather.lua
+msgid "A town or city"
+msgstr "Une ville ou un village"
+
+#: aleph_weather.lua
+msgid "Looking for %1…"
+msgstr "Recherche de %1…"
+
+#: aleph_weather.lua
+msgid "Connect to Wi-Fi to find the place."
+msgstr "Connectez-vous au Wi-Fi pour trouver le lieu."
+
+#: aleph_weather.lua
+msgid "The place could not be looked up."
+msgstr "Le lieu n'a pas pu être cherché."
+
+#: aleph_weather.lua
+msgid "No place called %1 was found."
+msgstr "Aucun lieu nommé %1 n'a été trouvé."
+
+#: aleph_weather.lua
+msgid "Not updated yet"
+msgstr "Pas encore mis à jour"
+
+#: aleph_weather.lua
+msgid "Update now"
+msgstr "Mettre à jour"
+
+#: aleph_weather.lua aleph_xr_page.lua
+msgid "Place"
+msgstr "Lieu"
+
+#: aleph_weather.lua
+msgid "From Open-Meteo, only with Wi-Fi already on, at most once an hour. Only the place's position is sent."
+msgstr "D'Open-Meteo, seulement avec le Wi-Fi déjà allumé, au plus une fois par heure. Seule la position du lieu est envoyée."
+
+#: aleph_weather.lua
+msgid "Connect to Wi-Fi to update the weather."
+msgstr "Connectez-vous au Wi-Fi pour mettre à jour la météo."
+
+#: aleph_xr_page.lua
+msgid "People"
+msgstr "Personnes"
+
+#: aleph_xr_page.lua
+msgid "Places"
+msgstr "Lieux"
+
+#: aleph_xr_ai.lua (provider) aleph_xr_page.lua
+msgid "Other"
+msgstr "Autres"
+
+#: aleph_xr_page.lua
+msgid "Person"
+msgstr "Personne"
+
+#: aleph_xr_page.lua
+msgid "Group"
+msgstr "Groupe"
+
+#: aleph_xr_page.lua
+msgid "Thing"
+msgstr "Chose"
+
+#: aleph_xr_page.lua
+msgid "Names"
+msgstr "Noms"
+
+#: aleph_xr_page.lua
+msgid "Story"
+msgstr "Histoire"
+
+#: aleph_xr_page.lua
+msgid "X-Ray works with books KOReader lays out itself (EPUB and the like), not with PDFs or comics."
+msgstr "X-Ray fonctionne avec les livres que KOReader met en page lui-même (EPUB et similaires), pas avec les PDF ni les BD."
+
+#: aleph_xr_page.lua
+msgid "Reading the book for its names. This takes a minute or two; you can close this and keep reading."
+msgstr "Lecture du livre pour ses noms. Cela prend une minute ou deux ; vous pouvez fermer ceci et continuer à lire."
+
+#: aleph_xr_page.lua
+msgid "Aleph can read this book once for its names and where each is mentioned. Nothing is sent anywhere."
+msgstr "Aleph peut lire ce livre une fois pour ses noms et l'endroit où chacun est mentionné. Rien n'est envoyé nulle part."
+
+#: aleph_xr_page.lua
+msgid "Find names in this book"
+msgstr "Trouver les noms de ce livre"
+
+#: aleph_xr_page.lua
+msgid "%1 names in the book"
+msgstr "%1 noms dans le livre"
+
+#: aleph_xr_page.lua
+msgid "%1 names so far"
+msgstr "%1 noms jusqu'ici"
+
+#: aleph_xr_page.lua
+msgid "No names were found in the pages read so far."
+msgstr "Aucun nom trouvé dans les pages lues jusqu'ici."
+
+#: aleph_xr_page.lua
+msgid "None of this kind in the pages read so far."
+msgstr "Aucun de ce type dans les pages lues jusqu'ici."
+
+#: aleph_xr_page.lua
+msgid "Asking… you can keep reading"
+msgstr "Demande en cours… vous pouvez continuer à lire"
+
+#: aleph_xr_page.lua
+msgid "Needs a provider's key: Aleph's Settings > X-Ray"
+msgstr "Il faut la clé d'un fournisseur : Réglages d'Aleph > X-Ray"
+
+#: aleph_xr_page.lua
+msgid "Described at %1% of the book · ask again from here"
+msgstr "Décrit à %1 % du livre · redemander d'ici"
+
+#: aleph_xr_page.lua
+msgid "Who and what each name is, from what you have read · %1"
+msgstr "Qui et quoi est chaque nom, d'après ce que vous avez lu · %1"
+
+#: aleph_xr_page.lua
+msgid "Describe with AI"
+msgstr "Décrire par IA"
+
+#: aleph_xr_page.lua
+msgid "Tap an underlined name to open it"
+msgstr "Touchez un nom souligné pour l'ouvrir"
+
+#: aleph_xr_page.lua
+msgid "Find names again"
+msgstr "Retrouver les noms"
+
+#: aleph_xr_page.lua
+msgid "Reads the book again; descriptions are kept"
+msgstr "Relit le livre ; les descriptions sont gardées"
+
+#: aleph_xr_page.lua
+msgid "Where it comes up"
+msgstr "Où il apparaît"
+
+#: aleph_xr_page.lua
+msgid "First seen"
+msgstr "Première apparition"
+
+#: aleph_xr_page.lua
+msgid "Most mentions"
+msgstr "Le plus de mentions"
+
+#: aleph_xr_page.lua
+msgid "Latest"
+msgstr "Dernière"
+
+#: aleph_xr_page.lua
+msgid "Often with"
+msgstr "Souvent avec"
+
+#: aleph_xr_page.lua
+msgid "%1 mentions"
+msgstr "%1 mentions"
+
+#: aleph_xr_page.lua
+msgid "%1 mentions so far"
+msgstr "%1 mentions jusqu'ici"
+
+#: aleph_xr_page.lua
+msgid "Also: %1"
+msgstr "Aussi : %1"
+
+#: aleph_xr_page.lua
+msgid "Mention"
+msgstr "Mention"
+
+#: aleph_xr_page.lua
+msgid "All names"
+msgstr "Tous les noms"
+
+#: aleph_xr_page.lua
+msgid "Not a name"
+msgstr "Pas un nom"
+
+#: aleph_xr_page.lua
+msgid "Book %1 of %2"
+msgstr "Livre %1 sur %2"
+
+#: aleph_xr_page.lua
+msgid "Reading the chapters and asking (%1). You can close this and keep reading."
+msgstr "Lecture des chapitres et demande en cours (%1). Vous pouvez fermer ceci et continuer à lire."
+
+#: aleph_xr_page.lua
+msgid "Reading the chapters and asking. You can close this and keep reading."
+msgstr "Lecture des chapitres et demande en cours. Vous pouvez fermer ceci et continuer à lire."
+
+#: aleph_xr_page.lua
+msgid "The story up to page %1 (%2%)"
+msgstr "L'histoire jusqu'à la page %1 (%2 %)"
+
+#: aleph_xr_page.lua
+msgid "What happened in each chapter you have read, and the story so far, written by the AI provider set in Settings."
+msgstr "Ce qui s'est passé dans chaque chapitre lu, et l'histoire jusqu'ici, écrits par le fournisseur d'IA choisi dans les Réglages."
+
+#: aleph_xr_page.lua
+msgid "Needs a provider's key: Aleph's Settings > X-Ray."
+msgstr "Il faut la clé d'un fournisseur : Réglages d'Aleph > X-Ray."
+
+#: aleph_xr_page.lua
+msgid "The book before"
+msgstr "Le livre précédent"
+
+#: aleph_xr_page.lua
+msgid "Asking…"
+msgstr "Demande en cours…"
+
+#: aleph_xr_page.lua
+msgid "Sends the text of %1 chapters read to %2"
+msgstr "Envoie le texte de %1 chapitres lus à %2"
+
+#: aleph_xr_page.lua
+msgid "Up to date with the page you are on"
+msgstr "À jour avec la page où vous êtes"
+
+#: aleph_xr_page.lua
+msgid "Update the story"
+msgstr "Mettre à jour l'histoire"
+
+#: aleph_xr_page.lua
+msgid "Chapter %1"
+msgstr "Chapitre %1"
+
+#: aleph_xr_page.lua
+msgid "The story so far"
+msgstr "L'histoire jusqu'ici"
+
+#: aleph_xr_page.lua
+msgid "The story"
+msgstr "L'histoire"
+
+#: aleph_xr_page.lua
+msgid "Go to chapter"
+msgstr "Aller au chapitre"
+
+#: aleph_xr_page.lua
+msgid "What happened"
+msgstr "Ce qui s'est passé"
+
+#: aleph_xr_page.lua
+msgid "What happened, as far as you read"
+msgstr "Ce qui s'est passé, jusqu'où vous avez lu"
+
+#: aleph_xr_page.lua
+msgid "Before this book · %1"
+msgstr "Avant ce livre · %1"
+
+#: aleph_xr_page.lua
+msgid "Asking. You can close this and keep reading."
+msgstr "Demande en cours. Vous pouvez fermer ceci et continuer à lire."
+
+#: aleph_xr_page.lua
+msgid "From what the AI model itself knows of that book, by its title. It can be wrong."
+msgstr "D'après ce que le modèle d'IA sait lui-même de ce livre, par son titre. Cela peut être faux."
+
+#: aleph_xr_page.lua
+msgid "The AI model did not know that book well enough to say. Use X-Ray's Story on that book itself for a summary made from its text."
+msgstr "Le modèle d'IA ne connaissait pas assez ce livre. Utilisez l'Histoire de X-Ray sur ce livre lui-même pour un résumé tiré de son texte."
+
+#: aleph_xr_page.lua
+msgid "Written from the chapter summaries kept for that book on this device."
+msgstr "Écrit à partir des résumés de chapitres gardés pour ce livre sur cet appareil."
+
+#: aleph_xr_page.lua
+msgid "That book has no story kept on this device, so the AI model is asked what it knows of it by its title. Nothing of the book is sent, and the answer can be wrong."
+msgstr "Ce livre n'a pas d'histoire gardée sur cet appareil : on demande donc au modèle d'IA ce qu'il en sait par son titre. Rien du livre n'est envoyé, et la réponse peut être fausse."
+
+#: aleph_xr_page.lua
+msgid "Ask again"
+msgstr "Redemander"
+
+#: aleph_xr_page.lua
+msgid "Ask"
+msgstr "Demander"
+
+#: aleph_xr_page.lua
+msgid "Add a provider and its key in Aleph's Settings > X-Ray first."
+msgstr "Ajoutez d'abord un fournisseur et sa clé dans Réglages d'Aleph > X-Ray."
+
+#: aleph_xr_page.lua
+msgid "X-Ray: the story stopped (%1)"
+msgstr "X-Ray : l'histoire s'est arrêtée (%1)"
+
+#: aleph_xr_page.lua
+msgid "X-Ray: part of the story is written. Update again for the rest."
+msgstr "X-Ray : une partie de l'histoire est écrite. Mettez à jour de nouveau pour le reste."
+
+#: aleph_xr_page.lua
+msgid "X-Ray: the story is up to date"
+msgstr "X-Ray : l'histoire est à jour"
+
+#: aleph_xr_page.lua
+msgid "The story is up to date."
+msgstr "L'histoire est à jour."
+
+#: aleph_xr_page.lua
+msgid "X-Ray could not start."
+msgstr "X-Ray n'a pas pu démarrer."
+
+#: aleph_xr_page.lua
+msgid "X-Ray: %1 names described"
+msgstr "X-Ray : %1 noms décrits"
+
+#: aleph_xr_page.lua
+msgid "X-Ray: no descriptions (%1)"
+msgstr "X-Ray : aucune description (%1)"
+
+#: aleph_xr_page.lua
+msgid "No names in the pages read so far."
+msgstr "Aucun nom dans les pages lues jusqu'ici."
+
+#: aleph_xr_page.lua
+msgid "X-Ray: %1 names found"
+msgstr "X-Ray : %1 noms trouvés"
+
+#: aleph_xr_page.lua
+msgid "X-Ray could not read this book."
+msgstr "X-Ray n'a pas pu lire ce livre."
+
+#: aleph_xr_page.lua
+msgid "No X-Ray entry for “%1”."
+msgstr "Pas d'entrée X-Ray pour « %1 »."
+
+#: aleph_xr_story.lua
+msgid "You last read this book %1 days ago. See the story so far?"
+msgstr "Vous avez lu ce livre pour la dernière fois il y a %1 jours. Voir l'histoire jusqu'ici ?"
+
+#: aleph_xr_story.lua
+msgid "You last read this book %1 days ago. Get a summary of the story so far? The text of the %2 chapters read and not summarised yet is sent to %3."
+msgstr "Vous avez lu ce livre pour la dernière fois il y a %1 jours. Obtenir un résumé de l'histoire jusqu'ici ? Le texte des %2 chapitres lus et pas encore résumés est envoyé à %3."
+
+#: aleph_xr_story.lua
+msgid "Welcome back"
+msgstr "Bon retour"
+
+#: aleph_xr_story.lua
+msgid "Summarise"
+msgstr "Résumer"
+
+#: aleph_xray.lua
+msgid "Characters"
+msgstr "Personnages"
+
+#: aleph_xray.lua
+msgid "Timeline"
+msgstr "Chronologie"
+
+#: aleph_xray.lua
+msgid "Historical Figures"
+msgstr "Personnages historiques"
+
+#: aleph_xray.lua
+msgid "Locations"
+msgstr "Lieux"
+
+#: aleph_xray.lua
+msgid "Glossary"
+msgstr "Glossaire"
+
+#: aleph_xray.lua
+msgid "Images & Maps"
+msgstr "Images et cartes"
+
+#: aleph_xray.lua
+msgid "1 character"
+msgstr "1 personnage"
+
+#: aleph_xray.lua
+msgid "%1 characters"
+msgstr "%1 personnages"
+
+#: aleph_xray.lua
+msgid "1 location"
+msgstr "1 lieu"
+
+#: aleph_xray.lua
+msgid "%1 locations"
+msgstr "%1 lieux"
+
+#: aleph_xray.lua
+msgid "1 term"
+msgstr "1 terme"
+
+#: aleph_xray.lua
+msgid "%1 terms"
+msgstr "%1 termes"
+
+#: aleph_xray.lua
+msgid "No X-Ray data for this book yet. Fetch it once, then everything below fills in."
+msgstr "Pas encore de données X-Ray pour ce livre. Récupérez-les une fois, et tout ce qui suit se remplit."
+
+#: aleph_xray.lua
+msgid "Fetch X-Ray data"
+msgstr "Récupérer les données X-Ray"
+
+#: aleph_xray.lua
+msgid "About %1"
+msgstr "À propos de %1"
+
+#: aleph_xray.lua
+msgid "About the author"
+msgstr "À propos de l'auteur"
+
+#: aleph_xray.lua
+msgid "X-Ray's author info"
+msgstr "Infos auteur de X-Ray"
+
+#: aleph_xray.lua
+msgid "All X-Ray options"
+msgstr "Toutes les options X-Ray"
+
+#: aleph_xray.lua
+msgid "Fetch, update and settings"
+msgstr "Récupérer, mettre à jour et réglages"
+
+#: main.lua
+msgid "Aleph could not open at startup:"
+msgstr "Aleph n'a pas pu s'ouvrir au démarrage :"
+
+#: main.lua
+msgid "Aleph: open"
+msgstr "Aleph : ouvrir"
+
+#: main.lua
+msgid "Aleph: pinned pages"
+msgstr "Aleph : pages épinglées"
+
+#: main.lua
+msgid "Aleph: page browser"
+msgstr "Aleph : navigateur de pages"
+
+#: main.lua
+msgid "Aleph: X-Ray"
+msgstr ""
+
+#: main.lua
+msgid "Aleph: this book"
+msgstr "Aleph : ce livre"
+
+#: main.lua
+msgid "Pin badge position"
+msgstr "Position du badge d'épingle"
+
+#: main.lua
+msgid "Book margins (top and bottom stats)"
+msgstr "Marges du livre (statistiques en haut et en bas)"
+
+#: main.lua
+msgid "X-Ray is off. Turn it on in Aleph's Settings > X-Ray."
+msgstr "X-Ray est désactivé. Activez-le dans Réglages d'Aleph > X-Ray."
+
+#: aleph_bookends.lua (sample)
+msgid "Page 825 of 2049"
+msgstr "Page 825 sur 2049"
+
+#: aleph_bookends.lua (sample)
+msgid "38 pages left in chapter"
+msgstr "38 pages restantes dans le chapitre"
+
+#: aleph_bookends.lua (sample)
+msgid "14 min left in chapter"
+msgstr "14 min restantes dans le chapitre"
+
+#: aleph_bookends.lua (sample)
+msgid "27h 31m left"
+msgstr "27 h 31 min restantes"
+
+#: aleph_bookends.lua (sample)
+msgid "Chapter 21"
+msgstr "Chapitre 21"
+
+#: aleph_bookends.lua (sample)
+msgid "Mon 9 Nov"
+msgstr "lun. 9 nov."
+
+#: aleph_bookends.lua (sample)
+msgid "12m read"
+msgstr "12 min lues"
+
+#: aleph_local.lua (PAGE_BANDS)
+msgid "Under 200 pages"
+msgstr "Moins de 200 pages"
+
+#: aleph_local.lua (PAGE_BANDS)
+msgid "200 – 399 pages"
+msgstr "200 – 399 pages"
+
+#: aleph_local.lua (PAGE_BANDS)
+msgid "400 – 599 pages"
+msgstr "400 – 599 pages"
+
+#: aleph_local.lua (PAGE_BANDS)
+msgid "600 pages or more"
+msgstr "600 pages ou plus"
+
+#: aleph_migrate.lua
+msgid "Aleph is now in aleph.koplugin. Please delete the old readingboard.koplugin folder from koreader/plugins and restart KOReader: with both installed, screens are hooked twice."
+msgstr "Aleph est maintenant dans aleph.koplugin. Supprimez l'ancien dossier readingboard.koplugin de koreader/plugins et redémarrez KOReader : avec les deux installés, les écrans sont modifiés deux fois."

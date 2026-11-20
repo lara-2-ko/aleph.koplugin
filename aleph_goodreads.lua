@@ -1,18 +1,18 @@
 -- Aleph modification, 2026-11-11: receiving the Goodreads sign-in cookie from
 -- a computer's browser.
 --[[--
-The Goodreads plugin by advokatb (goodreads.koplugin, 0.5.0) signs in to
-goodreads.com with the cookies of a browser where the reader is signed in,
-pasted by hand into its menu. They expire after a few weeks, and pasting a
-long cookie on an e-reader is hard.
+Goodreads (aleph_gr.lua, as advokatb's Goodreads plugin before it) signs
+in to goodreads.com with the cookies of a browser where the reader is
+signed in. They expire after a few weeks, and pasting a long cookie on an
+e-reader is hard.
 
-Settings > Library > Goodreads sign-in (shown only when that plugin is installed) opens a small
+Settings > Library > Goodreads sign-in opens a small
 screen that listens on the local network for a few minutes, with the
 device's address and a four-digit code. The "Aleph Goodreads cookie"
 extension for Chrome, Edge or Firefox (aleph-goodreads-cookie.zip, next to
 Aleph's release) reads the browser's goodreads.com cookies and sends them there with
-the code. Aleph saves them in the Goodreads plugin's settings, as its own
-"Session cookies" menu does, and stops listening.
+the code. Aleph saves them in the Goodreads settings (the plugin's file,
+which Aleph's Goodreads uses since 1.2.32) and stops listening.
 
 The cookies travel over the local network without encryption: the screen
 says so. Five wrong codes, ten minutes or closing the screen stop it. On a
@@ -36,38 +36,6 @@ GR.MAX_TRIES = 5
 GR.MINUTES = 10
 GR.MAX_BODY = 65536
 
--- ------------------------------------------------------------ the plugin
--- advokatb's plugin: named "goodreads", with a settings object that keeps
--- the cookie under "session_cookie" (other Goodreads plugins differ).
-local function isTheOne(p)
-    if type(p) ~= "table" then return false end
-    local s = p.settings
-    return type(s) == "table" and type(s.setCookie) == "function" and type(s.getCookie) == "function"
-        and s.KEY_COOKIE == "session_cookie"
-end
-GR.isTheOne = isTheOne
-
-local function hosts(ui)
-    local ok, list = pcall(function() return require("aleph_plugins").hosts(ui) end)
-    return ok and list or (ui and { ui } or {})
-end
-
--- Every running instance of the plugin (the file browser's and the reader's).
-function GR.instances(ui)
-    local out, seen = {}, {}
-    local function add(p)
-        if isTheOne(p) and not seen[p] then seen[p] = true; out[#out + 1] = p end
-    end
-    for _i, h in ipairs(hosts(ui)) do
-        try(function() add(rawget(h, "goodreads") or h.goodreads) end)
-    end
-    try(function() add(require("pluginloader"):getPluginInstance("goodreads")) end)
-    return out
-end
-
-function GR.plugin(ui) return GR.instances(ui)[1] end
-function GR.available(ui) return GR.plugin(ui) ~= nil end
-
 -- Drops jwt_token (it expires in minutes; the plugin strips it too) and
 -- blank parts. Returns the cookie and how many name=value pairs it holds.
 function GR.clean(cookie)
@@ -81,20 +49,14 @@ function GR.clean(cookie)
     return table.concat(parts, "; "), #parts
 end
 
--- Saves `cookie` in the plugin, as its "Session cookies" menu does.
-function GR.save(ui, cookie)
-    local list = GR.instances(ui)
-    if #list == 0 then return false end
-    for _i, p in ipairs(list) do
-        try(function() p.settings:setCookie(cookie) end)
-        try(function() if p.settings.clearSessionCache then p.settings:clearSessionCache() end end)
-    end
-    try(function()
-        local Api = package.loaded["goodreads_api"]
-        local backend = Api and Api._get_backend and Api:_get_backend()
-        if backend and backend.reset_csrf_token then backend:reset_csrf_token() end
-    end)
-    try(function() if list[1].onCookiesSaved then list[1]:onCookiesSaved() end end)
+-- Saves `cookie` as Goodreads' sign-in (aleph_gr.lua), as the plugin's
+-- "Session cookies" menu did, and sends what was waiting for it.
+function GR.save(_ui, cookie)
+    local h = require("aleph_gr").host()
+    h.settings:setCookie(cookie)
+    try(function() h.settings:clearSessionCache() end)
+    try(function() require("aleph_gr_api"):_get_backend():reset_csrf_token() end)
+    try(function() h:onCookiesSaved() end)
     logger.info("Aleph: Goodreads cookie received and saved")
     return true
 end
@@ -283,127 +245,135 @@ function GR.open(ui)
     NetworkMgr:runWhenConnected(function() GR.show(ui) end)
 end
 
-function GR.show(ui)
+-- The receiver is kept in one table, `r`: ui, state (the code and tries, shared
+-- with GR.listen), status (wait | saved | tries | timeout | error), note (the
+-- last thing that happened), ip, server and timer (while listening), panel.
+local function receiverStop(r)
     local UIManager = require("ui/uimanager")
-    local Geom = require("ui/geometry")
+    if r.timer then UIManager:unschedule(r.timer); r.timer = nil end
+    if r.server then UIManager:removeZMQ(r.server); r.server:stop(); r.server = nil end
+end
+
+-- Called by the server after each request, with what it answered.
+local function receiverAfter(r, code, answer)
     local T = require("ffi/util").template
+    local state = r.state
+    if answer and answer.ok and code == 200 and state.done then
+        r.status = "saved"
+        receiverStop(r)
+    elseif answer and answer.error == "code" then
+        if state.tries >= GR.MAX_TRIES then r.status = "tries"; receiverStop(r) end
+        r.note = T(_("A wrong code was sent (%1 tries left)."), math.max(0, GR.MAX_TRIES - state.tries))
+    elseif answer and answer.error == "cookie" then
+        r.note = _("What arrived was not a cookie. Sign in to goodreads.com in that browser and send again.")
+    elseif not (answer and answer.ok == false) then
+        -- The extension's check, or the address opened in a browser:
+        -- the network path works.
+        r.note = T(_("A computer reached this e-reader at %1. Waiting for the cookie…"), os.date("%H:%M"))
+    end
+    if r.panel and not r.panel.closed then r.panel:refresh() end
+end
+
+local function receiverStatusText(r)
+    local T = require("ffi/util").template
+    if r.status == "saved" then return _("Cookie received and saved. Goodreads is signed in again.") end
+    if r.status == "tries" then return _("Too many wrong codes: stopped listening. Open this screen again for a new code.") end
+    if r.status == "timeout" then return T(_("Stopped listening after %1 minutes. Open this screen again to try once more."), GR.MINUTES) end
+    if r.status == "error" then return T(_("Could not listen on the network: %1"), r.note) end
+    return T(_("Waiting… (listens for %1 minutes)"), GR.MINUTES)
+end
+
+local function receiverBuild(r, p, sw, sh)
+    local Geom = require("ui/geometry")
     local BoardMetrics = require("aleph_board_metrics")
     local BoardUI = require("aleph_board_ui")
     local MenuUI = require("aleph_menu_ui")
-    local Panel = require("aleph_panel")
     local INK, px, floor = BoardMetrics.INK, BoardMetrics.px, math.floor
+    local state, ip = r.state, r.ip
+    local w = math.min(px(500), sw - 2 * px(16))
+    local pad = px(18)
+    local iw = w - 2 * pad
+    local address = (ip or "?") .. ":" .. (r.server and r.server.port or GR.PORT)
+    local listening = r.status == "wait"
+    local items = {
+        BoardUI.text(_("Receive Goodreads cookie"), { s = 19, b = true, w = iw }),
+        BoardUI.space(nil, px(10)),
+        BoardUI.text(_("On your computer, sign in to goodreads.com, then open the Aleph Goodreads cookie extension and enter:"),
+            { s = 15, col = INK.g2, w = iw, lines = 4 }),
+        BoardUI.space(nil, px(12)),
+    }
+    if listening then
+        items[#items + 1] = BoardUI.text(_("Address"), { s = 13, col = INK.g4, w = iw })
+        items[#items + 1] = BoardUI.text(address, { s = 24, b = true, w = iw, data = true })
+        items[#items + 1] = BoardUI.space(nil, px(8))
+        items[#items + 1] = BoardUI.text(_("Code"), { s = 13, col = INK.g4, w = iw })
+        items[#items + 1] = BoardUI.text(state.code, { s = 30, b = true, w = iw, data = true })
+        items[#items + 1] = BoardUI.space(nil, px(12))
+        if not ip then
+            items[#items + 1] = BoardUI.text(_("The address could not be found: check that Wi-Fi is connected."), { s = 14, col = INK.g2, w = iw, lines = 3 })
+            items[#items + 1] = BoardUI.space(nil, px(8))
+        end
+    end
+    items[#items + 1] = BoardUI.text(receiverStatusText(r), { s = 15, b = r.status == "saved", w = iw, lines = 4, data = r.status == "error" })
+    if r.note and listening then
+        items[#items + 1] = BoardUI.space(nil, px(6))
+        items[#items + 1] = BoardUI.text(r.note, { s = 14, col = INK.g2, w = iw, lines = 3 })
+    end
+    if listening then
+        items[#items + 1] = BoardUI.space(nil, px(10))
+        items[#items + 1] = BoardUI.text(_("The computer must be on the same network. The cookie crosses it unencrypted, so use this on a network you trust. Keep this screen open until it arrives."),
+            { s = 13, col = INK.g4, w = iw, lines = 5 })
+    end
+    items[#items + 1] = BoardUI.space(nil, px(18))
+    items[#items + 1] = MenuUI.pill(listening and _("Stop") or _("Close"),
+        { kind = listening and "outline" or "dark", w = iw, h = 48, s = 16, action = { kind = "close" } })
+    local content = BoardUI.vstack({ w = w, pad = pad }, items)
+    local border = math.max(1, px(1.5))
+    local ph = content:getSize().h + 2 * border
+    local widget = BoardUI.box({ w = w, h = ph, radius = px(16), bg = INK.white, border = border, border_col = INK.g6 }, content)
+    local x, y = floor((sw - w) / 2), math.max(px(8), floor((sh - ph) / 2))
+    p.panel_rect = Geom:new{ x = x, y = y, w = w, h = ph }
+    return BoardUI.overlay(sw, sh, { { widget = widget, x = x, y = y } })
+end
 
-    local panel, server, timer
+function GR.show(ui)
+    local UIManager = require("ui/uimanager")
+    local Panel = require("aleph_panel")
     local state = { code = code4(), tries = 0 }
-    local status = "wait" -- wait | saved | tries | timeout | error
-    local note
-
-    local function stop()
-        if timer then UIManager:unschedule(timer); timer = nil end
-        if server then UIManager:removeZMQ(server); server:stop(); server = nil end
-    end
-
+    local r = { ui = ui, state = state, status = "wait" }
     state.on_cookie = function(cookie) return GR.save(ui, cookie) end
-    state.after = function(code, answer)
-        if answer and answer.ok and code == 200 and state.done then
-            status = "saved"
-            stop()
-        elseif answer and answer.error == "code" then
-            if state.tries >= GR.MAX_TRIES then status = "tries"; stop() end
-            note = T(_("A wrong code was sent (%1 tries left)."), math.max(0, GR.MAX_TRIES - state.tries))
-        elseif answer and answer.error == "cookie" then
-            note = _("What arrived was not a cookie. Sign in to goodreads.com in that browser and send again.")
-        elseif not (answer and answer.ok == false) then
-            -- The extension's check, or the address opened in a browser:
-            -- the network path works.
-            note = T(_("A computer reached this e-reader at %1. Waiting for the cookie…"), os.date("%H:%M"))
-        end
-        if panel and not panel.closed then panel:refresh() end
-    end
+    state.after = function(code, answer) return receiverAfter(r, code, answer) end
 
-    local ip = GR.localIp()
+    r.ip = GR.localIp()
     local err
-    server, err = GR.listen(state)
-    if server then
-        UIManager:insertZMQ(server)
-        timer = function()
-            timer = nil
-            if status == "wait" then status = "timeout"; stop(); if panel and not panel.closed then panel:refresh() end end
+    r.server, err = GR.listen(state)
+    if r.server then
+        UIManager:insertZMQ(r.server)
+        r.timer = function()
+            r.timer = nil
+            if r.status == "wait" then r.status = "timeout"; receiverStop(r); if r.panel and not r.panel.closed then r.panel:refresh() end end
         end
-        UIManager:scheduleIn(GR.MINUTES * 60, timer)
+        UIManager:scheduleIn(GR.MINUTES * 60, r.timer)
     else
-        status = "error"
-        note = tostring(err or "")
+        r.status = "error"
+        r.note = tostring(err or "")
     end
 
-    local function statusText()
-        if status == "saved" then return _("Cookie received and saved. The Goodreads plugin is signed in again.") end
-        if status == "tries" then return _("Too many wrong codes: stopped listening. Open this screen again for a new code.") end
-        if status == "timeout" then return T(_("Stopped listening after %1 minutes. Open this screen again to try once more."), GR.MINUTES) end
-        if status == "error" then return T(_("Could not listen on the network: %1"), note) end
-        return T(_("Waiting… (listens for %1 minutes)"), GR.MINUTES)
-    end
-
-    panel = Panel:new{
+    r.panel = Panel:new{
         dismiss = false,
-        build = function(p, sw, sh)
-            local w = math.min(px(500), sw - 2 * px(16))
-            local pad = px(18)
-            local iw = w - 2 * pad
-            local address = (ip or "?") .. ":" .. (server and server.port or GR.PORT)
-            local listening = status == "wait"
-            local items = {
-                BoardUI.text(_("Receive Goodreads cookie"), { s = 19, b = true, w = iw }),
-                BoardUI.space(nil, px(10)),
-                BoardUI.text(_("On your computer, sign in to goodreads.com, then open the Aleph Goodreads cookie extension and enter:"),
-                    { s = 15, col = INK.g2, w = iw, lines = 4 }),
-                BoardUI.space(nil, px(12)),
-            }
-            if listening then
-                items[#items + 1] = BoardUI.text(_("Address"), { s = 13, col = INK.g4, w = iw })
-                items[#items + 1] = BoardUI.text(address, { s = 24, b = true, w = iw, data = true })
-                items[#items + 1] = BoardUI.space(nil, px(8))
-                items[#items + 1] = BoardUI.text(_("Code"), { s = 13, col = INK.g4, w = iw })
-                items[#items + 1] = BoardUI.text(state.code, { s = 30, b = true, w = iw, data = true })
-                items[#items + 1] = BoardUI.space(nil, px(12))
-                if not ip then
-                    items[#items + 1] = BoardUI.text(_("The address could not be found: check that Wi-Fi is connected."), { s = 14, col = INK.g2, w = iw, lines = 3 })
-                    items[#items + 1] = BoardUI.space(nil, px(8))
-                end
-            end
-            items[#items + 1] = BoardUI.text(statusText(), { s = 15, b = status == "saved", w = iw, lines = 4, data = status == "error" })
-            if note and listening then
-                items[#items + 1] = BoardUI.space(nil, px(6))
-                items[#items + 1] = BoardUI.text(note, { s = 14, col = INK.g2, w = iw, lines = 3 })
-            end
-            if listening then
-                items[#items + 1] = BoardUI.space(nil, px(10))
-                items[#items + 1] = BoardUI.text(_("The computer must be on the same network. The cookie crosses it unencrypted, so use this on a network you trust. Keep this screen open until it arrives."),
-                    { s = 13, col = INK.g4, w = iw, lines = 5 })
-            end
-            items[#items + 1] = BoardUI.space(nil, px(18))
-            items[#items + 1] = MenuUI.pill(listening and _("Stop") or _("Close"),
-                { kind = listening and "outline" or "dark", w = iw, h = 48, s = 16, action = { kind = "close" } })
-            local content = BoardUI.vstack({ w = w, pad = pad }, items)
-            local border = math.max(1, px(1.5))
-            local ph = content:getSize().h + 2 * border
-            local widget = BoardUI.box({ w = w, h = ph, radius = px(16), bg = INK.white, border = border, border_col = INK.g6 }, content)
-            local x, y = floor((sw - w) / 2), math.max(px(8), floor((sh - ph) / 2))
-            p.panel_rect = Geom:new{ x = x, y = y, w = w, h = ph }
-            return BoardUI.overlay(sw, sh, { { widget = widget, x = x, y = y } })
-        end,
+        build = function(p, sw, sh) return receiverBuild(r, p, sw, sh) end,
         on_action = function(p, action)
             if action.kind == "close" then p:close() end
         end,
     }
     -- However it closes, it stops listening.
-    local base_close = panel.onCloseWidget
-    panel.onCloseWidget = function(self, ...)
-        stop()
+    local base_close = r.panel.onCloseWidget
+    r.panel.onCloseWidget = function(self, ...)
+        receiverStop(r)
         return base_close(self, ...)
     end
-    panel:show()
-    return panel, state
+    r.panel:show()
+    return r.panel, state
 end
 
 return GR

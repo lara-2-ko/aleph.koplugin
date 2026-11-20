@@ -15,9 +15,11 @@ view above it, dimmed.
               spacing, contrast…), Search, Bookmarks, Pages (the page
               browser); Bookmark this page; Book details (its Aleph
               page, with the highlight and bookmark counts); Aleph
-              Home; with BT Manager - HID Passthrough or Syncery installed, a
-              row of small buttons under the tiles: a Bluetooth switch for
-              the HID daemon, Sync now, and Syncery's progress browser
+              Home; with BT Manager - HID Passthrough, the Kobo plugin's
+              Bluetooth or Syncery installed, a row of small buttons under
+              the tiles: a Bluetooth switch (the Kobo plugin's on a Kobo it
+              supports, else the HID daemon), Sync now, and Syncery's
+              progress browser
   Also        the other books you are reading, newest first, with their
   reading     covers and progress: tap one to switch to it; All books opens
               the library
@@ -145,6 +147,34 @@ local function hidRunning(hid)
 end
 Sheet.hidRunning = hidRunning
 
+-- Aleph modification, 2026-11-18: the Kobo plugin's Bluetooth (OGKevin's
+-- kobo.koplugin), on the Kobos it supports (Libra 2, MTK models): its
+-- KoboBluetooth instance, or nil. It turns the Kobo's own Bluetooth on and
+-- off and handles page turners itself, so on those Kobos it is the switch
+-- instead of HID Passthrough.
+local function koboBluetooth(ui)
+    local kobo = plugin(ui, "kobo")
+    local kb = kobo and rawget(kobo, "kobo_bluetooth")
+    if type(kb) ~= "table" or type(kb.toggleBluetooth) ~= "function" or type(kb.isBluetoothEnabled) ~= "function" then return nil end
+    local ok, supported = pcall(function() return kb:isDeviceSupported() end)
+    return ok and supported and kb or nil
+end
+Sheet.koboBluetooth = koboBluetooth
+
+local function koboOn(kb)
+    local ok, on = pcall(kb.isBluetoothEnabled, kb)
+    return ok and on == true
+end
+
+-- The Bluetooth switch's plugin: "kobo", kb; or "hid", the HID plugin; or nil.
+function Sheet.bluetooth(ui)
+    local kb = koboBluetooth(ui)
+    if kb then return "kobo", kb end
+    local hid = plugin(ui, "hidpassthrough")
+    if hid and type(hid.isRunning) == "function" then return "hid", hid end
+    return nil
+end
+
 function Sheet.data(ui)
     local doc = ui.document
     local props = ui.doc_props or {}
@@ -173,8 +203,7 @@ function Sheet.data(ui)
     local xray = Xray.plugin(ui)
     local authors = props.authors
     if type(authors) == "table" then authors = table.concat(authors, ", ") end
-    local hid = plugin(ui, "hidpassthrough")
-    if hid and type(hid.isRunning) ~= "function" then hid = nil end
+    local bt_kind, bt = Sheet.bluetooth(ui)
     local syncery = plugin(ui, "syncery")
     if syncery and type(syncery.syncNow) ~= "function" then syncery = nil end
     return {
@@ -195,12 +224,17 @@ function Sheet.data(ui)
         xray_summary = xray and Xray.summary(xray) or nil,
         -- Aleph's own X-Ray (aleph_xr.lua), when it is on in Settings.
         own_xray = Prefs.is("xray_enabled"),
-        hid = hid ~= nil, hid_on = hid and hidRunning(hid) or false,
+        hid = bt ~= nil, bt_kind = bt_kind,
+        hid_on = (bt_kind == "kobo" and koboOn(bt)) or (bt_kind == "hid" and hidRunning(bt)) or false,
         syncery = syncery ~= nil,
         -- Sync: with Syncery and/or KOSyncthing+ (the same chain as Home's
-        -- Sync button). Goodreads: with the Goodreads plugin by advokatb.
+        -- Sync button). Goodreads: Aleph's own, once signed in.
         sync = syncery ~= nil or (select(2, pcall(function() return require("aleph_integrations").syncthing(ui) ~= nil end)) == true),
-        goodreads = select(2, pcall(function() return require("aleph_goodreads").available(ui) end)) == true,
+        goodreads = select(2, pcall(function()
+            -- Aleph's Goodreads (aleph_gr.lua), once signed in.
+            local Core = require("aleph_gr")
+            return Core.enabled(ui) and Core.host():_hasSession()
+        end)) == true,
     }
 end
 
@@ -485,131 +519,170 @@ local function openBoard(ui, then_fn)
     end
 end
 
-local function onAction(page, action)
-    local ui = page.ui
-    local k = action.kind
-    if k == "book-page" then
-        local file = ui.document and ui.document.file
-        handOff(page, function()
-            local board = ui.aleph
-            if not board then pcall(function() board = require("pluginloader"):getPluginInstance("aleph") end) end
-            if not (board and file and board:showBookPage(file)) then
-                try(function() require("aleph_toast").show(_("This book is not in Aleph's library yet. Refresh the library to add it.")) end)
-            end
-        end)
+-- What each button of the menu does: ACTIONS[kind](page, action, ui).
+local ACTIONS = {}
+
+ACTIONS["book-page"] = function(page, action, ui)
+    local file = ui.document and ui.document.file
+    handOff(page, function()
+        local board = ui.aleph
+        if not board then pcall(function() board = require("pluginloader"):getPluginInstance("aleph") end) end
+        if not (board and file and board:showBookPage(file)) then
+            try(function() require("aleph_toast").show(_("This book is not in Aleph's library yet. Refresh the library to add it.")) end)
+        end
+    end)
+end
+
+ACTIONS["tab"] = function(page, action, ui)
+    page.tab = action.tab
+    page:refresh()
+end
+
+ACTIONS["style"] = function(page, action, ui)
+    handOff(page, function() Sheet.nativeMenu(ui) end)
+end
+
+ACTIONS["toc"] = function(page, action, ui)
+    handOff(page, function() ui.toc:onShowToc() end)
+end
+
+-- The search box (Aleph's, with Search like a Kindle on).
+ACTIONS["search"] = function(page, action, ui)
+    handOff(page, function() ui.search:onShowFulltextSearchInput() end)
+end
+
+ACTIONS["bookmarks"] = function(page, action, ui)
+    handOff(page, function() ui.bookmark:onShowBookmark() end)
+end
+
+ACTIONS["pages"] = function(page, action, ui)
+    handOff(page, function() require("aleph_page_browser").open(ui) end)
+end
+
+-- Adding one, with the list of colours to come (aleph_bookmark_colors):
+-- the menu closes first, so the list stands alone over the page.
+ACTIONS["bookmark"] = function(page, action, ui)
+    local asks = not page.data.bookmarked and require("aleph_bookmark_colors").askOnAdd()
+    if asks then
+        handOff(page, function() ui:handleEvent(Event:new("ToggleBookmark")) end)
         return
-    elseif k == "tab" then
-        page.tab = action.tab
-        page:refresh()
-    elseif k == "style" then
-        handOff(page, function() Sheet.nativeMenu(ui) end)
-    elseif k == "toc" then
-        handOff(page, function() ui.toc:onShowToc() end)
-    elseif k == "search" then
-        -- The search box (Aleph's, with Search like a Kindle on).
-        handOff(page, function() ui.search:onShowFulltextSearchInput() end)
-    elseif k == "bookmarks" then
-        handOff(page, function() ui.bookmark:onShowBookmark() end)
-    elseif k == "pages" then
-        handOff(page, function() require("aleph_page_browser").open(ui) end)
-    elseif k == "bookmark" then
-        -- Adding one, with the list of colours to come (aleph_bookmark_colors):
-        -- the menu closes first, so the list stands alone over the page.
-        local asks = not page.data.bookmarked and require("aleph_bookmark_colors").askOnAdd()
-        if asks then
-            handOff(page, function() ui:handleEvent(Event:new("ToggleBookmark")) end)
-            return true
-        end
-        ui:handleEvent(Event:new("ToggleBookmark"))
-        page.data.bookmarked = bookmarked(ui)
-        local h, b = annotationCounts(ui)
-        page.data.highlights, page.data.bookmarks = h, b
-        page:refresh()
-    elseif k == "hid" then
-        -- The plugin's own toggle: it says what it does, and starting can
-        -- take a few seconds. The switch flips now and is checked after.
-        local hid = plugin(ui, "hidpassthrough")
-        if not hid then return true end
-        page.data.hid_on = not page.data.hid_on
-        page:refresh()
-        local ok = pcall(function()
-            if hid.onHIDPassthroughToggle then hid:onHIDPassthroughToggle() else hid:toggle() end
-        end)
-        if not ok then require("logger").warn("Aleph: HID passthrough toggle failed") end
-        UIManager:scheduleIn(0.5, function()
-            if page.closed then return end
-            page.data.hid_on = hidRunning(hid)
-            page:refresh()
-        end)
-    elseif k == "sync" then
-        -- What Home's Sync button does: the whole chain with Syncery
-        -- (aleph_sync_chain.lua), KOSyncthing+ alone starts Syncthing,
-        -- Syncery alone runs its Sync now.
-        local syncery = plugin(ui, "syncery")
-        local Chain = require("aleph_sync_chain")
-        local Integrations = require("aleph_integrations")
-        if Chain.available(ui) then
-            handOff(page, function() Chain.run(ui) end)
-        elseif Integrations.syncthing(ui) then
-            handOff(page, function() Integrations.startSyncthing() end)
-        elseif syncery then handOff(page, function() syncery:syncNow() end) end
-    elseif k == "goodreads_progress" then
-        -- The Goodreads plugin's own Update progress; a book not linked yet
-        -- is linked first (its own Link book), then sent.
-        local gr = require("aleph_goodreads").plugin(ui)
-        if gr then handOff(page, function()
-            local linked = false
-            try(function() linked = gr.settings:bookLinked() end)
-            if not linked and gr.menu and type(gr.menu.showLinkBookDialog) == "function" then
-                gr.menu:showLinkBookDialog(false, function() gr:onGoodreadsSyncProgress() end)
-            elseif type(gr.onGoodreadsSyncProgress) == "function" then
-                gr:onGoodreadsSyncProgress()
-            else
-                require("aleph_plugins").dispatch(ui, "goodreads_sync_progress")
-            end
-        end) end
-    elseif k == "own-xray" then
-        page:close()
-        UIManager:nextTick(function()
-            local ok, err = pcall(function()
-                local XR = require("aleph_xr")
-                XR.install()
-                XR.attach(ui)
-                XR.open(ui)
-            end)
-            if not ok then require("logger").warn("Aleph: X-Ray failed:", err) end
-        end)
-    elseif k == "xray" then
-        local d = page.data
-        page:close()
-        UIManager:nextTick(function()
-            local ok, err = pcall(function() require("aleph_xray").open(ui, { title = d.title, author = d.author }) end)
-            if not ok then require("logger").warn("Aleph: X-Ray sheet failed:", err) end
-        end)
-    elseif k == "author" then
-        local Xray = require("aleph_xray")
-        local plugin = Xray.plugin(ui)
-        if plugin then page:close(); Xray.run(plugin, "showAuthorInfo") end
-    elseif k == "details" then
-        handOff(page, function() require("aleph_topbar_book").showDetails(ui) end)
-    elseif k == "home" then
-        handOff(page, function() openBoard(ui) end)
-    elseif k == "library" then
-        handOff(page, function()
-            openBoard(ui, function(browser) pcall(function() browser:loadBooks({}) end) end)
-        end)
-    elseif k == "switch" then
-        local b = page.data.others[action.index]
-        if not b then return true end
-        if not require("libs/libkoreader-lfs").attributes(b.path, "mode") then
-            try(function() require("aleph_toast").show(_("This book is no longer on this device."), { icon = "x" }) end)
-            return true
-        end
-        handOff(page, function()
-            if ui.switchDocument then ui:switchDocument(b.path)
-            else require("apps/reader/readerui"):showReader(b.path) end
-        end)
     end
+    ui:handleEvent(Event:new("ToggleBookmark"))
+    page.data.bookmarked = bookmarked(ui)
+    local h, b = annotationCounts(ui)
+    page.data.highlights, page.data.bookmarks = h, b
+    page:refresh()
+end
+
+-- The plugin's own toggle: it says what it does, and starting can
+-- take a few seconds. The switch flips now and is checked after.
+ACTIONS["hid"] = function(page, action, ui)
+    local kind, bt = Sheet.bluetooth(ui)
+    if not bt then return end
+    page.data.hid_on = not page.data.hid_on
+    page:refresh()
+    local ok = pcall(function()
+        if kind == "kobo" then
+            -- The Kobo plugin turns Bluetooth on in the background (a few
+            -- seconds; Wi-Fi comes on for it, as the plugin does) and says so.
+            bt:toggleBluetooth(true)
+        elseif bt.onHIDPassthroughToggle then bt:onHIDPassthroughToggle() else bt:toggle() end
+    end)
+    if not ok then require("logger").warn("Aleph: Bluetooth toggle failed (" .. tostring(kind) .. ")") end
+    local function check()
+        if page.closed then return end
+        page.data.hid_on = kind == "kobo" and koboOn(bt) or (kind == "hid" and hidRunning(bt)) or false
+        page:refresh()
+    end
+    if kind == "kobo" and page.data.hid_on then
+        -- Kobo's Bluetooth takes up to about three seconds to come on: the
+        -- switch is not checked before then, so it does not flick back.
+        UIManager:scheduleIn(3.5, check)
+        UIManager:scheduleIn(7, check)
+    else
+        UIManager:scheduleIn(0.5, check)
+    end
+end
+
+-- What Home's Sync button does: the whole chain with Syncery
+-- (aleph_sync_chain.lua), KOSyncthing+ alone starts Syncthing,
+-- Syncery alone runs its Sync now.
+ACTIONS["sync"] = function(page, action, ui)
+    local syncery = plugin(ui, "syncery")
+    local Chain = require("aleph_sync_chain")
+    local Integrations = require("aleph_integrations")
+    if Chain.available(ui) then
+        handOff(page, function() Chain.run(ui) end)
+    elseif Integrations.syncthing(ui) then
+        handOff(page, function() Integrations.startSyncthing() end)
+    elseif syncery then handOff(page, function() syncery:syncNow() end) end
+end
+
+-- This book on Goodreads (aleph_gr.lua): send now, track it or not.
+ACTIONS["goodreads_progress"] = function(page, action, ui)
+    handOff(page, function() require("aleph_gr").readerMenu(ui) end)
+end
+
+ACTIONS["own-xray"] = function(page, action, ui)
+    page:close()
+    UIManager:nextTick(function()
+        local ok, err = pcall(function()
+            local XR = require("aleph_xr")
+            XR.install()
+            XR.attach(ui)
+            XR.open(ui)
+        end)
+        if not ok then require("logger").warn("Aleph: X-Ray failed:", err) end
+    end)
+end
+
+ACTIONS["xray"] = function(page, action, ui)
+    local d = page.data
+    page:close()
+    UIManager:nextTick(function()
+        local ok, err = pcall(function() require("aleph_xray").open(ui, { title = d.title, author = d.author }) end)
+        if not ok then require("logger").warn("Aleph: X-Ray sheet failed:", err) end
+    end)
+end
+
+ACTIONS["author"] = function(page, action, ui)
+    local Xray = require("aleph_xray")
+    local plugin = Xray.plugin(ui)
+    if plugin then page:close(); Xray.run(plugin, "showAuthorInfo") end
+end
+
+ACTIONS["details"] = function(page, action, ui)
+    handOff(page, function() require("aleph_topbar_book").showDetails(ui) end)
+end
+
+ACTIONS["home"] = function(page, action, ui)
+    handOff(page, function() openBoard(ui) end)
+end
+
+ACTIONS["library"] = function(page, action, ui)
+    handOff(page, function()
+        openBoard(ui, function(browser) pcall(function() browser:loadBooks({}) end) end)
+    end)
+end
+
+ACTIONS["switch"] = function(page, action, ui)
+    local b = page.data.others[action.index]
+    if not b then return end
+    if not require("libs/libkoreader-lfs").attributes(b.path, "mode") then
+        try(function() require("aleph_toast").show(_("This book is no longer on this device."), { icon = "x" }) end)
+        return
+    end
+    handOff(page, function()
+        if ui.switchDocument then ui:switchDocument(b.path)
+        else require("apps/reader/readerui"):showReader(b.path) end
+    end)
+end
+
+local function onAction(page, action)
+    local handler = ACTIONS[action.kind]
+    if handler then handler(page, action, page.ui) end
+    -- (The book page hands the tap on; everything else was dealt with here.)
+    if action.kind == "book-page" then return end
     return true
 end
 

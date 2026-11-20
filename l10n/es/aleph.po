@@ -3,7 +3,7 @@
 # KOReader's own translation is used first where it has one; this file fills in the rest.
 msgid ""
 msgstr ""
-"Project-Id-Version: Aleph 1.2.7\n"
+"Project-Id-Version: Aleph 1.3.0\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -58,7 +58,7 @@ msgstr "Series"
 msgid "Authors"
 msgstr "Autores"
 
-#: aleph_actions.lua aleph_board_edit.lua aleph_board_widgets.lua aleph_menu_sheet.lua
+#: aleph_actions.lua aleph_board_edit.lua aleph_board_widgets.lua aleph_menu_sheet.lua aleph_settings_page.lua
 msgid "Collections"
 msgstr "Colecciones"
 
@@ -66,7 +66,7 @@ msgstr "Colecciones"
 msgid "History"
 msgstr "Historial"
 
-#: aleph_actions.lua aleph_actions_page.lua aleph_board_edit.lua aleph_board_widgets.lua aleph_bookmarks.lua aleph_browser.lua aleph_goodreads_send.lua aleph_reader_sheet.lua aleph_search.lua
+#: aleph_actions.lua aleph_actions_page.lua aleph_board_edit.lua aleph_board_widgets.lua aleph_bookmarks.lua aleph_browser.lua aleph_goodreads_send.lua aleph_reader_sheet.lua aleph_search.lua aleph_weather.lua
 msgid "Search"
 msgstr "Buscar"
 
@@ -90,7 +90,7 @@ msgstr "Pantalla y luces"
 msgid "File browser"
 msgstr "Explorador de archivos"
 
-#: aleph_actions.lua aleph_actions_page.lua
+#: aleph_actions.lua aleph_actions_page.lua aleph_board_host.lua
 msgid "Default"
 msgstr "Predeterminado"
 
@@ -158,7 +158,7 @@ msgstr "Quitar"
 msgid "Earlier"
 msgstr "Antes"
 
-#: aleph_actions_page.lua aleph_board_host.lua
+#: aleph_actions_page.lua aleph_board_host.lua aleph_gr.lua
 msgid "Later"
 msgstr "Después"
 
@@ -190,7 +190,7 @@ msgstr "Nombre"
 msgid "Button name"
 msgstr "Nombre del botón"
 
-#: aleph_actions_page.lua aleph_browser.lua aleph_highlight.lua aleph_owner.lua aleph_settings_page.lua
+#: aleph_actions_page.lua aleph_bingo_page.lua aleph_board_edit.lua aleph_browser.lua aleph_highlight.lua aleph_owner.lua aleph_settings_page.lua
 msgid "Save"
 msgstr "Guardar"
 
@@ -235,6 +235,14 @@ msgid "Reading insights"
 msgstr ""
 
 #: aleph_actions_page.lua
+msgid "Your goals in Settings"
+msgstr "Tus objetivos en Ajustes"
+
+#: aleph_actions_page.lua
+msgid "The bingo card"
+msgstr "El cartón de bingo"
+
+#: aleph_actions_page.lua
 msgid "Its plugin is no longer installed"
 msgstr "Su complemento ya no está instalado"
 
@@ -277,6 +285,511 @@ msgstr "Toques en los widgets"
 #: aleph_actions_page.lua
 msgid "New button"
 msgstr "Nuevo botón"
+
+#: aleph_bingo.lua
+msgctxt "Bingo"
+msgid "Genre"
+msgstr "Género"
+
+#: aleph_bingo.lua
+msgctxt "Bingo"
+msgid "Places and cultures"
+msgstr "Lugares y culturas"
+
+#: aleph_bingo.lua
+msgctxt "Bingo"
+msgid "Literary experiment"
+msgstr "Experimento literario"
+
+#: aleph_bingo.lua
+msgid "A literary science fiction novel"
+msgstr "Una novela de ciencia ficción literaria"
+
+#: aleph_bingo.lua
+msgid "A fantasy novel"
+msgstr "Una novela de fantasía"
+
+#: aleph_bingo.lua
+msgid "A Gothic novel written before 1900"
+msgstr "Una novela gótica escrita antes de 1900"
+
+#: aleph_bingo.lua
+msgid "A literary horror novel"
+msgstr "Una novela de terror literaria"
+
+#: aleph_bingo.lua
+msgid "A mystery with literary ambitions"
+msgstr "Un misterio con ambiciones literarias"
+
+#: aleph_bingo.lua
+msgid "A collection of short stories"
+msgstr "Una colección de cuentos"
+
+#: aleph_bingo.lua
+msgid "A historical novel"
+msgstr "Una novela histórica"
+
+#: aleph_bingo.lua
+msgid "A magical realism novel"
+msgstr "Una novela de realismo mágico"
+
+#: aleph_bingo.lua
+msgid "A love story"
+msgstr "Una historia de amor"
+
+#: aleph_bingo.lua
+msgid "A book of poetry"
+msgstr "Un libro de poesía"
+
+#: aleph_bingo.lua
+msgid "A graphic novel or memoir"
+msgstr "Una novela gráfica o memoria en cómic"
+
+#: aleph_bingo.lua
+msgid "A memoir"
+msgstr "Unas memorias"
+
+#: aleph_bingo.lua
+msgid "A dystopian novel"
+msgstr "Una novela distópica"
+
+#: aleph_bingo.lua
+msgid "A nonfiction book about society"
+msgstr "Un libro de no ficción sobre la sociedad"
+
+#: aleph_bingo.lua
+msgid "A classic by a woman writer"
+msgstr "Un clásico escrito por una mujer"
+
+#: aleph_bingo.lua
+msgid "A thriller"
+msgstr "Un thriller"
+
+#: aleph_bingo.lua
+msgid "A western"
+msgstr "Un western"
+
+#: aleph_bingo.lua
+msgid "A comic or satirical novel"
+msgstr "Una novela cómica o satírica"
+
+#: aleph_bingo.lua
+msgid "A book of essays"
+msgstr "Un libro de ensayos"
+
+#: aleph_bingo.lua
+msgid "A biography"
+msgstr "Una biografía"
+
+#: aleph_bingo.lua
+msgid "A retelling of a myth"
+msgstr "Una reescritura de un mito"
+
+#: aleph_bingo.lua
+msgid "Fairy tales or folklore"
+msgstr "Cuentos de hadas o folclore"
+
+#: aleph_bingo.lua
+msgid "A play"
+msgstr "Una obra de teatro"
+
+#: aleph_bingo.lua
+msgid "A cosy mystery"
+msgstr "Un misterio acogedor"
+
+#: aleph_bingo.lua
+msgid "An adventure story"
+msgstr "Una historia de aventuras"
+
+#: aleph_bingo.lua
+msgid "A novel about war"
+msgstr "Una novela sobre la guerra"
+
+#: aleph_bingo.lua
+msgid "A coming-of-age novel"
+msgstr "Una novela de formación"
+
+#: aleph_bingo.lua
+msgid "A popular science book"
+msgstr "Un libro de divulgación científica"
+
+#: aleph_bingo.lua
+msgid "A book of philosophy"
+msgstr "Un libro de filosofía"
+
+#: aleph_bingo.lua
+msgid "Travel writing"
+msgstr "Literatura de viajes"
+
+#: aleph_bingo.lua
+msgid "A children's classic"
+msgstr "Un clásico infantil"
+
+#: aleph_bingo.lua
+msgid "A young adult novel"
+msgstr "Una novela juvenil"
+
+#: aleph_bingo.lua
+msgid "A book published before 1800"
+msgstr "Un libro publicado antes de 1800"
+
+#: aleph_bingo.lua
+msgid "Climate fiction"
+msgstr "Ficción climática"
+
+#: aleph_bingo.lua
+msgid "A novel about the working class"
+msgstr "Una novela sobre la clase trabajadora"
+
+#: aleph_bingo.lua
+msgid "A queer literary classic"
+msgstr "Un clásico literario queer"
+
+#: aleph_bingo.lua
+msgid "A novel set in Africa"
+msgstr "Una novela ambientada en África"
+
+#: aleph_bingo.lua
+msgid "A book translated from an Asian language"
+msgstr "Un libro traducido de una lengua asiática"
+
+#: aleph_bingo.lua
+msgid "A novel originally written in Arabic"
+msgstr "Una novela escrita originalmente en árabe"
+
+#: aleph_bingo.lua
+msgid "A book by an Indigenous author"
+msgstr "Un libro de un autor indígena"
+
+#: aleph_bingo.lua
+msgid "A book from a country you have never read from"
+msgstr "Un libro de un país del que nunca has leído nada"
+
+#: aleph_bingo.lua
+msgid "A memoir from a different culture"
+msgstr "Unas memorias de otra cultura"
+
+#: aleph_bingo.lua
+msgid "A book from Latin America"
+msgstr "Un libro de América Latina"
+
+#: aleph_bingo.lua
+msgid "A Nordic book"
+msgstr "Un libro nórdico"
+
+#: aleph_bingo.lua
+msgid "A Russian classic"
+msgstr "Un clásico ruso"
+
+#: aleph_bingo.lua
+msgid "A book from the Caribbean"
+msgstr "Un libro del Caribe"
+
+#: aleph_bingo.lua
+msgid "A book set in the Middle East"
+msgstr "Un libro ambientado en Oriente Medio"
+
+#: aleph_bingo.lua
+msgid "A Japanese novel"
+msgstr "Una novela japonesa"
+
+#: aleph_bingo.lua
+msgid "A book from the Indian subcontinent"
+msgstr "Un libro del subcontinente indio"
+
+#: aleph_bingo.lua
+msgid "An Irish novel"
+msgstr "Una novela irlandesa"
+
+#: aleph_bingo.lua
+msgid "A contemporary prizewinning translation"
+msgstr "Una traducción contemporánea premiada"
+
+#: aleph_bingo.lua
+msgid "A book from Eastern Europe"
+msgstr "Un libro de Europa del Este"
+
+#: aleph_bingo.lua
+msgid "A book from Australia or the Pacific"
+msgstr "Un libro de Australia o del Pacífico"
+
+#: aleph_bingo.lua
+msgid "A book translated from a language you don't speak"
+msgstr "Un libro traducido de una lengua que no hablas"
+
+#: aleph_bingo.lua
+msgid "A book by a diaspora or immigrant writer"
+msgstr "Un libro de un autor inmigrante o de la diáspora"
+
+#: aleph_bingo.lua
+msgid "A book set somewhere you would like to visit"
+msgstr "Un libro ambientado en un lugar que te gustaría visitar"
+
+#: aleph_bingo.lua
+msgid "A Chinese novel"
+msgstr "Una novela china"
+
+#: aleph_bingo.lua
+msgid "A Korean novel"
+msgstr "Una novela coreana"
+
+#: aleph_bingo.lua
+msgid "A book set on an island"
+msgstr "Un libro ambientado en una isla"
+
+#: aleph_bingo.lua
+msgid "A book set where you live"
+msgstr "Un libro ambientado donde vives"
+
+#: aleph_bingo.lua
+msgid "A book with an unreliable narrator"
+msgstr "Un libro con narrador poco fiable"
+
+#: aleph_bingo.lua
+msgid "A book told in the second person"
+msgstr "Un libro narrado en segunda persona"
+
+#: aleph_bingo.lua
+msgid "A novel told in letters"
+msgstr "Una novela epistolar"
+
+#: aleph_bingo.lua
+msgid "A novel in verse"
+msgstr "Una novela en verso"
+
+#: aleph_bingo.lua
+msgid "A story told out of order"
+msgstr "Una historia contada fuera de orden"
+
+#: aleph_bingo.lua
+msgid "A book with several narrators"
+msgstr "Un libro con varios narradores"
+
+#: aleph_bingo.lua
+msgid "A book under 150 pages"
+msgstr "Un libro de menos de 150 páginas"
+
+#: aleph_bingo.lua
+msgid "A book over 700 pages"
+msgstr "Un libro de más de 700 páginas"
+
+#: aleph_bingo.lua
+msgid "An experimental literary novel"
+msgstr "Una novela literaria experimental"
+
+#: aleph_bingo.lua
+msgid "A novel about writing a novel"
+msgstr "Una novela sobre escribir una novela"
+
+#: aleph_bingo.lua
+msgid "A stream-of-consciousness novel"
+msgstr "Una novela de flujo de conciencia"
+
+#: aleph_bingo.lua
+msgid "A book with footnotes that matter"
+msgstr "Un libro con notas al pie que importan"
+
+#: aleph_bingo.lua
+msgid "A novella"
+msgstr "Una novela corta"
+
+#: aleph_bingo.lua
+msgid "A story that takes place in one day"
+msgstr "Una historia que transcurre en un día"
+
+#: aleph_bingo.lua
+msgid "An anthology by many writers"
+msgstr "Una antología de varios autores"
+
+#: aleph_bingo.lua
+msgid "An illustrated book"
+msgstr "Un libro ilustrado"
+
+#: aleph_bingo.lua
+msgid "A book with a nameless narrator"
+msgstr "Un libro con narrador sin nombre"
+
+#: aleph_bingo.lua
+msgid "A story within a story"
+msgstr "Una historia dentro de otra"
+
+#: aleph_bingo.lua
+msgid "A book written in fragments"
+msgstr "Un libro escrito en fragmentos"
+
+#: aleph_bingo.lua
+msgid "A debut novel"
+msgstr "Una primera novela"
+
+#: aleph_bingo.lua
+msgid "A book from a small press"
+msgstr "Un libro de una editorial pequeña"
+
+#: aleph_bingo.lua
+msgid "A work of autofiction"
+msgstr "Una obra de autoficción"
+
+#: aleph_bingo.lua
+msgid "A book that mixes genres or forms"
+msgstr "Un libro que mezcla géneros o formas"
+
+#: aleph_bingo.lua
+msgid "A novel written under a constraint"
+msgstr "Una novela escrita con una restricción"
+
+#: aleph_bingo.lua aleph_bingo_page.lua
+msgid "Free space"
+msgstr "Casilla libre"
+
+#: aleph_bingo.lua aleph_bingo_page.lua
+msgid "Reading bingo: %1"
+msgstr "Bingo de lectura: %1"
+
+#: aleph_bingo.lua aleph_bingo_page.lua
+msgid "Bingo!"
+msgstr "¡Bingo!"
+
+#: aleph_bingo_page.lua aleph_board_widgets.lua
+msgid "%1/%2 read"
+msgstr "%1/%2 leídos"
+
+#: aleph_bingo_page.lua aleph_board_widgets.lua
+msgid "%1 bingo"
+msgid_plural "%1 bingos"
+msgstr[0] "%1 bingo"
+msgstr[1] "%1 bingos"
+
+#: aleph_bingo_page.lua aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Reading bingo"
+msgstr "Bingo de lectura"
+
+#: aleph_bingo_page.lua
+msgid "No card yet"
+msgstr "Aún no hay cartón"
+
+#: aleph_bingo_page.lua
+msgid "A card of reading challenges: half genres, a quarter places and cultures, a quarter literary experiments. A finished book fills a square by itself when its tags or Calibre's #bingo column say which; otherwise Aleph asks. A full row or column is a bingo."
+msgstr "Un cartón de retos de lectura: la mitad géneros, un cuarto lugares y culturas, un cuarto experimentos literarios. Un libro terminado llena una casilla por sí solo cuando sus etiquetas o la columna #bingo de Calibre dicen cuál; si no, Aleph pregunta. Una fila o columna completa es bingo."
+
+#: aleph_bingo_page.lua
+msgid "24 books (5 × 5)"
+msgstr "24 libros (5 × 5)"
+
+#: aleph_bingo_page.lua
+msgid "12 books (4 × 3)"
+msgstr "12 libros (4 × 3)"
+
+#: aleph_bingo_page.lua aleph_board_widgets.lua
+msgid "A row or a column = Bingo!"
+msgstr "Una fila o columna = ¡Bingo!"
+
+#: aleph_bingo_page.lua aleph_board_widgets.lua
+msgid "5 in a row = Bingo!"
+msgstr "5 en línea = ¡Bingo!"
+
+#: aleph_bingo_page.lua
+msgid "New card"
+msgstr "Nuevo cartón"
+
+#: aleph_bingo_page.lua
+msgid "Tap a square to choose its book or change its challenge."
+msgstr "Toca una casilla para elegir su libro o cambiar el reto."
+
+#: aleph_bingo_page.lua
+msgid "Finished %1"
+msgstr "Terminado el %1"
+
+#: aleph_bingo_page.lua
+msgid "No finished books to choose from yet."
+msgstr "Aún no hay libros terminados para elegir."
+
+#: aleph_bingo_page.lua
+msgid "Choose a book"
+msgstr "Elige un libro"
+
+#: aleph_bingo_page.lua
+msgid "Choose another book…"
+msgstr "Elegir otro libro…"
+
+#: aleph_bingo_page.lua
+msgid "Empty this square"
+msgstr "Vaciar esta casilla"
+
+#: aleph_bingo_page.lua
+msgid "Choose a book…"
+msgstr "Elegir un libro…"
+
+#: aleph_bingo_page.lua
+msgid "One you have finished"
+msgstr "Uno que hayas terminado"
+
+#: aleph_bingo_page.lua
+msgid "Another challenge"
+msgstr "Otro reto"
+
+#: aleph_bingo_page.lua
+msgid "Write my own…"
+msgstr "Escribir el mío…"
+
+#: aleph_bingo_page.lua
+msgid "Your own challenge"
+msgstr "Tu propio reto"
+
+#: aleph_bingo_page.lua
+msgid "The books on this card are let go"
+msgstr "Se liberan los libros de este cartón"
+
+#: aleph_bingo_page.lua
+msgid "Does %1 fill a square?"
+msgstr "¿%1 llena alguna casilla?"
+
+#: aleph_bingo_page.lua aleph_xr_story.lua
+msgid "Not now"
+msgstr "Ahora no"
+
+#: aleph_board_colour.lua aleph_bookmark_colors.lua
+msgid "Yellow"
+msgstr "Amarillo"
+
+#: aleph_board_colour.lua aleph_bookmark_colors.lua
+msgid "Orange"
+msgstr "Naranja"
+
+#: aleph_board_colour.lua aleph_bookmark_colors.lua
+msgid "Green"
+msgstr "Verde"
+
+#: aleph_board_colour.lua aleph_bookmark_colors.lua
+msgid "Blue"
+msgstr "Azul"
+
+#: aleph_board_colour.lua aleph_bookmark_colors.lua
+msgid "Red"
+msgstr "Rojo"
+
+#: aleph_board_colour.lua aleph_bookmark_colors.lua
+msgid "Purple"
+msgstr "Morado"
+
+#: aleph_board_colour.lua
+msgid "Gold"
+msgstr "Dorado"
+
+#: aleph_board_colour.lua
+msgid "Teal"
+msgstr "Verde azulado"
+
+#: aleph_board_colour.lua aleph_bookmark_colors.lua
+msgid "Pink"
+msgstr "Rosa"
+
+#: aleph_board_colour.lua
+msgid "Brown"
+msgstr "Marrón"
+
+#: aleph_board_colour.lua
+msgid "Dark blue"
+msgstr "Azul oscuro"
 
 #: aleph_board_data.lua
 msgctxt "Date: long weekday, day, long month"
@@ -331,19 +844,19 @@ msgstr ""
 msgid "%1h %2m"
 msgstr ""
 
-#: aleph_board_data.lua aleph_board_util.lua aleph_menu_ui.lua
+#: aleph_board_data.lua aleph_board_util.lua
 msgid "just now"
 msgstr "ahora mismo"
 
-#: aleph_board_data.lua aleph_board_util.lua aleph_menu_ui.lua
+#: aleph_board_data.lua aleph_board_util.lua
 msgid "%1 min ago"
 msgstr "hace %1 min"
 
-#: aleph_board_data.lua aleph_board_util.lua aleph_menu_ui.lua
+#: aleph_board_data.lua aleph_board_util.lua
 msgid "%1 h ago"
 msgstr "hace %1 h"
 
-#: aleph_board_data.lua aleph_board_util.lua aleph_menu_ui.lua
+#: aleph_board_data.lua aleph_board_util.lua
 msgid "yesterday"
 msgstr "ayer"
 
@@ -543,7 +1056,7 @@ msgstr "¡Libro terminado!"
 
 #: aleph_board_decor.lua
 msgid "Past bedtime"
-msgstr "Ya es hora de dormir"
+msgstr "Pasada la hora de dormir"
 
 #: aleph_board_decor.lua
 msgid "%1 read today"
@@ -565,7 +1078,7 @@ msgstr "%1 % de luz"
 msgid "today"
 msgstr "hoy"
 
-#: aleph_board_decor.lua
+#: aleph_board_decor.lua aleph_board_widgets.lua
 msgid "since %1"
 msgstr "desde %1"
 
@@ -669,6 +1182,14 @@ msgstr "Épica"
 msgid "Legendary"
 msgstr "Legendaria"
 
+#: aleph_board_decor.lua aleph_library_view.lua
+msgid "of %1"
+msgstr "de %1"
+
+#: aleph_board_decor.lua aleph_board_host.lua aleph_highlight.lua aleph_library_view.lua aleph_list_data.lua aleph_search.lua aleph_text_pages.lua
+msgid "%1 of %2"
+msgstr "%1 de %2"
+
 #: aleph_board_decor.lua
 msgid "Next badge"
 msgstr "Próxima insignia"
@@ -700,14 +1221,6 @@ msgstr "Aún no hay insignias."
 #: aleph_board_decor.lua
 msgid "New badge"
 msgstr "Nueva insignia"
-
-#: aleph_board_decor.lua aleph_library_view.lua
-msgid "of %1"
-msgstr "de %1"
-
-#: aleph_board_decor.lua aleph_board_host.lua aleph_highlight.lua aleph_library_view.lua aleph_list_data.lua aleph_search.lua aleph_text_pages.lua
-msgid "%1 of %2"
-msgstr "%1 de %2"
 
 #: aleph_board_decor.lua aleph_board_edit.lua
 msgid "Gathering dust"
@@ -745,11 +1258,11 @@ msgid_plural "%1 days unopened"
 msgstr[0] "%1 día sin abrir"
 msgstr[1] "%1 días sin abrir"
 
-#: aleph_board_decor.lua aleph_goodreads_send.lua
+#: aleph_board_decor.lua aleph_goodreads_send.lua aleph_gr.lua
 msgid "Open"
 msgstr "Abrir"
 
-#: aleph_board_decor.lua
+#: aleph_board_decor.lua aleph_board_widgets.lua
 msgid "%1 book"
 msgid_plural "%1 books"
 msgstr[0] "%1 libro"
@@ -777,6 +1290,22 @@ msgstr "Año de lectura"
 msgid "One square a day for a whole year"
 msgstr "Un cuadrado al día durante todo un año"
 
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Time read"
+msgstr "Tiempo de lectura"
+
+#: aleph_board_edit.lua
+msgid "The hours you read each month this year"
+msgstr "Las horas que leíste cada mes de este año"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Books and pages"
+msgstr "Libros y páginas"
+
+#: aleph_board_edit.lua
+msgid "Books finished and pages read each month this year"
+msgstr "Libros terminados y páginas leídas cada mes de este año"
+
 #: aleph_board_edit.lua
 msgid "Goal pace"
 msgstr "Ritmo del objetivo"
@@ -800,6 +1329,90 @@ msgstr "Una palabra que buscaste, en contexto"
 #: aleph_board_edit.lua
 msgid "Wi-Fi, light, night mode and more: you choose the buttons"
 msgstr "Wi-Fi, luz, modo nocturno y más: tú eliges los botones"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Goals"
+msgstr "Objetivos"
+
+#: aleph_board_edit.lua
+msgid "Today, this week, this month and this year"
+msgstr "Hoy, esta semana, este mes y este año"
+
+#: aleph_board_edit.lua aleph_settings_page.lua
+msgid "Daily goal"
+msgstr "Objetivo diario"
+
+#: aleph_board_edit.lua
+msgid "Minutes read today"
+msgstr "Minutos leídos hoy"
+
+#: aleph_board_edit.lua aleph_settings_page.lua
+msgid "Weekly goal"
+msgstr "Objetivo semanal"
+
+#: aleph_board_edit.lua
+msgid "Days read this week"
+msgstr "Días de lectura esta semana"
+
+#: aleph_board_edit.lua aleph_settings_page.lua
+msgid "Monthly goal"
+msgstr "Objetivo mensual"
+
+#: aleph_board_edit.lua
+msgid "Books finished this month"
+msgstr "Libros terminados este mes"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Monthly challenge"
+msgstr "Reto mensual"
+
+#: aleph_board_edit.lua
+msgid "One challenge a month, chosen for how you read"
+msgstr "Un reto al mes, elegido según cómo lees"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Reading rhythm"
+msgstr "Ritmo de lectura"
+
+#: aleph_board_edit.lua
+msgid "The last 14 days, and how steady you are"
+msgstr "Los últimos 14 días, y lo constante que eres"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Hours read"
+msgstr "Horas leídas"
+
+#: aleph_board_edit.lua
+msgid "All the hours you have read on this device"
+msgstr "Todas las horas que has leído en este dispositivo"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Year projection"
+msgstr "Proyección del año"
+
+#: aleph_board_edit.lua
+msgid "Books, pages and hours by the end of the year"
+msgstr "Libros, páginas y horas a final de año"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Diversity score"
+msgstr "Puntuación de diversidad"
+
+#: aleph_board_edit.lua
+msgid "How widely you read: genres, authors, eras, languages"
+msgstr "Lo variado que lees: géneros, autores, épocas, idiomas"
+
+#: aleph_board_edit.lua
+msgid "A card of reading challenges, filled as you finish books"
+msgstr "Un cartón de retos de lectura que se llena al terminar libros"
+
+#: aleph_board_edit.lua aleph_board_widgets.lua
+msgid "Reading DNA"
+msgstr "ADN de Lectura"
+
+#: aleph_board_edit.lua
+msgid "What kind of reader you are, in five traits"
+msgstr "Qué tipo de lector eres, en cinco rasgos"
 
 #: aleph_board_edit.lua aleph_board_widgets.lua
 msgid "Reading records"
@@ -833,7 +1446,7 @@ msgstr "Retomar"
 msgid "Books you put down a while ago"
 msgstr "Libros que dejaste hace un tiempo"
 
-#: aleph_board_edit.lua aleph_board_widgets.lua aleph_goodreads_send.lua (status)
+#: aleph_board_edit.lua aleph_board_widgets.lua aleph_goodreads_send.lua (status) aleph_gr_api.lua
 msgid "Want to read"
 msgstr "Quiero leer"
 
@@ -880,10 +1493,6 @@ msgstr "Esta semana"
 #: aleph_board_edit.lua
 msgid "Minutes read each day"
 msgstr "Minutos leídos cada día"
-
-#: aleph_board_edit.lua
-msgid "Minutes read today"
-msgstr "Minutos leídos hoy"
 
 #: aleph_board_edit.lua
 msgid "Reading calendar"
@@ -965,6 +1574,14 @@ msgstr "Reloj"
 #: aleph_board_edit.lua
 msgid "Time and date, each minute"
 msgstr "Hora y fecha, cada minuto"
+
+#: aleph_board_edit.lua aleph_weather.lua
+msgid "Weather"
+msgstr "Tiempo"
+
+#: aleph_board_edit.lua
+msgid "Today's weather where you are, with Wi-Fi on"
+msgstr "El tiempo de hoy donde estás, con el Wi-Fi activado"
 
 #: aleph_board_edit.lua
 msgid "Your companion from the Silverfish plugin"
@@ -1175,6 +1792,14 @@ msgid "Pages"
 msgstr "Páginas"
 
 #: aleph_board_edit.lua
+msgid "Rename this page"
+msgstr "Renombrar esta página"
+
+#: aleph_board_edit.lua
+msgid "Empty: its usual name"
+msgstr "Vacío: su nombre habitual"
+
+#: aleph_board_edit.lua
 msgid "Reset this page"
 msgstr "Restablecer esta página"
 
@@ -1252,6 +1877,10 @@ msgstr "Tamaño"
 msgid "Page"
 msgstr "Página"
 
+#: aleph_board_host.lua aleph_bookends_page.lua aleph_settings_page.lua
+msgid "Colour"
+msgstr "Color"
+
 #: aleph_board_host.lua
 msgid "Add a widget"
 msgstr "Añadir un widget"
@@ -1271,6 +1900,14 @@ msgstr "Estadísticas"
 #: aleph_board_util.lua
 msgid "%1 days ago"
 msgstr "hace %1 días"
+
+#: aleph_board_widgets.lua
+msgid "Continue reading · %1 of %2"
+msgstr "Seguir leyendo · %1 de %2"
+
+#: aleph_board_widgets.lua aleph_bookends.lua aleph_library_view.lua aleph_list_data.lua
+msgid "%1 left"
+msgstr "quedan %1"
 
 #: aleph_board_widgets.lua
 msgid "Three picks from your library"
@@ -1300,14 +1937,6 @@ msgstr "Mezclar"
 msgid "Pick a book from your library to begin"
 msgstr "Elige un libro de tu biblioteca para empezar"
 
-#: aleph_board_widgets.lua
-msgid "Continue reading · %1 of %2"
-msgstr "Seguir leyendo · %1 de %2"
-
-#: aleph_board_widgets.lua aleph_bookends.lua aleph_library_view.lua aleph_list_data.lua
-msgid "%1 left"
-msgstr "quedan %1"
-
 #: aleph_board_widgets.lua aleph_detail.lua
 msgid "Resume"
 msgstr "Continuar"
@@ -1324,11 +1953,7 @@ msgstr "Descargar"
 msgid "%1 / %2"
 msgstr ""
 
-#: aleph_board_widgets.lua
-msgid "day"
-msgstr "día"
-
-#: aleph_board_widgets.lua
+#: aleph_board_widgets.lua aleph_settings_page.lua
 msgid "days"
 msgstr "días"
 
@@ -1344,7 +1969,7 @@ msgstr "récord %1"
 msgid "Nothing yet"
 msgstr "Nada aún"
 
-#: aleph_board_widgets.lua
+#: aleph_board_widgets.lua aleph_settings_page.lua
 msgid "min"
 msgstr ""
 
@@ -1389,12 +2014,28 @@ msgid "Goal met"
 msgstr "Objetivo cumplido"
 
 #: aleph_board_widgets.lua
+msgid "%1 to go · %2 ahead of pace"
+msgstr "faltan %1 · %2 por delante del ritmo"
+
+#: aleph_board_widgets.lua
+msgid "%1 to go · %2 ahead"
+msgstr "faltan %1 · %2 por delante"
+
+#: aleph_board_widgets.lua
 msgid "%1 ahead of pace"
 msgstr "%1 por delante del ritmo"
 
 #: aleph_board_widgets.lua
 msgid "%1 ahead"
 msgstr "%1 por delante"
+
+#: aleph_board_widgets.lua
+msgid "%1 to go · %2 behind pace"
+msgstr "faltan %1 · %2 por detrás del ritmo"
+
+#: aleph_board_widgets.lua
+msgid "%1 to go · %2 behind"
+msgstr "faltan %1 · %2 por detrás"
 
 #: aleph_board_widgets.lua
 msgid "%1 behind pace"
@@ -1428,6 +2069,10 @@ msgstr "Tus días de lectura se rellenan aquí"
 msgid "Best day"
 msgstr "Mejor día"
 
+#: aleph_board_widgets.lua aleph_settings_page.lua
+msgid "%1 days"
+msgstr "%1 días"
+
 #: aleph_board_widgets.lua
 msgid "Past %1 months"
 msgstr "Últimos %1 meses"
@@ -1443,10 +2088,6 @@ msgstr "mejor racha"
 #: aleph_board_widgets.lua
 msgid "a reading day"
 msgstr "un día de lectura"
-
-#: aleph_board_widgets.lua aleph_settings_page.lua
-msgid "%1 days"
-msgstr "%1 días"
 
 #: aleph_board_widgets.lua
 msgid "%1 days read"
@@ -1543,16 +2184,16 @@ msgid "of your books"
 msgstr "de tus libros"
 
 #: aleph_board_widgets.lua
-msgid "%1 GB free"
-msgstr "%1 GB libres"
-
-#: aleph_board_widgets.lua
 msgid "Title, author"
 msgstr "Título, autor"
 
 #: aleph_board_widgets.lua
 msgid "Books"
 msgstr "Libros"
+
+#: aleph_board_widgets.lua
+msgid "%1 GB free"
+msgstr "%1 GB libres"
 
 #: aleph_board_widgets.lua
 msgid "Mornings"
@@ -1599,6 +2240,210 @@ msgid "sessions"
 msgstr "sesiones"
 
 #: aleph_board_widgets.lua
+msgid "day"
+msgid_plural "days"
+msgstr[0] "día"
+msgstr[1] "días"
+
+#: aleph_board_widgets.lua
+msgid "Week"
+msgstr "Semana"
+
+#: aleph_board_widgets.lua
+msgid "book"
+msgid_plural "books"
+msgstr[0] "libro"
+msgstr[1] "libros"
+
+#: aleph_board_widgets.lua
+msgid "Set your daily, weekly, monthly and yearly goals in Settings > Profile."
+msgstr "Define tus objetivos diario, semanal, mensual y anual en Ajustes > Perfil."
+
+#: aleph_board_widgets.lua
+msgid "Set a daily goal in Settings > Profile."
+msgstr "Fija un objetivo diario en Ajustes > Perfil."
+
+#: aleph_board_widgets.lua
+msgid "%1 min to go"
+msgstr "faltan %1 min"
+
+#: aleph_board_widgets.lua
+msgid "Set a weekly goal in Settings > Profile."
+msgstr "Fija un objetivo semanal en Ajustes > Perfil."
+
+#: aleph_board_widgets.lua
+msgid "%1 day to go"
+msgid_plural "%1 days to go"
+msgstr[0] "falta %1 día"
+msgstr[1] "faltan %1 días"
+
+#: aleph_board_widgets.lua
+msgid "Set a monthly goal in Settings > Profile."
+msgstr "Fija un objetivo mensual en Ajustes > Perfil."
+
+#: aleph_board_widgets.lua
+msgid "%1 book to go"
+msgid_plural "%1 books to go"
+msgstr[0] "falta %1 libro"
+msgstr[1] "faltan %1 libros"
+
+#: aleph_board_widgets.lua
+msgid "%1 day left"
+msgid_plural "%1 days left"
+msgstr[0] "queda %1 día"
+msgstr[1] "quedan %1 días"
+
+#: aleph_board_widgets.lua
+msgctxt "Reading DNA"
+msgid "Length"
+msgstr "Duración"
+
+#: aleph_board_widgets.lua
+msgctxt "Reading DNA"
+msgid "Variety"
+msgstr "Variedad"
+
+#: aleph_board_widgets.lua
+msgctxt "Reading DNA"
+msgid "Rhythm"
+msgstr "Ritmo"
+
+#: aleph_board_widgets.lua
+msgctxt "Reading DNA"
+msgid "Time"
+msgstr "Tiempo"
+
+#: aleph_board_widgets.lua
+msgctxt "Reading DNA"
+msgid "Speed"
+msgstr "Velocidad"
+
+#: aleph_board_widgets.lua
+msgid "Finish at least 5 books to see your reading DNA (%1 so far)."
+msgstr "Termina al menos 5 libros para ver tu ADN de Lectura (%1 hasta ahora)."
+
+#: aleph_board_widgets.lua
+msgid "Based on %1 book"
+msgid_plural "Based on %1 books"
+msgstr[0] "Basado en %1 libro"
+msgstr[1] "Basado en %1 libros"
+
+#: aleph_board_widgets.lua
+msgid "Your challenge appears as you read on this device."
+msgstr "Tu reto aparece a medida que lees en este dispositivo."
+
+#: aleph_board_widgets.lua
+msgid "Complete!"
+msgstr "¡Completo!"
+
+#: aleph_board_widgets.lua
+msgid "Start reading to see your rhythm take shape."
+msgstr "Empieza a leer para ver cómo tu ritmo toma forma."
+
+#: aleph_board_widgets.lua
+msgid "%1 active day"
+msgid_plural "%1 active days"
+msgstr[0] "%1 día activo"
+msgstr[1] "%1 días activos"
+
+#: aleph_board_widgets.lua
+msgid "%1 · %2% consistency"
+msgstr "%1 · %2% de consistencia"
+
+#: aleph_board_widgets.lua
+msgid "avg %1/day"
+msgstr "promedio %1/día"
+
+#: aleph_board_widgets.lua
+msgid "consistency"
+msgstr "consistencia"
+
+#: aleph_board_widgets.lua
+msgid "Your hours appear as you read on this device."
+msgstr "Tus horas aparecen a medida que lees en este dispositivo."
+
+#: aleph_board_widgets.lua
+msgid "hours"
+msgstr "horas"
+
+#: aleph_board_widgets.lua
+msgid "%1 h this year"
+msgstr "%1 h este año"
+
+#: aleph_board_widgets.lua
+msgid "Your books and pages appear as you read on this device."
+msgstr "Tus libros y páginas aparecen a medida que lees en este dispositivo."
+
+#: aleph_board_widgets.lua
+msgid "%1 page"
+msgid_plural "%1 pages"
+msgstr[0] "%1 página"
+msgstr[1] "%1 páginas"
+
+#: aleph_board_widgets.lua
+msgid "Your projection appears as you read on this device."
+msgstr "Tu proyección aparece a medida que lees en este dispositivo."
+
+#: aleph_board_widgets.lua
+msgid "Trending up"
+msgstr "Tendencia ascendente"
+
+#: aleph_board_widgets.lua
+msgid "Trending down"
+msgstr "Tendencia a la baja"
+
+#: aleph_board_widgets.lua
+msgid "Steady pace"
+msgstr "Ritmo constante"
+
+#: aleph_board_widgets.lua
+msgid "%1 read · %2 days left"
+msgstr "%1 leídos · quedan %2 días"
+
+#: aleph_board_widgets.lua
+msgid "pages"
+msgstr "páginas"
+
+#: aleph_board_widgets.lua
+msgctxt "Diversity"
+msgid "Genre"
+msgstr "Género"
+
+#: aleph_board_widgets.lua
+msgctxt "Diversity"
+msgid "Author"
+msgstr "Autor"
+
+#: aleph_board_widgets.lua
+msgctxt "Diversity"
+msgid "Era"
+msgstr "Época"
+
+#: aleph_board_widgets.lua
+msgctxt "Diversity"
+msgid "Language"
+msgstr "Idioma"
+
+#: aleph_board_widgets.lua
+msgid "Finish at least 3 books to see your diversity score (%1 so far)."
+msgstr "Termina al menos 3 libros para ver tu puntuación de diversidad (%1 hasta ahora)."
+
+#: aleph_board_widgets.lua
+msgid "%1 book analyzed"
+msgid_plural "%1 books analyzed"
+msgstr[0] "%1 libro analizado"
+msgstr[1] "%1 libros analizados"
+
+#: aleph_board_widgets.lua
+msgid "Tap to make a card of 12 or 24 reading challenges."
+msgstr "Toca para crear un cartón de 12 o 24 retos de lectura."
+
+#: aleph_board_widgets.lua
+msgctxt "Bingo"
+msgid "read"
+msgstr "leídos"
+
+#: aleph_board_widgets.lua
 msgid "This device has no frontlight."
 msgstr "Este dispositivo no tiene luz frontal."
 
@@ -1611,6 +2456,10 @@ msgid "Brightness"
 msgstr "Brillo"
 
 #: aleph_board_widgets.lua
+msgid "%1 left at ~%2 min a day"
+msgstr "quedan %1 a ~%2 min al día"
+
+#: aleph_board_widgets.lua
 msgid "Finish"
 msgstr "Fin"
 
@@ -1621,10 +2470,6 @@ msgstr "Lee un poco en este dispositivo y aparecerá aquí una fecha de fin."
 #: aleph_board_widgets.lua
 msgid "Read a little"
 msgstr "Lee un poco"
-
-#: aleph_board_widgets.lua
-msgid "%1 left at ~%2 min a day"
-msgstr "quedan %1 a ~%2 min al día"
 
 #: aleph_board_widgets.lua
 msgid "Look up a word while reading and one comes back here each day."
@@ -1782,7 +2627,7 @@ msgstr "Mediano"
 msgid "Large"
 msgstr "Grande"
 
-#: aleph_bookends_page.lua
+#: aleph_bookends_page.lua aleph_settings_page.lua
 msgid "Text size"
 msgstr "Tamaño del texto"
 
@@ -1797,10 +2642,6 @@ msgstr "Gris"
 #: aleph_bookends_page.lua
 msgid "Black"
 msgstr "Negro"
-
-#: aleph_bookends_page.lua aleph_settings_page.lua
-msgid "Colour"
-msgstr "Color"
 
 #: aleph_bookends_page.lua
 msgid "Text colour"
@@ -1894,41 +2735,13 @@ msgstr "Editar nota"
 msgid "Go to bookmark"
 msgstr "Ir al marcador"
 
-#: aleph_bookmark.lua aleph_browser.lua aleph_goodreads.lua aleph_goodreads_import.lua aleph_goodreads_send.lua aleph_sync_chain.lua
+#: aleph_bookmark.lua aleph_browser.lua aleph_goodreads.lua aleph_goodreads_import.lua aleph_goodreads_send.lua aleph_gr.lua aleph_settings_page.lua aleph_sync_chain.lua
 msgid "Close"
 msgstr "Cerrar"
 
 #: aleph_bookmark_colors.lua
-msgid "Red"
-msgstr "Rojo"
-
-#: aleph_bookmark_colors.lua
-msgid "Orange"
-msgstr "Naranja"
-
-#: aleph_bookmark_colors.lua
-msgid "Yellow"
-msgstr "Amarillo"
-
-#: aleph_bookmark_colors.lua
-msgid "Green"
-msgstr "Verde"
-
-#: aleph_bookmark_colors.lua
 msgid "Aqua"
 msgstr "Aguamarina"
-
-#: aleph_bookmark_colors.lua
-msgid "Blue"
-msgstr "Azul"
-
-#: aleph_bookmark_colors.lua
-msgid "Purple"
-msgstr "Morado"
-
-#: aleph_bookmark_colors.lua
-msgid "Pink"
-msgstr "Rosa"
 
 #: aleph_bookmarks.lua
 msgid "Page order"
@@ -2000,11 +2813,19 @@ msgstr "Editar"
 
 #: aleph_bookmarks.lua
 msgid "Go to in book"
-msgstr "Ir a en el libro"
+msgstr "Ver en el libro"
 
 #: aleph_bookmarks.lua
 msgid "Search bookmarks"
 msgstr "Buscar marcadores"
+
+#: aleph_bookmarks.lua
+msgid "A word in a passage or note"
+msgstr "Una palabra de un pasaje o nota"
+
+#: aleph_bookmarks.lua aleph_browser.lua aleph_color_wheel.lua aleph_confirm.lua aleph_input.lua
+msgid "Cancel"
+msgstr "Cancelar"
 
 #: aleph_bookmarks.lua
 msgid "Now: “%1”"
@@ -2062,14 +2883,6 @@ msgstr "Seleccionar, texto editado y más"
 msgid "In KOReader's own list"
 msgstr "En la propia lista de KOReader"
 
-#: aleph_bookmarks.lua
-msgid "A word in a passage or note"
-msgstr "Una palabra de un pasaje o nota"
-
-#: aleph_bookmarks.lua aleph_browser.lua aleph_color_wheel.lua aleph_confirm.lua aleph_input.lua
-msgid "Cancel"
-msgstr "Cancelar"
-
 #: aleph_bookmarks.lua aleph_menu_skin.lua
 msgid "Show one style"
 msgstr "Mostrar un estilo"
@@ -2091,7 +2904,7 @@ msgstr "Lectura"
 msgid "Unread"
 msgstr "No leído"
 
-#: aleph_browser.lua aleph_detail.lua
+#: aleph_browser.lua aleph_detail.lua aleph_gr_api.lua
 msgid "Finished"
 msgstr "Terminado"
 
@@ -2142,6 +2955,14 @@ msgstr "Lectura (más antigua)"
 #: aleph_browser.lua aleph_detail.lua
 msgid "Last read"
 msgstr "Última lectura"
+
+#: aleph_browser.lua
+msgid "Least read first"
+msgstr "Menos leídos primero"
+
+#: aleph_browser.lua
+msgid "Most read first"
+msgstr "Más leídos primero"
 
 #: aleph_browser.lua
 msgid "Whole library"
@@ -2220,6 +3041,10 @@ msgid "No collections yet. Create them in the file browser."
 msgstr "Aún no hay colecciones. Créalas en el explorador de archivos."
 
 #: aleph_browser.lua
+msgid "Hold a collection to rename or delete it."
+msgstr "Mantén pulsada una colección para cambiarle el nombre o borrarla."
+
+#: aleph_browser.lua
 msgid "Any genre"
 msgstr "Cualquier género"
 
@@ -2268,6 +3093,22 @@ msgid "No release dates found. They come from each book's publication date (Cali
 msgstr "No se encontraron fechas de publicación. Vienen de la fecha de publicación de cada libro (columna Publicado de Calibre)."
 
 #: aleph_browser.lua
+msgid "Newest"
+msgstr "Más recientes"
+
+#: aleph_browser.lua
+msgid "Oldest"
+msgstr "Más antiguos"
+
+#: aleph_browser.lua
+msgid "Most read"
+msgstr "Más leídos"
+
+#: aleph_browser.lua
+msgid "Least read"
+msgstr "Menos leídos"
+
+#: aleph_browser.lua
 msgid "Sort and filter"
 msgstr "Ordenar y filtrar"
 
@@ -2278,14 +3119,6 @@ msgstr "Nombre"
 #: aleph_browser.lua
 msgid "Last name"
 msgstr "Apellido"
-
-#: aleph_browser.lua
-msgid "Newest"
-msgstr "Más recientes"
-
-#: aleph_browser.lua
-msgid "Oldest"
-msgstr "Más antiguos"
 
 #: aleph_browser.lua
 msgid "For this list only"
@@ -2407,6 +3240,56 @@ msgstr ""
 #: aleph_browser.lua
 msgid "Remove from record"
 msgstr "Quitar del registro"
+
+#: aleph_browser.lua
+msgid "Favorites is KOReader's own collection: it cannot be renamed or deleted."
+msgstr "Favoritos es la colección propia de KOReader: no se puede renombrar ni borrar."
+
+#: aleph_browser.lua
+msgid "Rename collection"
+msgstr "Renombrar colección"
+
+#: aleph_browser.lua
+msgid "Could not rename the collection."
+msgstr "No se pudo renombrar la colección."
+
+#: aleph_browser.lua
+msgid "Rename"
+msgstr "Renombrar"
+
+#: aleph_browser.lua
+msgid "Delete \"%1\"?"
+msgstr "¿Borrar \"%1\"?"
+
+#: aleph_browser.lua
+msgid "The collection goes; its books stay on the device and in the library."
+msgstr "La colección se elimina; sus libros siguen en el dispositivo y en la biblioteca."
+
+#: aleph_browser.lua
+msgid "Could not delete the collection."
+msgstr "No se pudo borrar la colección."
+
+#: aleph_browser.lua
+msgid "Rename this collection or delete it. Deleting it keeps its books."
+msgstr "Renombra esta colección o bórrala. Borrarla conserva sus libros."
+
+#: aleph_browser.lua
+msgid "This collection comes from Calibre"
+msgstr "Esta colección viene de Calibre"
+
+#: aleph_browser.lua
+msgid ""
+"Aleph fills \"%1\" from Calibre's #collections column. Renamed or deleted here, it comes back with its books the next time Aleph reads Calibre's column (when Home opens), alongside any new name.\n"
+"\n"
+"To change it for good, rename it or clear it in Calibre's #collections column and send the books again."
+msgstr ""
+"Aleph llena \"%1\" a partir de la columna #collections de Calibre. Si se renombra o se borra aquí, vuelve con sus libros la próxima vez que Aleph lea la columna de Calibre (al abrir el Inicio), junto con cualquier nombre nuevo.\n"
+"\n"
+"Para cambiarla del todo, renómbrala o bórrala en la columna #collections de Calibre y envía los libros de nuevo."
+
+#: aleph_browser.lua
+msgid "Change here anyway"
+msgstr "Cambiar aquí de todos modos"
 
 #: aleph_browser.lua aleph_menu_sheet.lua
 msgid "1 book"
@@ -2629,14 +3512,6 @@ msgid "Powered by BookOrbit ↗"
 msgstr "Con tecnología de BookOrbit ↗"
 
 #: aleph_browser.lua
-msgid "Add folder…"
-msgstr "Añadir carpeta…"
-
-#: aleph_browser.lua
-msgid "Remove from index: %1"
-msgstr "Quitar del índice: %1"
-
-#: aleph_browser.lua
 msgid "Choose one of the local shelf widgets in Add widget → Library."
 msgstr "Elige uno de los widgets de estantería local en Añadir widget → Biblioteca."
 
@@ -2838,7 +3713,7 @@ msgstr "Más de"
 msgid "of"
 msgstr "de"
 
-#: aleph_detail.lua
+#: aleph_detail.lua aleph_xr_page.lua
 msgid "Read all"
 msgstr "Leer todo"
 
@@ -2862,6 +3737,141 @@ msgstr "Herramientas"
 msgid "Options"
 msgstr "Opciones"
 
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Short"
+msgstr "Cortos"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Medium"
+msgstr "Medianos"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Long"
+msgstr "Largos"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Focused"
+msgstr "Enfocado"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Balanced"
+msgstr "Equilibrado"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Eclectic"
+msgstr "Ecléctico"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Bursty"
+msgstr "A ráfagas"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Moderate"
+msgstr "Moderado"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Steady"
+msgstr "Constante"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Night Owl"
+msgstr "Noctámbulo"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Early Bird"
+msgstr "Madrugador"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Afternoon"
+msgstr "Tarde"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Evening"
+msgstr "Noche"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Slow Savorer"
+msgstr "Saborea despacio"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Steady Pacer"
+msgstr "Ritmo firme"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Speed Demon"
+msgstr "Velocista"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Night Owl Epic Specialist"
+msgstr "Noctámbulo de grandes epopeyas"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Steady Eclectic Explorer"
+msgstr "Explorador ecléctico constante"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Disciplined Genre Hopper"
+msgstr "Saltador de géneros disciplinado"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Early Bird Marathon Reader"
+msgstr "Maratonista madrugador"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Rapid Explorer"
+msgstr "Explorador veloz"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Patient Specialist"
+msgstr "Especialista paciente"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Deep Specialist"
+msgstr "Especialista profundo"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Weekend Binge Reader"
+msgstr "Lector maratoniano de fin de semana"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Curious Explorer"
+msgstr "Explorador curioso"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Steady Habit Reader"
+msgstr "Lector de hábito constante"
+
+#: aleph_dna.lua
+msgctxt "Reading DNA"
+msgid "Avid Reader"
+msgstr "Lector ávido"
+
 #: aleph_goodreads.lua
 msgid "A wrong code was sent (%1 tries left)."
 msgstr "Se envió un código incorrecto (quedan %1 intentos)."
@@ -2875,8 +3885,8 @@ msgid "A computer reached this e-reader at %1. Waiting for the cookie…"
 msgstr "Un ordenador ha contactado con este lector en %1. Esperando la cookie…"
 
 #: aleph_goodreads.lua
-msgid "Cookie received and saved. The Goodreads plugin is signed in again."
-msgstr "Cookie recibida y guardada. El complemento de Goodreads vuelve a tener la sesión iniciada."
+msgid "Cookie received and saved. Goodreads is signed in again."
+msgstr "Cookie recibida y guardada. Goodreads vuelve a tener la sesión iniciada."
 
 #: aleph_goodreads.lua
 msgid "Too many wrong codes: stopped listening. Open this screen again for a new code."
@@ -3049,12 +4059,12 @@ msgstr ""
 "Aleph rellena el estado, la fecha de finalización y la valoración de los libros de este dispositivo que no los tienen, y añade los libros que leíste en otro sitio al registro de libros terminados."
 
 #: aleph_goodreads_send.lua
-msgid "The Goodreads plugin could not be found."
-msgstr "No se encontró el complemento de Goodreads."
+msgid "Could not see what Goodreads has for this book, so nothing was sent. Try again in a moment."
+msgstr "No se pudo ver lo que Goodreads tiene de este libro, así que no se envió nada. Vuelve a intentarlo en un momento."
 
-#: aleph_goodreads_send.lua
-msgid "The Goodreads plugin is not signed in. Send its cookie from your computer first (Settings → Library → Goodreads sign-in)."
-msgstr "El complemento de Goodreads no tiene la sesión iniciada. Envía primero su cookie desde tu ordenador (Ajustes → Biblioteca → Inicio de sesión en Goodreads)."
+#: aleph_goodreads_send.lua aleph_gr.lua
+msgid "Goodreads is not signed in. Send the sign-in from your computer first (Settings → Library → Goodreads sign-in)."
+msgstr "Goodreads no tiene la sesión iniciada. Envía primero el inicio de sesión desde tu ordenador (Ajustes → Biblioteca → Inicio de sesión en Goodreads)."
 
 #: aleph_goodreads_send.lua
 msgid "Looking for the book on Goodreads…"
@@ -3088,7 +4098,7 @@ msgstr "Buscar con otras palabras…"
 msgid "This book is On hold here, and the Goodreads account has no Did not finish shelf to put it on."
 msgstr "Este libro está En pausa aquí, y la cuenta de Goodreads no tiene una estantería Did not finish donde ponerlo."
 
-#: aleph_goodreads_send.lua
+#: aleph_goodreads_send.lua aleph_gr.lua
 msgid "Goodreads book: %1"
 msgstr "Libro en Goodreads: %1"
 
@@ -3113,8 +4123,8 @@ msgid "Rating: not sent (Goodreads takes ratings for read books)"
 msgstr "Valoración: no enviada (Goodreads acepta valoraciones de libros leídos)"
 
 #: aleph_goodreads_send.lua
-msgid "What Goodreads has for this book is replaced."
-msgstr "Se sustituye lo que Goodreads tiene de este libro."
+msgid "What Goodreads has for this book is replaced. A book that is already Read there is not shelved again, so it does not count as read twice; its rating is sent."
+msgstr "Se sustituye lo que Goodreads tiene de este libro. Un libro que ya está como Leído allí no se vuelve a poner en la estantería, así que no cuenta como leído dos veces; se envía su valoración."
 
 #: aleph_goodreads_send.lua
 msgid "Send"
@@ -3124,7 +4134,7 @@ msgstr "Enviar"
 msgid "Not this book? Choose another…"
 msgstr "¿No es este libro? Elige otro…"
 
-#: aleph_goodreads_send.lua
+#: aleph_goodreads_send.lua aleph_gr.lua
 msgid "Sending to Goodreads…"
 msgstr "Enviando a Goodreads…"
 
@@ -3141,6 +4151,14 @@ msgid "Status sent, but the rating was not: %1"
 msgstr "Estado enviado, pero la valoración no: %1"
 
 #: aleph_goodreads_send.lua
+msgid "Already Read on Goodreads: rating %1 stars"
+msgstr "Ya leído en Goodreads: valoración de %1 estrellas"
+
+#: aleph_goodreads_send.lua
+msgid "Already Read on Goodreads: nothing to add"
+msgstr "Ya leído en Goodreads: nada que añadir"
+
+#: aleph_goodreads_send.lua
 msgid "Sent to Goodreads: %1, %2 stars"
 msgstr "Enviado a Goodreads: %1, %2 estrellas"
 
@@ -3148,7 +4166,7 @@ msgstr "Enviado a Goodreads: %1, %2 estrellas"
 msgid "Sent to Goodreads: %1"
 msgstr "Enviado a Goodreads: %1"
 
-#: aleph_goodreads_track.lua aleph_reader_sheet.lua aleph_settings_page.lua
+#: aleph_goodreads_track.lua aleph_gr.lua aleph_reader_sheet.lua aleph_settings_page.lua
 msgid "Goodreads"
 msgstr ""
 
@@ -3162,7 +4180,7 @@ msgstr ""
 "\n"
 "¿Marcarlo como Leyendo actualmente?"
 
-#: aleph_goodreads_send.lua (status) aleph_goodreads_track.lua
+#: aleph_goodreads_send.lua (status) aleph_goodreads_track.lua aleph_gr_api.lua
 msgid "Currently reading"
 msgstr "Leyendo actualmente"
 
@@ -3170,9 +4188,129 @@ msgstr "Leyendo actualmente"
 msgid "Keep as is"
 msgstr "Dejarlo así"
 
-#: aleph_goodreads_track.lua
+#: aleph_goodreads_track.lua aleph_gr.lua
 msgid "Goodreads no longer accepts the sign-in. Renew it in Aleph's Settings > Library > Goodreads sign-in."
 msgstr "Goodreads ya no acepta el inicio de sesión. Renuévalo en Ajustes de Aleph > Biblioteca > Inicio de sesión en Goodreads."
+
+#: aleph_gr.lua
+msgid "Goodreads is now part of Aleph"
+msgstr "Goodreads ahora forma parte de Aleph"
+
+#: aleph_gr.lua
+msgid ""
+"Aleph now keeps Goodreads up to date itself, with the plugin's sign-in, settings and book links. With both on, things could be sent twice.\n"
+"\n"
+"Turn the Goodreads plugin off? It stops when KOReader starts again. It can be turned back on in Tools → Plugin management."
+msgstr ""
+"Ahora Aleph mantiene Goodreads al día por sí mismo, con el inicio de sesión, los ajustes y los vínculos de libros del complemento. Con los dos activados, algo podría enviarse dos veces.\n"
+"\n"
+"¿Desactivar el complemento Goodreads? Se detiene cuando KOReader vuelva a iniciarse. Se puede volver a activar en Herramientas → Gestión de complementos."
+
+#: aleph_gr.lua
+msgid "Turn off"
+msgstr "Desactivar"
+
+#: aleph_gr.lua
+msgid "KOReader needs to restart to turn the Goodreads plugin off."
+msgstr "KOReader necesita reiniciarse para desactivar el complemento Goodreads."
+
+#: aleph_gr.lua
+msgid "Restart KOReader to turn the Goodreads plugin off."
+msgstr "Reinicia KOReader para desactivar el complemento Goodreads."
+
+#: aleph_gr.lua
+msgid ""
+"The Goodreads plugin by advokatb is on. Goodreads is part of Aleph now and uses the plugin's sign-in, settings and book links, so the plugin is no longer needed.\n"
+"\n"
+"While it is on, Aleph sends nothing to Goodreads on its own, so nothing is sent twice. Turn the plugin off? It stops when KOReader starts again."
+msgstr ""
+"El complemento Goodreads de advokatb está activado. Goodreads ahora forma parte de Aleph y usa el inicio de sesión, los ajustes y los vínculos de libros del complemento, así que el complemento ya no hace falta.\n"
+"\n"
+"Mientras esté activado, Aleph no envía nada a Goodreads por sí solo, para que nada se envíe dos veces. ¿Desactivar el complemento? Se detiene cuando KOReader vuelva a iniciarse."
+
+#: aleph_gr.lua
+msgid "Sent to Goodreads"
+msgstr "Enviado a Goodreads"
+
+#: aleph_gr.lua
+msgid "This book is not linked to Goodreads yet. Its page in Aleph finds it: ⋯ → Send to Goodreads."
+msgstr "Este libro aún no está vinculado a Goodreads. Su página en Aleph lo encuentra: ⋯ → Enviar a Goodreads."
+
+#: aleph_gr.lua
+msgid "Book page"
+msgstr "Página del libro"
+
+#: aleph_gr.lua
+msgid "On Goodreads: %1"
+msgstr "En Goodreads: %1"
+
+#: aleph_gr.lua
+msgid "on no shelf"
+msgstr "en ninguna estantería"
+
+#: aleph_gr.lua
+msgid "Progress sent: %1"
+msgstr "Progreso enviado: %1"
+
+#: aleph_gr.lua
+msgid "This book is tracked: its progress and status are sent as you read."
+msgstr "Este libro se sigue: su progreso y su estado se envían mientras lees."
+
+#: aleph_gr.lua
+msgid "This book is not tracked: nothing is sent on its own."
+msgstr "Este libro no se sigue: no se envía nada por sí solo."
+
+#: aleph_gr.lua
+msgid "Send progress now"
+msgstr "Enviar progreso ahora"
+
+#: aleph_gr.lua
+msgid "Track this book"
+msgstr "Seguir este libro"
+
+#: aleph_gr.lua
+msgid "Stop tracking this book"
+msgstr "Dejar de seguir este libro"
+
+#: aleph_gr.lua
+msgid "No internet: it is sent when Goodreads can be reached"
+msgstr "Sin internet: se enviará cuando se pueda acceder a Goodreads"
+
+#: aleph_gr.lua
+msgid "This book is tracked now"
+msgstr "Ahora se sigue este libro"
+
+#: aleph_gr.lua
+msgid "This book is not tracked now"
+msgstr "Este libro ya no se sigue"
+
+#: aleph_goodreads_send.lua (status) aleph_gr_api.lua
+msgid "Did not finish"
+msgstr "No terminado"
+
+#: aleph_gr_api.lua
+msgid "Paused"
+msgstr "En pausa"
+
+#: aleph_gr_api.lua
+msgid "Unknown status"
+msgstr "Estado desconocido"
+
+#: aleph_gr_legacy.lua
+msgid "Could not parse the Goodreads response. The site may have changed."
+msgstr "No se pudo entender la respuesta de Goodreads. Puede que el sitio haya cambiado."
+
+#: aleph_gr_legacy.lua
+msgid "No network connection"
+msgstr "Sin conexión de red"
+
+#: aleph_gr_legacy.lua
+msgid "Network error: %1"
+msgstr "Error de red: %1"
+
+#: aleph_gr_legacy.lua
+msgid "Error updating rating"
+msgstr "Error al actualizar la valoración"
 
 #: aleph_highlight.lua
 msgid "More…"
@@ -3317,6 +4455,10 @@ msgid "Jump to"
 msgstr "Ir a"
 
 #: aleph_library_view.lua aleph_list_data.lua
+msgid " · %1 left"
+msgstr " · quedan %1"
+
+#: aleph_library_view.lua aleph_list_data.lua
 msgid "%1 of %2 read"
 msgstr "%1 de %2 leídos"
 
@@ -3343,10 +4485,6 @@ msgstr "Empezar el libro %1"
 #: aleph_library_view.lua
 msgid "Start book"
 msgstr "Empezar el libro"
-
-#: aleph_library_view.lua aleph_list_data.lua
-msgid " · %1 left"
-msgstr " · quedan %1"
 
 #: aleph_light_sheet.lua
 msgid "Frontlight"
@@ -3444,6 +4582,74 @@ msgstr "Versión %1 · avisos legales"
 msgid "Table of contents"
 msgstr "Índice"
 
+#: aleph_more_stats.lua
+msgid "Quick Read"
+msgstr "Lectura rápida"
+
+#: aleph_more_stats.lua
+msgid "Finish a book under 200 pages this month"
+msgstr "Termina un libro de menos de 200 páginas este mes"
+
+#: aleph_more_stats.lua
+msgid "Genre Explorer"
+msgstr "Explorador de géneros"
+
+#: aleph_more_stats.lua
+msgid "Finish a book in a genre new to you this month"
+msgstr "Termina un libro de un género nuevo para ti este mes"
+
+#: aleph_more_stats.lua
+msgid "Clear the Backlog"
+msgstr "Despeja la pila"
+
+#: aleph_more_stats.lua
+msgid "Finish a book you have been reading for a while"
+msgstr "Termina un libro que llevas tiempo leyendo"
+
+#: aleph_more_stats.lua
+msgid "Streak Builder"
+msgstr "Constructor de rachas"
+
+#: aleph_more_stats.lua
+msgid "Read 5 days in a row this month"
+msgstr "Lee 5 días seguidos este mes"
+
+#: aleph_more_stats.lua
+msgid "New Voice"
+msgstr "Nueva voz"
+
+#: aleph_more_stats.lua
+msgid "Finish a book by an author new to you this month"
+msgstr "Termina un libro de un autor nuevo para ti este mes"
+
+#: aleph_more_stats.lua
+msgid "Page Turner"
+msgstr "Pasapáginas"
+
+#: aleph_more_stats.lua
+msgid "Read 500 pages this month"
+msgstr "Lee 500 páginas este mes"
+
+#: aleph_more_stats.lua
+msgctxt "Diversity"
+msgid "Deep Specialist"
+msgstr "Especialista profundo"
+
+#: aleph_more_stats.lua
+msgctxt "Diversity"
+msgid "Comfortable Reader"
+msgstr "Lector cómodo"
+
+#: aleph_more_stats.lua
+msgctxt "Diversity"
+msgid "Curious Explorer"
+msgstr "Explorador curioso"
+
+#: aleph_more_stats.lua
+msgctxt "Diversity"
+msgid "Literary Adventurer"
+msgstr "Aventurero literario"
+
 #: aleph_night.lua
 msgid "night mode %1–%2"
 msgstr "modo nocturno %1–%2"
@@ -3500,7 +4706,7 @@ msgstr "Si encuentras este lector electrónico, ponte en contacto con:"
 msgid "Nothing here yet. Add your name and a way to reach you below."
 msgstr "Aún no hay nada. Añade abajo tu nombre y una forma de contactarte."
 
-#: aleph_owner.lua aleph_settings_page.lua
+#: aleph_owner.lua aleph_settings_page.lua aleph_weather.lua
 msgid "Not set"
 msgstr "Sin definir"
 
@@ -3553,6 +4759,30 @@ msgid "All of KOReader's settings and tools"
 msgstr "Todos los ajustes y herramientas de KOReader"
 
 #: aleph_pins.lua
+msgid "Bring back this book's pins?"
+msgstr "¿Recuperar las páginas fijadas de este libro?"
+
+#: aleph_pins.lua
+msgid "This book had %1 pin before its settings were reset. Bring it back?"
+msgid_plural "This book had %1 pins before its settings were reset. Bring them back?"
+msgstr[0] "Este libro tenía %1 página fijada antes de restablecer sus ajustes. ¿Recuperarla?"
+msgstr[1] "Este libro tenía %1 páginas fijadas antes de restablecer sus ajustes. ¿Recuperarlas?"
+
+#: aleph_pins.lua
+msgid "Bring back"
+msgstr "Recuperar"
+
+#: aleph_pins.lua
+msgid "Forget them"
+msgstr "Olvidarlas"
+
+#: aleph_pins.lua
+msgid "%1 pin brought back"
+msgid_plural "%1 pins brought back"
+msgstr[0] "%1 página fijada recuperada"
+msgstr[1] "%1 páginas fijadas recuperadas"
+
+#: aleph_pins.lua
 msgid "This page is already pinned."
 msgstr "Esta página ya está fijada."
 
@@ -3597,10 +4827,6 @@ msgid "(moved)"
 msgstr "(movido)"
 
 #: aleph_pins.lua
-msgid "Nothing is pinned in this book. Hold text and tap Pin."
-msgstr "No hay nada fijado en este libro. Mantén pulsado un texto y toca Fijar."
-
-#: aleph_pins.lua
 msgid "The picture's file is missing."
 msgstr "Falta el archivo de la imagen."
 
@@ -3619,6 +4845,10 @@ msgstr "Quitar fijación"
 #: aleph_pins.lua
 msgid "The pin is removed from this book. The page itself is not changed."
 msgstr "Se quita la fijación de este libro. La página en sí no cambia."
+
+#: aleph_pins.lua
+msgid "Nothing is pinned in this book. Hold text and tap Pin."
+msgstr "No hay nada fijado en este libro. Mantén pulsado un texto y toca Fijar."
 
 #: aleph_pins.lua
 msgid "Where the pin badge sits on the page"
@@ -3913,6 +5143,10 @@ msgid "Author portraits"
 msgstr "Retratos de autores"
 
 #: aleph_settings_page.lua
+msgid "Font"
+msgstr "Fuente"
+
+#: aleph_settings_page.lua
 msgid "Night profile"
 msgstr "Perfil nocturno"
 
@@ -3935,6 +5169,10 @@ msgstr "Objetivo anual de lectura"
 #: aleph_settings_page.lua
 msgid "Tap the number to type one"
 msgstr "Toca el número para escribir uno"
+
+#: aleph_settings_page.lua
+msgid "Goals widget"
+msgstr "Widget de objetivos"
 
 #: aleph_settings_page.lua
 msgid "Your name is shown in the greeting on Home."
@@ -4049,6 +5287,14 @@ msgid "Every result on a page, then ‹ › through them and back to your page; 
 msgstr "Todos los resultados en una página, luego ‹ › entre ellos y de vuelta a tu página; desactivado: la búsqueda de KOReader"
 
 #: aleph_settings_page.lua
+msgid "Way back after a jump"
+msgstr "Volver tras un salto"
+
+#: aleph_settings_page.lua
+msgid "After the contents, Go to page, a link or a bookmark: Go to most recent page at the foot"
+msgstr "Tras el índice, Ir a la página, un enlace o un marcador: Ir a la página más reciente al pie"
+
+#: aleph_settings_page.lua
 msgid "Controls and Apps tabs"
 msgstr "Pestañas Controles y Apps"
 
@@ -4093,6 +5339,18 @@ msgid "Dots"
 msgstr "Puntos"
 
 #: aleph_settings_page.lua
+msgid "Same as Home"
+msgstr "Igual que Inicio"
+
+#: aleph_settings_page.lua
+msgid "The whole top menu, with its icons"
+msgstr "Todo el menú superior, con sus iconos"
+
+#: aleph_settings_page.lua aleph_wallpaper.lua
+msgid "%1%"
+msgstr ""
+
+#: aleph_settings_page.lua
 msgid "Outline around icons"
 msgstr "Contorno en los iconos"
 
@@ -4103,6 +5361,10 @@ msgstr "Icono de la pestaña Controles"
 #: aleph_settings_page.lua
 msgid "Apps tab icon"
 msgstr "Icono de la pestaña Apps"
+
+#: aleph_settings_page.lua
+msgid "Wi-Fi icon"
+msgstr "Icono del Wi-Fi"
 
 #: aleph_settings_page.lua
 msgid "Brightness slider"
@@ -4120,7 +5382,7 @@ msgstr "Personalizar Inicio"
 msgid "Move, resize, add and remove widgets"
 msgstr "Mover, cambiar de tamaño, añadir y quitar widgets"
 
-#: aleph_settings_page.lua
+#: aleph_settings_page.lua aleph_wallpaper.lua
 msgid "Outline"
 msgstr "Contorno"
 
@@ -4159,6 +5421,10 @@ msgstr "Tamaño de la interfaz"
 #: aleph_settings_page.lua
 msgid "Text and controls across Aleph"
 msgstr "Texto y controles en todo Aleph"
+
+#: aleph_settings_page.lua
+msgid "Home, widgets, the library and Aleph's windows"
+msgstr "Inicio, widgets, la biblioteca y las ventanas de Aleph"
 
 #: aleph_settings_page.lua
 msgid "Aleph dialogs"
@@ -4317,32 +5583,88 @@ msgid "Off: reads every book's details the first time"
 msgstr "Desactivado: lee los detalles de cada libro la primera vez"
 
 #: aleph_settings_page.lua
-msgid "Goodreads sign-in"
-msgstr "Inicio de sesión en Goodreads"
+msgid "Collections from Calibre"
+msgstr "Colecciones de Calibre"
 
 #: aleph_settings_page.lua
-msgid "Receive the sign-in cookie from your computer's browser"
-msgstr "Recibir la cookie de inicio de sesión del navegador de tu ordenador"
-
-#: aleph_settings_page.lua
-msgid "Track in the background"
-msgstr "Seguimiento en segundo plano"
-
-#: aleph_settings_page.lua
-msgid "Not with this version of the Goodreads plugin: it tracks its own way"
-msgstr "No con esta versión del complemento de Goodreads: hace el seguimiento a su manera"
-
-#: aleph_settings_page.lua
-msgid "Goodreads is updated without holding up the page"
-msgstr "Goodreads se actualiza sin detener la página"
-
-#: aleph_settings_page.lua
-msgid "Off: the Goodreads plugin asks while you wait, slow on bad Wi-Fi"
-msgstr "Desactivado: el complemento de Goodreads consulta mientras esperas, lento con mal Wi-Fi"
+msgid "Books join the collections in Calibre's #collections column"
+msgstr "Los libros entran en las colecciones de la columna #collections de Calibre"
 
 #: aleph_settings_page.lua
 msgid "Status, finished dates and ratings from Goodreads' library export"
 msgstr "Estados, fechas de finalización y valoraciones de la exportación de la biblioteca de Goodreads"
+
+#: aleph_settings_page.lua
+msgid "Goodreads sign-in"
+msgstr "Inicio de sesión en Goodreads"
+
+#: aleph_settings_page.lua
+msgid "Signed in"
+msgstr "Sesión iniciada"
+
+#: aleph_settings_page.lua
+msgid "Not signed in"
+msgstr "Sin iniciar sesión"
+
+#: aleph_settings_page.lua
+msgid "The Goodreads plugin is still on"
+msgstr "El complemento Goodreads sigue activado"
+
+#: aleph_settings_page.lua
+msgid "Aleph sends to Goodreads itself now. Turn the plugin off so nothing is sent twice"
+msgstr "Ahora Aleph envía a Goodreads por sí mismo. Desactiva el complemento para que nada se envíe dos veces"
+
+#: aleph_settings_page.lua
+msgid "Keep Goodreads up to date"
+msgstr "Mantener Goodreads al día"
+
+#: aleph_settings_page.lua
+msgid "Reading, progress, finished and stars, sent in the background"
+msgstr "Leyendo, progreso, terminado y estrellas, enviados en segundo plano"
+
+#: aleph_settings_page.lua
+msgid "Off: only Send to Goodreads from a book's page"
+msgstr "Desactivado: solo Enviar a Goodreads desde la página de un libro"
+
+#: aleph_settings_page.lua
+msgid "Track every book"
+msgstr "Seguir todos los libros"
+
+#: aleph_settings_page.lua
+msgid "Every book linked to Goodreads is sent"
+msgstr "Se envía cada libro vinculado a Goodreads"
+
+#: aleph_settings_page.lua
+msgid "Only books tracked one by one (Goodreads in the reader's menu)"
+msgstr "Solo los libros que se siguen uno a uno (Goodreads en el menú del lector)"
+
+#: aleph_settings_page.lua
+msgid "Send the percentage"
+msgstr "Enviar el porcentaje"
+
+#: aleph_settings_page.lua
+msgid "At most once a minute while reading"
+msgstr "Como mucho una vez por minuto mientras lees"
+
+#: aleph_settings_page.lua
+msgid "Send the stars"
+msgstr "Enviar las estrellas"
+
+#: aleph_settings_page.lua
+msgid "With Read, and when they change on a Read book"
+msgstr "Con Leído, y cuando cambian en un libro Leído"
+
+#: aleph_settings_page.lua
+msgid "Waiting to send"
+msgstr "Pendiente de enviar"
+
+#: aleph_settings_page.lua
+msgid "%1 waiting, %2 failed"
+msgstr "%1 pendientes, %2 fallidos"
+
+#: aleph_settings_page.lua
+msgid "%1 waiting for the internet"
+msgstr "%1 esperando a internet"
 
 #: aleph_settings_page.lua
 msgid "Show author portraits"
@@ -4417,8 +5739,8 @@ msgid "Descriptions with AI (optional)"
 msgstr "Descripciones con IA (opcional)"
 
 #: aleph_settings_page.lua
-msgid "Asked from a book's X-Ray, never by itself, with your own key. Names: sends the book's title and a few words around each name. Story: sends the text of the chapters you have read. Never a page not read yet."
-msgstr "Se piden desde el X-Ray de un libro, nunca solas, con tu propia clave. Nombres: envía el título del libro y unas palabras alrededor de cada nombre. Historia: envía el texto de los capítulos que has leído. Nunca una página aún no leída."
+msgid "Asked from a book's X-Ray, never by itself, with your own key. Names: sends the book's title and a few words around each name (with Detailed descriptions, longer passages and the chapter summaries). Story: sends the text of the chapters you have read. Never a page not read yet."
+msgstr "Se piden desde el X-Ray de un libro, nunca solas, con tu propia clave. Nombres: envía el título del libro y unas palabras alrededor de cada nombre (con Descripciones detalladas, pasajes más largos y los resúmenes de los capítulos). Historia: envía el texto de los capítulos que has leído. Nunca una página aún no leída."
 
 #: aleph_settings_page.lua
 msgid "Key"
@@ -4427,6 +5749,18 @@ msgstr "Clave"
 #: aleph_settings_page.lua
 msgid "Model"
 msgstr "Modelo"
+
+#: aleph_settings_page.lua
+msgid "Detailed descriptions"
+msgstr "Descripciones detalladas"
+
+#: aleph_settings_page.lua
+msgid "Main characters in 3–4 sentences, from longer passages and the chapter summaries. Uses several times more of your AI allowance"
+msgstr "Personajes principales en 3–4 frases, a partir de pasajes más largos y de los resúmenes de los capítulos. Usa varias veces más de tu cuota de IA"
+
+#: aleph_settings_page.lua
+msgid "Off: a sentence or two for each name, from a few words around it"
+msgstr "Desactivado: una o dos frases para cada nombre, a partir de unas palabras a su alrededor"
 
 #: aleph_settings_page.lua
 msgid "Offer a recap after a break"
@@ -4501,6 +5835,10 @@ msgid "Automatic: on devices with direction keys"
 msgstr "Automático: en dispositivos con teclas de dirección"
 
 #: aleph_settings_page.lua
+msgid "KOReader's own"
+msgstr "La de KOReader"
+
+#: aleph_settings_page.lua
 msgid "Aleph %1"
 msgstr ""
 
@@ -4509,12 +5847,24 @@ msgid "Choose where to open Aleph"
 msgstr "Elige dónde abrir Aleph"
 
 #: aleph_settings_page.lua
+msgid "Home and widgets"
+msgstr "Inicio y widgets"
+
+#: aleph_settings_page.lua
 msgid "Type a whole number of books, 1 or more."
 msgstr "Escribe un número entero de libros, 1 o más."
 
 #: aleph_settings_page.lua
 msgid "Books to finish this year"
 msgstr "Libros que terminar este año"
+
+#: aleph_settings_page.lua
+msgid "Type a whole number from 0 (off) to %1."
+msgstr "Escribe un número entero de 0 (desactivado) a %1."
+
+#: aleph_settings_page.lua
+msgid "0 turns it off; at most %1"
+msgstr "0 lo desactiva; como mucho %1"
 
 #: aleph_settings_page.lua
 msgid "Provider key"
@@ -4579,6 +5929,22 @@ msgstr "¿Restablecer Inicio?"
 #: aleph_settings_page.lua
 msgid "Your pages and tile style go back to how they started."
 msgstr "Tus páginas y el estilo de los bloques vuelven a como empezaron."
+
+#: aleph_settings_page.lua
+msgid "%1 stars"
+msgstr "%1 estrellas"
+
+#: aleph_settings_page.lua
+msgid "failed"
+msgstr "falló"
+
+#: aleph_settings_page.lua
+msgid "Send now"
+msgstr "Enviar ahora"
+
+#: aleph_settings_page.lua
+msgid "Drop the failed ones"
+msgstr "Descartar los fallidos"
 
 #: aleph_settings_page.lua
 msgid "Remove this folder?"
@@ -4655,42 +6021,6 @@ msgid "Open Silverfish"
 msgstr "Abrir Silverfish"
 
 #: aleph_sync_chain.lua
-msgid "Already syncing…"
-msgstr "Ya se está sincronizando…"
-
-#: aleph_sync_chain.lua
-msgid "Starting Syncthing"
-msgstr "Iniciando Syncthing"
-
-#: aleph_sync_chain.lua
-msgid "Saving this e-reader's positions"
-msgstr "Guardando las posiciones de este lector"
-
-#: aleph_sync_chain.lua
-msgid "Looking for another device nearby"
-msgstr "Buscando otro dispositivo cerca"
-
-#: aleph_sync_chain.lua
-msgid "Looking for your other e-reader"
-msgstr "Buscando tu otro lector"
-
-#: aleph_sync_chain.lua
-msgid "Exchanging reading data"
-msgstr "Intercambiando datos de lectura"
-
-#: aleph_sync_chain.lua
-msgid "Sending and receiving through the cloud"
-msgstr "Enviando y recibiendo a través de la nube"
-
-#: aleph_sync_chain.lua
-msgid "Looking for a newer position"
-msgstr "Buscando una posición más reciente"
-
-#: aleph_sync_chain.lua
-msgid "Updating the library"
-msgstr "Actualizando la biblioteca"
-
-#: aleph_sync_chain.lua
 msgid "the cloud"
 msgstr "la nube"
 
@@ -4737,6 +6067,42 @@ msgstr "No se pudo iniciar Syncthing: %1"
 #: aleph_sync_chain.lua
 msgid "Syncthing did not start. Open KOSyncthing+ to see why."
 msgstr "Syncthing no se inició. Abre KOSyncthing+ para ver por qué."
+
+#: aleph_sync_chain.lua
+msgid "Starting Syncthing"
+msgstr "Iniciando Syncthing"
+
+#: aleph_sync_chain.lua
+msgid "Saving this e-reader's positions"
+msgstr "Guardando las posiciones de este lector"
+
+#: aleph_sync_chain.lua
+msgid "Looking for another device nearby"
+msgstr "Buscando otro dispositivo cerca"
+
+#: aleph_sync_chain.lua
+msgid "Looking for your other e-reader"
+msgstr "Buscando tu otro lector"
+
+#: aleph_sync_chain.lua
+msgid "Exchanging reading data"
+msgstr "Intercambiando datos de lectura"
+
+#: aleph_sync_chain.lua
+msgid "Sending and receiving through the cloud"
+msgstr "Enviando y recibiendo a través de la nube"
+
+#: aleph_sync_chain.lua
+msgid "Looking for a newer position"
+msgstr "Buscando una posición más reciente"
+
+#: aleph_sync_chain.lua
+msgid "Updating the library"
+msgstr "Actualizando la biblioteca"
+
+#: aleph_sync_chain.lua
+msgid "Already syncing…"
+msgstr "Ya se está sincronizando…"
 
 #: aleph_sync_chain.lua
 msgid "Stopped."
@@ -4915,10 +6281,6 @@ msgid "Choose a picture…"
 msgstr "Elegir una imagen…"
 
 #: aleph_wallpaper.lua
-msgid "%1%"
-msgstr ""
-
-#: aleph_wallpaper.lua
 msgid "Fit"
 msgstr "Ajuste"
 
@@ -4939,8 +6301,213 @@ msgid "Lower lets the wallpaper show through the widgets"
 msgstr "Menos deja ver el fondo a través de los widgets"
 
 #: aleph_wallpaper.lua
+msgid "Text over the wallpaper"
+msgstr "Texto sobre el fondo de pantalla"
+
+#: aleph_wallpaper.lua
+msgctxt "Text colour"
+msgid "Auto"
+msgstr "Automático"
+
+#: aleph_wallpaper.lua
+msgctxt "Text colour"
+msgid "Dark"
+msgstr "Oscuro"
+
+#: aleph_wallpaper.lua
+msgctxt "Text colour"
+msgid "Light"
+msgstr "Claro"
+
+#: aleph_wallpaper.lua
+msgid "An edge in the other colour, for a busy picture"
+msgstr "Un borde del otro color, para una imagen recargada"
+
+#: aleph_wallpaper.lua
 msgid "Change picture"
 msgstr "Cambiar imagen"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Clear"
+msgstr "Despejado"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Mainly clear"
+msgstr "Mayormente despejado"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Partly cloudy"
+msgstr "Parcialmente nublado"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Overcast"
+msgstr "Cubierto"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Fog"
+msgstr "Niebla"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Light drizzle"
+msgstr "Llovizna débil"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Drizzle"
+msgstr "Llovizna"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Heavy drizzle"
+msgstr "Llovizna intensa"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Freezing drizzle"
+msgstr "Llovizna helada"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Light rain"
+msgstr "Lluvia débil"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Rain"
+msgstr "Lluvia"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Heavy rain"
+msgstr "Lluvia intensa"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Freezing rain"
+msgstr "Lluvia helada"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Light snow"
+msgstr "Nevada débil"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Snow"
+msgstr "Nieve"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Heavy snow"
+msgstr "Nevada intensa"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Snow grains"
+msgstr "Granos de nieve"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Showers"
+msgstr "Chubascos"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Heavy showers"
+msgstr "Chubascos fuertes"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Snow showers"
+msgstr "Chubascos de nieve"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Thunderstorm"
+msgstr "Tormenta"
+
+#: aleph_weather.lua
+msgctxt "Weather"
+msgid "Thunderstorm, hail"
+msgstr "Tormenta con granizo"
+
+#: aleph_weather.lua
+msgid "Tap to choose your town."
+msgstr "Toca para elegir tu ciudad."
+
+#: aleph_weather.lua
+msgid "Updating…"
+msgstr "Actualizando…"
+
+#: aleph_weather.lua
+msgid "Not updated yet."
+msgstr "Aún sin actualizar."
+
+#: aleph_weather.lua
+msgid "Connect to Wi-Fi to see the weather."
+msgstr "Conéctate al Wi-Fi para ver el tiempo."
+
+#: aleph_weather.lua
+msgid "H %1  L %2"
+msgstr "Máx %1  Mín %2"
+
+#: aleph_weather.lua
+msgid "Updated %1"
+msgstr "Actualizado a las %1"
+
+#: aleph_weather.lua
+msgid "Which place?"
+msgstr "¿Qué lugar?"
+
+#: aleph_weather.lua
+msgid "Your town"
+msgstr "Tu ciudad"
+
+#: aleph_weather.lua
+msgid "A town or city"
+msgstr "Una ciudad o pueblo"
+
+#: aleph_weather.lua
+msgid "Looking for %1…"
+msgstr "Buscando %1…"
+
+#: aleph_weather.lua
+msgid "Connect to Wi-Fi to find the place."
+msgstr "Conéctate al Wi-Fi para encontrar el lugar."
+
+#: aleph_weather.lua
+msgid "The place could not be looked up."
+msgstr "No se pudo buscar el lugar."
+
+#: aleph_weather.lua
+msgid "No place called %1 was found."
+msgstr "No se encontró ningún lugar llamado %1."
+
+#: aleph_weather.lua
+msgid "Not updated yet"
+msgstr "Aún sin actualizar"
+
+#: aleph_weather.lua
+msgid "Update now"
+msgstr "Actualizar ahora"
+
+#: aleph_weather.lua aleph_xr_page.lua
+msgid "Place"
+msgstr "Lugar"
+
+#: aleph_weather.lua
+msgid "From Open-Meteo, only with Wi-Fi already on, at most once an hour. Only the place's position is sent."
+msgstr "De Open-Meteo, solo con el Wi-Fi ya activado, como mucho una vez por hora. Solo se envía la posición del lugar."
+
+#: aleph_weather.lua
+msgid "Connect to Wi-Fi to update the weather."
+msgstr "Conéctate al Wi-Fi para actualizar el tiempo."
 
 #: aleph_xr_page.lua
 msgid "People"
@@ -4957,10 +6524,6 @@ msgstr "Otros"
 #: aleph_xr_page.lua
 msgid "Person"
 msgstr "Persona"
-
-#: aleph_xr_page.lua
-msgid "Place"
-msgstr "Lugar"
 
 #: aleph_xr_page.lua
 msgid "Group"
@@ -5043,6 +6606,26 @@ msgid "Reads the book again; descriptions are kept"
 msgstr "Vuelve a leer el libro; se conservan las descripciones"
 
 #: aleph_xr_page.lua
+msgid "Where it comes up"
+msgstr "Dónde aparece"
+
+#: aleph_xr_page.lua
+msgid "First seen"
+msgstr "Primera vez"
+
+#: aleph_xr_page.lua
+msgid "Most mentions"
+msgstr "Más menciones"
+
+#: aleph_xr_page.lua
+msgid "Latest"
+msgstr "Más reciente"
+
+#: aleph_xr_page.lua
+msgid "Often with"
+msgstr "A menudo con"
+
+#: aleph_xr_page.lua
 msgid "%1 mentions"
 msgstr "%1 menciones"
 
@@ -5113,6 +6696,10 @@ msgstr "Actualizar la historia"
 #: aleph_xr_page.lua
 msgid "Chapter %1"
 msgstr "Capítulo %1"
+
+#: aleph_xr_page.lua
+msgid "The story so far"
+msgstr "La historia hasta ahora"
 
 #: aleph_xr_page.lua
 msgid "The story"
@@ -5225,10 +6812,6 @@ msgstr "Bienvenido de nuevo"
 #: aleph_xr_story.lua
 msgid "Summarise"
 msgstr "Resumir"
-
-#: aleph_xr_story.lua
-msgid "Not now"
-msgstr "Ahora no"
 
 #: aleph_xray.lua
 msgid "Characters"
@@ -5385,10 +6968,6 @@ msgstr "400 – 599 páginas"
 #: aleph_local.lua (PAGE_BANDS)
 msgid "600 pages or more"
 msgstr "600 páginas o más"
-
-#: aleph_goodreads_send.lua (status)
-msgid "Did not finish"
-msgstr "No terminado"
 
 #: aleph_migrate.lua
 msgid "Aleph is now in aleph.koplugin. Please delete the old readingboard.koplugin folder from koreader/plugins and restart KOReader: with both installed, screens are hooked twice."

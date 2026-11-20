@@ -98,7 +98,8 @@ function BC.ribbonFile(hex)
         if not f then return nil end
         -- A ribbon hanging from the top edge, with a notch at its foot; a thin
         -- dark edge keeps light colours visible on grey screens.
-        f:write(string.format([[<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.5 0H18.5V23.2L12 18.4L5.5 23.2Z" fill="%s" stroke="#2B2B2B" stroke-width="0.9" stroke-linejoin="round"/></svg>]], hex))
+        f:write(string.format([[<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.5 0H18.5V23.2L12 18.4L5.5 23.2Z" fill="%s" stroke="#2B2B2B" stroke-width="0.9" stroke-linejoin="round"/></svg>]],
+            hex))
         f:close()
     end
     ribbon_written[path] = true
@@ -132,7 +133,6 @@ function BC.showPicker(ui, item)
     if not item then return end
     local Geom = require("ui/geometry")
     local Blitbuffer = require("ffi/blitbuffer")
-    local UIManager = require("ui/uimanager")
     local Event = require("ui/event")
     local BoardMetrics = require("aleph_board_metrics")
     local BoardUI = require("aleph_board_ui")

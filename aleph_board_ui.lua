@@ -58,6 +58,99 @@ local function isRGB(c)
 end
 BoardUI.isRGB = isRGB
 
+-- ------------------------------------------------------------------ ink
+-- Aleph modification, 2026-11-18: the colour of Home's own text over a
+-- wallpaper (aleph_wallpaper.lua, "Text over the wallpaper"). While
+-- BoardUI.ink is set, what is built draws its grays another way:
+--   { invert = true }      black becomes white, each gray its opposite
+--   { halo = colour, r }   an outline of `colour`, r wide, round each text,
+--                          icon and dot (the same thing drawn in that
+--                          colour around it: no images, no new fonts)
+--   { solid = colour }     everything in one colour (the outline itself)
+-- Colours of a colour scheme (RGB) are left as they are, except in solid.
+-- Set only while the header and the footer are built (BoardUI.withInk).
+BoardUI.ink = nil
+
+local function gray(c)
+    if not c then return nil end
+    local ok, v = pcall(function() return c.a end)
+    if ok and type(v) == "number" then return v end
+    return nil
+end
+
+function BoardUI.inkCol(c)
+    local ink = BoardUI.ink
+    if not ink then return c end
+    if ink.solid then return ink.solid end
+    if ink.invert and c and not isRGB(c) and Blitbuffer.Color8 then
+        local v = gray(c)
+        if v then return Blitbuffer.Color8(255 - v) end
+    end
+    return c
+end
+
+local function hexGray(hex)
+    local r = tostring(hex):match("^#(%x%x)%x%x%x%x$")
+    return r and tonumber(r, 16) or nil
+end
+
+-- An icon's colour (an INK key or a hex), as drawn under the ink.
+function BoardUI.inkHex(key)
+    local hex = BoardMetrics.INK_HEX[key or "black"] or key
+    local ink = BoardUI.ink
+    if not ink then return hex end
+    if ink.solid then return ink.solid_hex end
+    if ink.invert then
+        local v = hexGray(hex)
+        local r, g, b = tostring(hex):match("^#(%x%x)(%x%x)(%x%x)$")
+        if v and r == g and g == b then return string.format("#%02x%02x%02x", 255 - v, 255 - v, 255 - v) end
+    end
+    return hex
+end
+
+-- Builds with `ink` in force (nil: as usual).
+function BoardUI.withInk(ink, fn)
+    local before = BoardUI.ink
+    BoardUI.ink = ink
+    local ok, result = pcall(fn)
+    BoardUI.ink = before
+    if not ok then error(result, 0) end
+    return result
+end
+
+-- A widget with its outline: `shadow` (the same, in the outline's colour)
+-- painted r pixels round it in eight directions, then the widget itself.
+local Halo = Widget:extend{ r = 1 }
+function Halo:getSize() return self[1]:getSize() end
+function Halo:paintTo(bb, x, y)
+    local r = self.r
+    local size = self[1]:getSize()
+    self.dimen = Geom:new{ x = x, y = y, w = size.w, h = size.h }
+    for _i, d in ipairs({ { -r, 0 }, { r, 0 }, { 0, -r }, { 0, r }, { -r, -r }, { r, -r }, { -r, r }, { r, r } }) do
+        self.shadow:paintTo(bb, x + d[1], y + d[2])
+    end
+    self[1]:paintTo(bb, x, y)
+end
+function Halo:free()
+    if self.shadow and self.shadow.free then self.shadow:free() end
+    if self[1] and self[1].free then self[1]:free() end
+end
+function Halo:isTruncated() return self[1].isTruncated and self[1]:isTruncated() end
+function Halo:getBaseline() return self[1].getBaseline and self[1]:getBaseline() end
+
+-- make() built as usual, and with an outline when the ink asks for one.
+local function withHalo(make)
+    local ink = BoardUI.ink
+    local main = make()
+    if not (ink and ink.halo) or ink.solid then return main end
+    BoardUI.ink = { solid = ink.halo, solid_hex = ink.halo_hex }
+    local ok, shadow = pcall(make)
+    BoardUI.ink = ink
+    if not ok or not shadow then return main end
+    return Halo:new{ r = ink.r or 1, shadow = shadow, main }
+end
+BoardUI._withHalo = withHalo
+
 local function paintBorder(bb, x, y, w, h, bw, c, r)
     if isRGB(c) and bb.paintBorderRGB32 then
         bb:paintBorderRGB32(x, y, w, h, bw, c, r)
@@ -197,10 +290,15 @@ end
 
 -- A single line, or o.lines lines when o.lines > 1. o: s (nominal size),
 -- b, i, serif, col, w (box width), align, lines, data.
+local textPlain
 function BoardUI.text(str, o)
+    if BoardUI.ink then return withHalo(function() return textPlain(str, o) end) end
+    return textPlain(str, o)
+end
+textPlain = function(str, o)
     o = o or {}
     local size = o.s or 14
-    local face = BoardMetrics.face(size, faceKind(o))
+    local face = o.face or BoardMetrics.face(size, faceKind(o))
     str = BD.auto(tostring(str or ""))
     local lines = o.lines or 1
     -- No room to set any text: report it and hold the space.
@@ -214,7 +312,7 @@ function BoardUI.text(str, o)
             text = str,
             face = face,
             bold = o.b == true,
-            fgcolor = o.col or INK.black,
+            fgcolor = BoardUI.inkCol(o.col or INK.black),
             -- TextBoxWidget paints its own background; match the surface
             -- it sits on.
             bgcolor = o.bg or BoardUI.surface or INK.white,
@@ -227,17 +325,18 @@ function BoardUI.text(str, o)
         if tb.line_with_ellipsis and not o.data then problem("clamped", str) end
         return tb
     end
-    local rgb = isRGB(o.col) and Blitbuffer.TYPE_BB8 ~= nil
+    local fg = BoardUI.inkCol(o.col or INK.black)
+    local rgb = isRGB(fg) and Blitbuffer.TYPE_BB8 ~= nil
     local tw = TextWidget:new{
         text = str,
         padding = 0,
         face = face,
         bold = o.b == true,
-        fgcolor = rgb and INK.white or (o.col or INK.black),
+        fgcolor = rgb and INK.white or fg,
         max_width = o.w,
     }
     if o.w and tw:isTruncated() and not o.data then problem("ellipsis", str .. " w=" .. o.w .. " need=" .. tw:getSize().w) end
-    if rgb then tw = ColourLine:new{ line = tw, color = o.col } end
+    if rgb then tw = ColourLine:new{ line = tw, color = fg } end
     if not o.w then return tw end
     local dimen = Geom:new{ w = o.w, h = tw:getSize().h }
     if o.align == "center" then return CenterContainer:new{ dimen = dimen, tw } end
@@ -251,10 +350,18 @@ end
 -- each try costs a text widget), keyed by everything that changes the fit.
 local fit_size_cache, fit_size_count = {}, 0
 
+-- Aleph modification, 2026-11-18: after a change of font, what was
+-- measured and which layout won are found again.
+function BoardUI.resetFits()
+    pick_memo, pick_memo_fp = {}, nil
+    fit_size_cache, fit_size_count = {}, 0
+end
+
+
 function BoardUI.fitSize(str, o, w, min_s)
     local size = o.s or 14
     local face_kind = faceKind(o)
-    local key = table.concat({ tostring(str), size, min_s or size, w, face_kind, o.b == true and 1 or 0, BoardMetrics.get().dp, BoardMetrics.fontSize(1) }, "|")
+    local key = table.concat({ tostring(str), size, min_s or size, w, face_kind, o.b == true and 1 or 0, BoardMetrics.get().dp, BoardMetrics.fontSize(1), BoardMetrics.font_gen or 0 }, "|")
     local hit = fit_size_cache[key]
     if hit then return hit end
     if size <= (min_s or size) then return size end
@@ -321,7 +428,12 @@ end
 
 -- One line of styled runs on a shared baseline, e.g. a bold number followed
 -- by a muted unit. parts: strings or { t, b, s, col, serif, i }.
+local runsPlain
 function BoardUI.runs(parts, o)
+    if BoardUI.ink then return withHalo(function() return runsPlain(parts, o) end) end
+    return runsPlain(parts, o)
+end
+runsPlain = function(parts, o)
     o = o or {}
     local base = o.s or 14
     local widgets = {}
@@ -336,7 +448,7 @@ function BoardUI.runs(parts, o)
             padding = 0,
             face = BoardMetrics.face(size, faceKind(p)),
             bold = p.b == true,
-            fgcolor = p.col or o.col or INK.black,
+            fgcolor = BoardUI.inkCol(p.col or o.col or INK.black),
         }
         table.insert(widgets, tw)
         max_base = math.max(max_base, tw:getBaseline())
@@ -558,9 +670,9 @@ function BoardUI.box(o, child)
         margin = 0,
         padding = 0,
         bordersize = border,
-        color = o.border_col or INK.black,
+        color = BoardUI.inkCol(o.border_col or INK.black),
         radius = o.radius,
-        background = o.bg,
+        background = BoardUI.inkCol(o.bg),
         LeftContainer:new{
             dimen = Geom:new{ w = math.max(1, inner_w), h = math.max(1, inner_h) },
             child or HorizontalSpan:new{ width = 0 },
@@ -592,6 +704,18 @@ end
 
 -- A dot: filled, or an outlined ring.
 function BoardUI.dot(size, on, o)
+    if BoardUI.ink then
+        return withHalo(function()
+            local ink = BoardUI.ink
+            BoardUI.ink = nil
+            local inner = { off = BoardUI.withInk(ink, function() return BoardUI.inkCol((o or {}).off or INK.ga) end),
+                col = BoardUI.withInk(ink, function() return BoardUI.inkCol((o or {}).col or INK.black) end) }
+            local ok, d = pcall(BoardUI.dot, size, on, inner)
+            BoardUI.ink = ink
+            if not ok then error(d, 0) end
+            return d
+        end)
+    end
     o = o or {}
     return FrameContainer:new{
         margin = 0, padding = 0,
@@ -610,7 +734,7 @@ end
 function BoardUI.rect(w, h, col, r)
     return FrameContainer:new{
         margin = 0, padding = 0, bordersize = 0, radius = r,
-        background = col,
+        background = BoardUI.inkCol(col),
         HorizontalGroup:new{ HorizontalSpan:new{ width = math.max(0, w) }, VerticalSpan:new{ width = math.max(0, h) } },
     }
 end
@@ -618,11 +742,15 @@ end
 -- An icon. o: col (an INK key), sw, fill.
 function BoardUI.icon(name, size, o)
     o = o or {}
-    return BoardIcons.widget(name, size, {
-        color = BoardMetrics.INK_HEX[o.col or "black"] or o.col,
-        sw = o.sw or 2,
-        fill = o.fill,
-    })
+    local function make()
+        return BoardIcons.widget(name, size, {
+            color = BoardUI.ink and BoardUI.inkHex(o.col or "black") or (BoardMetrics.INK_HEX[o.col or "black"] or o.col),
+            sw = o.sw or 2,
+            fill = o.fill,
+        })
+    end
+    if BoardUI.ink then return withHalo(make) end
+    return make()
 end
 
 -- A circle of diameter d with an icon centred in it.
@@ -631,9 +759,9 @@ function BoardUI.circle(d, o, child)
     return FrameContainer:new{
         margin = 0, padding = 0,
         bordersize = border,
-        color = o.border_col or INK.black,
+        color = BoardUI.inkCol(o.border_col or INK.black),
         radius = math.floor(d / 2),
-        background = o.bg,
+        background = BoardUI.inkCol(o.bg),
         CenterContainer:new{ dimen = Geom:new{ w = d - 2 * border, h = d - 2 * border }, child },
     }
 end
@@ -709,7 +837,8 @@ function StatusSlot:free()
 end
 
 function BoardUI.statusCluster(d)
-    return StatusSlot:new{ statusInner(d) }
+    -- The ink it was built with, for the minute's redraw in place.
+    return StatusSlot:new{ ink = BoardUI.ink, statusInner(d) }
 end
 
 -- The status corner on screen redrawn with `clock`, in place. Returns the
@@ -718,7 +847,7 @@ end
 function BoardUI.refreshStatus(clock)
     local slot = BoardUI.painted_status
     if not slot or slot.freed or not slot.dimen then return nil end
-    local fresh = statusInner({ clock = clock })
+    local fresh = BoardUI.withInk(slot.ink, function() return statusInner({ clock = clock }) end)
     local old = slot[1]:getSize()
     local new = fresh:getSize()
     if old.w ~= new.w or old.h ~= new.h then
@@ -734,7 +863,12 @@ end
 -- The battery: an outline, its fill for `level` (0 to 100) and the nub.
 -- o: w, h (in dp; 21 by 11 unless given), col (black unless given). Drawn
 -- the same in Home's header and in a book's top and bottom lines.
+local batteryPlain
 function BoardUI.battery(level, o)
+    if BoardUI.ink then return withHalo(function() return batteryPlain(level, o) end) end
+    return batteryPlain(level, o)
+end
+batteryPlain = function(level, o)
     o = o or {}
     local bw, bh = px(o.w or 21), px(o.h or 11)
     local b = math.max(1, px(1.25))
@@ -789,7 +923,6 @@ local function touchCover(key)
     table.insert(cover_order, key)
 end
 
-local aspect_cache = {}
 
 -- The cover scaled for a w x h box: cropped to fill when its shape is within
 -- tol (12% unless given) of the box, fitted otherwise. One decode serves both
@@ -826,7 +959,6 @@ local function cachedCover(path, w, h, tol)
     local ok, native = pcall(RenderImage.renderImageFile, RenderImage, path, false)
     if not ok or not native then cover_failed[path] = true; return nil end
     local iw, ih = native:getWidth(), native:getHeight()
-    aspect_cache[path] = iw / ih
     local box_aspect = w / h
     local crop = shape ~= "fit" or math.abs(iw / ih - box_aspect) / box_aspect <= tol
     local scale = crop and math.max(w / iw, h / ih) or math.min(w / iw, h / ih)
@@ -876,15 +1008,6 @@ end
 -- The cover's native shape, from the decode the board already did, or a
 -- decode of its own when the cover has not been drawn yet.
 BoardUI.cachedCover = cachedCover
-
-function BoardUI.nativeAspect(path)
-    if aspect_cache[path] then return aspect_cache[path] end
-    local ok, native = pcall(RenderImage.renderImageFile, RenderImage, path, false)
-    if not ok or not native then return nil end
-    aspect_cache[path] = native:getWidth() / native:getHeight()
-    native:free()
-    return aspect_cache[path]
-end
 
 local BoardCover = Widget:extend{
     path = nil,

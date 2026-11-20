@@ -168,6 +168,7 @@ local function titleOf(view)
         if cat.id == view then return cat.label() end
     end
     if view == "about" then return _("About") end
+    if view == "font-home" or view == "font-menu" then return _("Font") end
     if view == "night" then return _("Night profile") end
     if view == "shortcut" then return _("Shortcut") end
     return _("Settings")
@@ -204,6 +205,19 @@ local function segRow(w, label, sub, options, selected, action_for, tight)
     })
 end
 
+-- Aleph modification, 2026-11-18: the daily (minutes), weekly (days) and
+-- monthly (books) goals; the yearly one is the reading goal above.
+local GOAL_LIMITS = { day_goal = { 5, 1440, 5 }, week_goal = { 1, 7, 1 }, month_goal = { 1, 100, 1 } }
+function Settings.goalRow(iw, settings, key, label, unit)
+    local v = require("aleph_local").goalSetting(settings, key)
+    local lim = GOAL_LIMITS[key]
+    return MenuUI.row(iw, { label = label, h = 56,
+        trail = MenuUI.stepper(v == 0 and _("Off") or v, v > 0 and unit or nil,
+            v > 0 and { kind = "goal-step", key = key, delta = -1 } or nil,
+            v < lim[2] and { kind = "goal-step", key = key, delta = 1 } or nil,
+            { kind = "goal-step-type", key = key, label = label }) })
+end
+
 local function profileBody(page, w)
     local settings = page.browser.settings
     local iw = MenuUI.rowsIn(w)
@@ -217,6 +231,14 @@ local function profileBody(page, w)
             MenuUI.row(iw, { icon = "target", label = _("Annual reading goal"), sub = _("Tap the number to type one"), h = 64,
                 trail = MenuUI.stepper(goal, _("books"), { kind = "goal", delta = -1 }, { kind = "goal", delta = 1 }, { kind = "goal-type" }) }),
         }),
+        -- Aleph modification, 2026-11-18: the Goals widget's other three
+        -- (0 turns one off: the widget leaves it out).
+        space(nil, px(12)),
+        MenuUI.section(w, _("Goals widget"), MenuUI.group(w, {
+            Settings.goalRow(iw, settings, "day_goal", _("Daily goal"), _("min")),
+            Settings.goalRow(iw, settings, "week_goal", _("Weekly goal"), _("days")),
+            Settings.goalRow(iw, settings, "month_goal", _("Monthly goal"), _("books")),
+        })),
         space(nil, px(12)),
         MenuUI.card(w, { space(nil, px(12)), text(_("Your name is shown in the greeting on Home."), { s = 13, col = INK.g4, w = iw, lines = 2 }), space(nil, px(12)) }, { fill = true }),
     }
@@ -227,7 +249,10 @@ end
 local function shortcutCard(page, w)
     local iw = MenuUI.rowsIn(w)
     if not Device:isTouchDevice() then
-        return MenuUI.card(w, { space(nil, px(12)), text(_("This device has no touchscreen. KOReader's keyboard shortcuts can open Aleph: its action is \"Aleph: open\"."), { s = 14, w = iw, lines = 3 }), space(nil, px(12)) })
+        return MenuUI.card(w,
+            { space(nil, px(12)),
+            text(_("This device has no touchscreen. KOReader's keyboard shortcuts can open Aleph: its action is \"Aleph: open\"."), { s = 14, w = iw, lines = 3 }),
+            space(nil, px(12)) })
     end
     local g = Shortcut.find(Shortcut.current(page.gestures_data))
     local pill = MenuUI.pill(g and _("Change") or _("Pick one"), { kind = "outline", h = 36, s = 14, pad_x = 14, action = { kind = "view", view = "shortcut" } })
@@ -323,7 +348,8 @@ local function shortcutCards(page, w, illus_max, with_note)
             hstack({ w = iw, gap = px(12), valign = "top" }, {
                 vstack({}, { space(nil, px(12)), icon("info", px(20), { sw = 2 }) }),
                 vstack({ w = iw - px(20) - px(12), pad = { px(12), 0, px(12), 0 } }, {
-                    text(_("Top-left hold and top-right tap work in books only. Other choices also work in the file browser. A gesture that already does something is named before it is replaced. The \"Aleph: this book\" action can be given a gesture in KOReader's Taps and gestures."), { s = 13, col = INK.g4, lines = 5, w = iw - px(20) - px(12), bg = INK.ge }),
+                    text(_("Top-left hold and top-right tap work in books only. Other choices also work in the file browser. A gesture that already does something is named before it is replaced. The \"Aleph: this book\" action can be given a gesture in KOReader's Taps and gestures."),
+                        { s = 13, col = INK.g4, lines = 5, w = iw - px(20) - px(12), bg = INK.ge }),
                 }),
             }),
         }, { fill = true }),
@@ -395,6 +421,9 @@ local function readerBody(page, w, compact)
             MenuUI.row(iw, { icon = "search", label = _("Search like a Kindle"),
                 sub = _("Every result on a page, then ‹ › through them and back to your page; off: KOReader's search"), h = 64,
                 toggle = settings.kindle_search ~= false, action = { kind = "kindle-search", value = settings.kindle_search == false } }),
+            MenuUI.row(iw, { icon = "undo-2", label = _("Way back after a jump"),
+                sub = _("After the contents, Go to page, a link or a bookmark: Go to most recent page at the foot"), h = 64,
+                toggle = settings.jump_back ~= false, action = { kind = "jump-back", value = settings.jump_back == false } }),
         }, { inset = 0 }),
     }
 end
@@ -437,12 +466,31 @@ local function topMenuBody(page, w, compact)
         r._no_icon = true
         return r
     end
+    -- Aleph modification, 2026-11-18: the top menu's font and text size.
+    local Fonts = require("aleph_fonts")
+    local menu_font = Fonts.menuSetting()
+    local menu_scale = Fonts.menuScale()
+    local function scaleAt(delta)
+        for i, v in ipairs(Fonts.MENU_SCALES) do
+            if math.abs(v - menu_scale) < 0.001 then return Fonts.MENU_SCALES[i + delta] end
+        end
+    end
     local look = {
+        MenuUI.row(iw, { icon = "type", label = _("Font"), h = 56,
+            value = Settings.shortName(menu_font == "same" and _("Same as Home") or menu_font == "noto" and "Noto Sans" or menu_font.name),
+            chevron = true, action = { kind = "view", view = "font-menu" } }),
+        MenuUI.row(iw, { icon = "a-large-small", label = _("Text size"), sub = _("The whole top menu, with its icons"), h = 64,
+            trail = MenuUI.stepper(T(_("%1%"), math.floor(menu_scale * 100 + 0.5)), nil,
+                scaleAt(-1) and { kind = "menu-scale", value = scaleAt(-1) } or nil,
+                scaleAt(1) and { kind = "menu-scale", value = scaleAt(1) } or nil) }),
         MenuUI.row(iw, { icon = "square", label = _("Outline around icons"), h = 56,
             toggle = TopMenu.read("outline", true) ~= false, action = { kind = "topmenu-outline" } }),
         iconRow(_("Controls tab icon"), "tab_controls", "controls"),
         iconRow(_("Apps tab icon"), "tab_apps", "apps"),
     }
+    -- Holding the Wi-Fi tile lists the networks in range (as in KOReader),
+    -- so its icon is changed here.
+    if Device.hasWifiToggle and Device:hasWifiToggle() then table.insert(look, iconRow(_("Wi-Fi icon"), "wifi", "wifi")) end
     if Device:hasFrontlight() then
         table.insert(look, sliderRow(_("Brightness slider"), "brightness_style"))
         if Device:hasNaturalLight() then table.insert(look, sliderRow(_("Warmth slider"), "warmth_style")) end
@@ -481,6 +529,10 @@ local function homeBody(page, w, compact)
         trail = MenuUI.stepper(scaleLabel(scale_now), nil,
             scale_now > scales[1] and { kind = "ui-scale", delta = -1 } or nil,
             scale_now < scales[#scales] and { kind = "ui-scale", delta = 1 } or nil) }))
+    -- Aleph modification, 2026-11-18: Home's font (aleph_fonts.lua).
+    local home_font = require("aleph_fonts").home()
+    table.insert(rows, MenuUI.row(iw, { label = _("Font"), sub = sub(_("Home, widgets, the library and Aleph's windows")), h = compact and 56 or 64,
+        value = Settings.shortName(home_font and home_font.name or "Noto Sans"), chevron = true, action = { kind = "view", view = "font-home" } }))
     for _i, r in ipairs(rows) do r._no_icon = true end
     local look = MenuUI.group(w, rows, { inset = 0 })
     local styled = settings.style_dialogs ~= false
@@ -625,37 +677,64 @@ local function libraryBody(page, w)
             sub = extra and _("In the library's Sort and filter") or _("Off: reads every book's details the first time"),
             h = 64, toggle = extra, action = { kind = "extra-filters" } }),
     })))
+    -- Aleph modification, 2026-11-17: KOReader collections from Calibre's
+    -- #collections column (aleph_calibre_collections.lua).
+    local from_calibre = settings.calibre_collections ~= false
+    table.insert(items, space(nil, px(16)))
+    table.insert(items, MenuUI.section(w, _("Collections"), MenuUI.group(w, {
+        MenuUI.row(iw, { icon = "library", label = _("Collections from Calibre"),
+            sub = from_calibre and _("Books join the collections in Calibre's #collections column") or _("Off"),
+            h = 64, toggle = from_calibre, action = { kind = "calibre-collections" } }),
+    })))
     -- Goodreads' library export (aleph_goodreads_import.lua).
     table.insert(items, space(nil, px(16)))
-    -- Below it, the sign-in cookie for advokatb's Goodreads plugin, only
-    -- with that plugin installed (aleph_goodreads.lua).
-    local cookie, background = false, false
-    try(function()
-        if require("aleph_goodreads").available(page.browser.plugin and page.browser.plugin.ui) then
-            cookie = MenuUI.row(iw, { icon = "key-round", label = _("Goodreads sign-in"),
-                sub = _("Receive the sign-in cookie from your computer's browser"),
-                h = 64, chevron = true, action = { kind = "view", view = "goodreads" } })
-            -- The plugin's automatic tracking, asked in the background
-            -- (aleph_goodreads_track.lua).
-            local status = require("aleph_goodreads_track").status(page.browser.plugin and page.browser.plugin.ui)
-            if status == "unsupported" then
-                background = MenuUI.row(iw, { icon = "refresh-cw", label = _("Track in the background"),
-                    sub = _("Not with this version of the Goodreads plugin: it tracks its own way"), h = 64 })
-            elseif status then
-                background = MenuUI.row(iw, { icon = "refresh-cw", label = _("Track in the background"),
-                    sub = status == "on" and _("Goodreads is updated without holding up the page")
-                        or _("Off: the Goodreads plugin asks while you wait, slow on bad Wi-Fi"),
-                    h = 64, toggle = status == "on", action = { kind = "goodreads-background", value = status ~= "on" } })
-            end
-        end
-    end)
-    table.insert(items, MenuUI.section(w, _("Goodreads"), MenuUI.group(w, {
+    -- Below it, the sign-in cookie (aleph_goodreads.lua) and, Aleph modification
+    -- 2026-11-18, Aleph's own Goodreads (aleph_gr.lua) or, while advokatb's
+    -- plugin is still on, only a way to turn it off.
+    local gr_rows = {
         MenuUI.row(iw, { icon = "download", label = _("Import from Goodreads"),
             sub = _("Status, finished dates and ratings from Goodreads' library export"),
             h = 64, chevron = true, action = { kind = "goodreads-import" } }),
-        cookie,
-        background,
-    })))
+    }
+    try(function()
+        local ui = page.browser.plugin and page.browser.plugin.ui
+        local Core = require("aleph_gr")
+        -- Aleph modification, 2026-11-18: whether Goodreads is signed in.
+        gr_rows[#gr_rows + 1] = MenuUI.row(iw, { icon = "key-round", label = _("Goodreads sign-in"),
+            sub = Core.host():_hasSession() and _("Signed in") or _("Not signed in"),
+            h = 64, chevron = true, action = { kind = "view", view = "goodreads" } })
+        if Core.pluginOn(ui) then
+            gr_rows[#gr_rows + 1] = MenuUI.row(iw, { icon = "info", label = _("The Goodreads plugin is still on"),
+                sub = _("Aleph sends to Goodreads itself now. Turn the plugin off so nothing is sent twice"),
+                h = 64, chevron = true, action = { kind = "goodreads-plugin-off" } })
+            return
+        end
+        local on = settings.goodreads_own ~= false
+        gr_rows[#gr_rows + 1] = MenuUI.row(iw, { icon = "refresh-cw", label = _("Keep Goodreads up to date"),
+            sub = on and _("Reading, progress, finished and stars, sent in the background")
+                or _("Off: only Send to Goodreads from a book's page"),
+            h = 64, toggle = on, action = { kind = "goodreads-own" } })
+        if not on then return end
+        local S = Core.host().settings
+        gr_rows[#gr_rows + 1] = MenuUI.row(iw, { icon = "book-open", label = _("Track every book"),
+            sub = S:alwaysSync() and _("Every book linked to Goodreads is sent")
+                or _("Only books tracked one by one (Goodreads in the reader's menu)"),
+            h = 64, toggle = S:alwaysSync(), action = { kind = "gr-opt", key = "always_sync", value = not S:alwaysSync() } })
+        gr_rows[#gr_rows + 1] = MenuUI.row(iw, { icon = "trending-up", label = _("Send the percentage"),
+            sub = S:syncProgressEnabled() and _("At most once a minute while reading") or _("Off"),
+            h = 64, toggle = S:syncProgressEnabled(), action = { kind = "gr-opt", key = "sync_progress", value = not S:syncProgressEnabled() } })
+        gr_rows[#gr_rows + 1] = MenuUI.row(iw, { icon = "star", label = _("Send the stars"),
+            sub = S:syncRatingEnabled() and _("With Read, and when they change on a Read book") or _("Off"),
+            h = 64, toggle = S:syncRatingEnabled(), action = { kind = "gr-opt", key = "sync_rating", value = not S:syncRatingEnabled() } })
+        local waiting, failed = Core.counts()
+        if waiting + failed > 0 then
+            local T = require("ffi/util").template
+            gr_rows[#gr_rows + 1] = MenuUI.row(iw, { icon = "clock", label = _("Waiting to send"),
+                sub = failed > 0 and T(_("%1 waiting, %2 failed"), waiting, failed) or T(_("%1 waiting for the internet"), waiting),
+                h = 64, chevron = true, action = { kind = "goodreads-queue" } })
+        end
+    end)
+    table.insert(items, MenuUI.section(w, _("Goodreads"), MenuUI.group(w, gr_rows)))
     return items
 end
 
@@ -678,7 +757,12 @@ local function portraitsBody(page, w)
                 toggle = on, action = { kind = "portraits-toggle", value = not on } }),
         }),
         space(nil, px(12)),
-        MenuUI.card(w, { space(nil, px(12)), text(_("Turning this on uses the internet. Only an author's name is sent, to Open Library and Wikipedia, and the photos are saved on this device. Authors without a photo keep showing their covers."), { s = 13, col = INK.g4, w = iw, lines = 5 }), space(nil, px(12)) }, { fill = true }),
+        MenuUI.card(w,
+            { space(nil, px(12)),
+            text(_("Turning this on uses the internet. Only an author's name is sent, to Open Library and Wikipedia, and the photos are saved on this device. Authors without a photo keep showing their covers."),
+            { s = 13, col = INK.g4, w = iw, lines = 5 }),
+            space(nil, px(12)) },
+            { fill = true }),
     }
     if on then
         local names = authorNames(page.browser)
@@ -734,7 +818,7 @@ local function xrayBody(page, w)
     })))
     table.insert(items, space(nil, px(16)))
     table.insert(items, MenuUI.section(w, _("Descriptions with AI (optional)"), vstack({ w = w }, {
-        text(_("Asked from a book's X-Ray, never by itself, with your own key. Names: sends the book's title and a few words around each name. Story: sends the text of the chapters you have read. Never a page not read yet."),
+        text(_("Asked from a book's X-Ray, never by itself, with your own key. Names: sends the book's title and a few words around each name (with Detailed descriptions, longer passages and the chapter summaries). Story: sends the text of the chapters you have read. Never a page not read yet."),
             { s = 13, col = INK.g4, w = w, lines = 5 }),
         space(nil, px(10)),
         MenuUI.segmented(w, labels, at, function(index) return { kind = "xray-provider", id = AI.PROVIDERS[index].id } end),
@@ -743,6 +827,11 @@ local function xrayBody(page, w)
             MenuUI.row(iw, { icon = "key-round", label = _("Key"), sub = key_sub, sub_data = true, chevron = true, action = { kind = "xray-input", key = "xray_ai_key" } }),
             MenuUI.row(iw, { icon = "sliders-horizontal", label = _("Model"), sub = config.model ~= "" and config.model or _("Not set"), sub_data = true,
                 chevron = true, action = { kind = "xray-input", key = "xray_ai_model" } }),
+            -- Aleph modification, 2026-11-18: longer descriptions for a larger allowance (aleph_xr_ai.lua).
+            MenuUI.row(iw, { icon = "sparkles", label = _("Detailed descriptions"),
+                sub = settings.xray_ai_rich == true and _("Main characters in 3–4 sentences, from longer passages and the chapter summaries. Uses several times more of your AI allowance")
+                    or _("Off: a sentence or two for each name, from a few words around it"), h = 64,
+                toggle = settings.xray_ai_rich == true, action = { kind = "xray-set", key = "xray_ai_rich", value = settings.xray_ai_rich ~= true } }),
             MenuUI.row(iw, { icon = "calendar-clock", label = _("Offer a recap after a break"),
                 sub = _("Opening a book not read for this long asks whether to summarise the story so far"), h = 64,
                 value = ({ [0] = _("Never"), [7] = _("1 week"), [14] = _("2 weeks"), [30] = _("1 month") })[recap_days] or T(_("%1 days"), recap_days),
@@ -847,6 +936,66 @@ local function heightOf(items)
     return h
 end
 
+-- Aleph modification, 2026-11-18: Settings > Home > Font and Top menu >
+-- Font (aleph_fonts.lua): KOReader's fonts, each name written in its own
+-- font, a page at a time (only the fonts on the page shown are opened).
+local FONT_ROW = 60
+-- A font's name short enough for the end of a row.
+function Settings.shortName(name)
+    name = tostring(name or "")
+    if #name > 20 then name = name:sub(1, 19):gsub("[\128-\191]+$", ""):gsub("[\192-\255]$", "") .. "…" end
+    return name
+end
+function Settings.fontBody(page, view, w, room)
+    local Fonts = require("aleph_fonts")
+    local scope = view == "font-home" and "home" or "menu"
+    local current
+    if scope == "home" then
+        local c = Fonts.home(); current = c and c.file or "noto"
+    else
+        local c = Fonts.menuSetting(); current = type(c) == "table" and c.file or c
+    end
+    local choices = {}
+    if scope == "menu" then
+        choices[#choices + 1] = { key = "same", label = _("Same as Home"), sub = (Fonts.home() or { name = "Noto Sans" }).name }
+    end
+    choices[#choices + 1] = { key = "noto", label = "Noto Sans", sub = _("KOReader's own"), file = "NotoSans-Regular.ttf" }
+    for _i, f in ipairs(Fonts.list()) do
+        if f.file ~= "NotoSans-Regular.ttf" and not f.file:match("/NotoSans%-Regular%.ttf$") then
+            choices[#choices + 1] = { key = f.file, label = f.name, sub = f.file:match("([^/]+)$"), file = f.file, font = f }
+        end
+    end
+    local pager_h = px(40) + px(8)
+    local row_h = px(FONT_ROW)
+    local per = math.max(1, math.floor((room - pager_h) / row_h))
+    local count = math.max(1, math.ceil(#choices / per))
+    local key = view .. "#" .. #page.stack
+    page.sub_pages = page.sub_pages or {}
+    -- Opened at the page of the font in use.
+    if not page.sub_pages[key] then
+        for i, c in ipairs(choices) do
+            if c.key == current then page.sub_pages[key] = math.floor((i - 1) / per) + 1; break end
+        end
+    end
+    local at = math.max(1, math.min(count, page.sub_pages[key] or 1))
+    page.sub_pages[key], page.sub_count, page.sub_key = at, count, key
+    local iw = MenuUI.rowsIn(w)
+    local rows = {}
+    for i = (at - 1) * per + 1, math.min(#choices, at * per) do
+        local c = choices[i]
+        local face
+        if c.file then pcall(function() face = BoardMetrics.fileFace(c.file, 18) end) end
+        local tw = iw - px(40)
+        local label = text(c.label, { s = 18, w = tw, face = face, data = true })
+        local column = vstack({ w = tw }, { label, text(c.sub or "", { s = 12, col = INK.g4, w = tw, data = true }) })
+        rows[#rows + 1] = BoardUI.hit(hstack({ w = iw, h = row_h }, { column, flex(0), MenuUI.radio(c.key == current) }),
+            { kind = "font-pick", scope = scope, key = c.key })
+    end
+    local out = { MenuUI.group(w, rows, { inset = 0 }), flex(px(8)) }
+    if count > 1 then out[#out + 1] = require("aleph_text_pages").pager(w, at, count) end
+    return out
+end
+
 local function build(page, sw, sh)
     local mx = MenuUI.mx()
     local top, bottom = px(6), px(12)
@@ -861,6 +1010,13 @@ local function build(page, sw, sh)
     elseif view == "shortcut" then
         header = MenuUI.pageHeader(w, _("Shortcut"), { sub = _("Choose where to open Aleph") })
         body = shortcutBody(page, w, avail - header:getSize().h - px(8))
+    elseif view == "font-home" or view == "font-menu" then
+        header = MenuUI.pageHeader(w, _("Font"), { sub = view == "font-home" and _("Home and widgets") or _("Top menu") })
+        local room = avail - header:getSize().h - px(8)
+        items = { header, space(nil, px(8)) }
+        for _i, item in ipairs(Settings.fontBody(page, view, w, room)) do table.insert(items, item) end
+        page.panel_rect = Geom:new{ x = 0, y = 0, w = sw, h = sh }
+        return vstack({ w = sw, h = sh, pad = { top, mx, bottom, mx }, top = true }, items)
     else
         header = MenuUI.pageHeader(w, titleOf(view), { sub = _("Settings") })
         body = bodyFor(page, view, w, false)
@@ -978,6 +1134,32 @@ ACTIONS["goal-type"] = function(page, action, browser, settings)
     end, _("Save"), _("Books to finish this year"), "number")
 end
 
+-- The Goals widget's goals: a step of the stepper (below the least, off;
+-- up from off, the least), or a number typed (0 is off).
+ACTIONS["goal-step"] = function(page, action, browser, settings)
+    local lim = GOAL_LIMITS[action.key]
+    if not lim then return true end
+    local v = require("aleph_local").goalSetting(settings, action.key)
+    if action.delta > 0 then v = v == 0 and lim[1] or math.min(lim[2], v + lim[3])
+    else v = v <= lim[1] and 0 or math.max(lim[1], v - lim[3]) end
+    browser:persistSetting(action.key, v)
+    page:refresh()
+    refreshHomeSoon(browser)
+end
+
+ACTIONS["goal-step-type"] = function(page, action, browser, settings)
+    local lim = GOAL_LIMITS[action.key]
+    if not lim then return true end
+    browser:input(action.label, tostring(require("aleph_local").goalSetting(settings, action.key)), function(v)
+        local n = tonumber((tostring(v or ""):gsub("[^%d]", "")))
+        if not n then return browser:message(T(_("Type a whole number from 0 (off) to %1."), lim[2])) end
+        n = math.max(0, math.min(lim[2], math.floor(n)))
+        browser:persistSetting(action.key, n)
+        page:refresh()
+        refreshHomeSoon(browser)
+    end, _("Save"), T(_("0 turns it off; at most %1"), lim[2]), "number")
+end
+
 ACTIONS["open-home"] = function(page, action, browser, settings)
     browser:persistSetting("open_home", action.value)
     page:refresh()
@@ -1028,7 +1210,8 @@ end
 ACTIONS["portraits-download"] = function(page, action, browser, settings)
     local minutes = math.max(1, math.ceil(action.pending / 60))
     confirm(_("Download author portraits"),
-        T(_("This looks up %1 authors on Open Library and Wikipedia, about one a second (around %2 minutes), and needs Wi-Fi to stay on. Only the names are sent. You can stop it any time, and the Authors list shows portraits as they arrive."), action.pending, minutes),
+        T(_("This looks up %1 authors on Open Library and Wikipedia, about one a second (around %2 minutes), and needs Wi-Fi to stay on. Only the names are sent. You can stop it any time, and the Authors list shows portraits as they arrive."),
+            action.pending, minutes),
         _("Download"), function()
             require("ui/network/manager"):runWhenOnline(function()
                 local Portraits = require("aleph_portraits")
@@ -1102,6 +1285,11 @@ end
 
 ACTIONS["reader-sheet"] = function(page, action, browser, settings)
     browser:persistSetting("reader_sheet", action.value)
+    page:refresh()
+end
+
+ACTIONS["jump-back"] = function(page, action, browser, settings)
+    browser:persistSetting("jump_back", action.value)
     page:refresh()
 end
 
@@ -1217,6 +1405,31 @@ ACTIONS["ui-scale"] = function(page, action, browser, settings)
     page:refresh()
 end
 
+ACTIONS["font-pick"] = function(page, action, browser, settings)
+    local Fonts = require("aleph_fonts")
+    local value
+    if action.key == "same" then value = nil
+    elseif action.key == "noto" then value = action.scope == "menu" and "noto" or nil
+    else
+        for _i, f in ipairs(Fonts.list()) do
+            if f.file == action.key then value = { name = f.name, file = f.file, italic = f.italic }; break end
+        end
+        if not value then return true end
+    end
+    browser:persistSetting(action.scope == "home" and "font_home" or "font_menu", value)
+    if action.scope == "home" then
+        Fonts.apply()
+        try(function() require("aleph_theme").sync() end)
+        browser:updateItems()
+    end
+    page:refresh()
+end
+
+ACTIONS["menu-scale"] = function(page, action, browser, settings)
+    browser:persistSetting("menu_scale", math.abs((action.value or 1) - 1) < 0.001 and nil or action.value)
+    page:refresh()
+end
+
 ACTIONS["reset-home"] = function(page, action, browser, settings)
     confirm(_("Reset Home?"), _("Your pages and tile style go back to how they started."), _("Reset"), function()
         local state = BoardStore.withPreset(settings, BoardStore.read(settings).preset)
@@ -1227,15 +1440,49 @@ ACTIONS["reset-home"] = function(page, action, browser, settings)
     end)
 end
 
-ACTIONS["goodreads-background"] = function(page, action, browser, settings)
-    browser:persistSetting("goodreads_background", action.value and true or false)
-    -- A book open behind Settings follows at once; otherwise the next one opened.
-    try(function()
-        local ReaderUI = package.loaded["apps/reader/readerui"]
-        local ui = ReaderUI and rawget(ReaderUI, "instance")
-        if ui then require("aleph_goodreads_track").sync(ui) end
-    end)
+-- Aleph modification, 2026-11-18: Aleph's own Goodreads (aleph_gr.lua).
+ACTIONS["goodreads-own"] = function(page, action, browser, settings)
+    browser:persistSetting("goodreads_own", settings.goodreads_own == false)
     page:refresh()
+end
+
+ACTIONS["gr-opt"] = function(page, action, browser, settings)
+    try(function() require("aleph_gr").host().settings:updateSetting(action.key, action.value and true or false) end)
+    page:refresh()
+end
+
+ACTIONS["goodreads-queue"] = function(page, action, browser, settings)
+    local Core = require("aleph_gr")
+    local S = Core.host().settings
+    local waiting, failed = Core.counts()
+    local T = require("ffi/util").template
+    local lines = {}
+    for _i, op in ipairs(S:getSyncQueue()) do
+        if #lines >= 8 then break end
+        local what = op.operation == "progress" and (tostring(op.percent) .. "%")
+            or op.operation == "rating" and T(_("%1 stars"), tostring(op.rating))
+            or tostring(op.shelf or op.operation)
+        lines[#lines + 1] = "• " .. tostring(op.title or op.book_id) .. ": " .. what .. (op.failed and (" (" .. _("failed") .. ")") or "")
+    end
+    require("aleph_confirm").show{
+        title = _("Waiting to send"),
+        text = T(_("%1 waiting, %2 failed"), waiting, failed) .. "\n\n" .. table.concat(lines, "\n"),
+        ok_label = _("Send now"), cancel_label = _("Close"),
+        extra_label = failed > 0 and _("Drop the failed ones") or nil,
+        on_ok = function()
+            S:retryFailedSync()
+            Core.flush()
+            page:refresh()
+        end,
+        on_extra = function()
+            S:clearFailedSync()
+            page:refresh()
+        end,
+    }
+end
+
+ACTIONS["goodreads-plugin-off"] = function(page, action, browser, settings)
+    require("aleph_gr").askDisablePlugin()
 end
 
 ACTIONS["goodreads-import"] = function(page, action, browser, settings)
@@ -1278,6 +1525,13 @@ ACTIONS["cover-shape"] = function(page, action, browser, settings)
     page:refresh()
 end
 
+ACTIONS["calibre-collections"] = function(page, action, browser, settings)
+    local on = settings.calibre_collections == false
+    browser:persistSetting("calibre_collections", on)
+    if on then browser:syncCalibreCollections(true) end
+    page:refresh()
+end
+
 ACTIONS["extra-filters"] = function(page, action, browser, settings)
     if settings.extra_filters == true then
         browser:persistSetting("extra_filters", false)
@@ -1286,7 +1540,8 @@ ACTIONS["extra-filters"] = function(page, action, browser, settings)
     else
         local count = #(browser.local_library.books or {})
         confirm(_("Turn on the extra filters?"),
-            T(_("Language, Pages and Released will be added to the library's Sort and filter.\n\nTo find each book's page count and release date, Aleph opens every book once and reads its details. The first time this takes a lot of time, memory and battery, more so with a big library (yours has %1 books): it can take several minutes, and the device may feel slow until it finishes. Keep it plugged in if you can. After that, a book is only read again when its file changes."), count),
+            T(_("Language, Pages and Released will be added to the library's Sort and filter.\n\nTo find each book's page count and release date, Aleph opens every book once and reads its details. The first time this takes a lot of time, memory and battery, more so with a big library (yours has %1 books): it can take several minutes, and the device may feel slow until it finishes. Keep it plugged in if you can. After that, a book is only read again when its file changes."),
+                count),
             _("Turn on"), function()
                 browser:persistSetting("extra_filters", true)
                 if browser.scanning then browser:cancelScan() end
@@ -1297,12 +1552,12 @@ ACTIONS["extra-filters"] = function(page, action, browser, settings)
 end
 
 ACTIONS["key-nav"] = function(page, action, browser, settings)
-    browser:persistSetting("key_nav", not (settings.key_nav == true))
+    browser:persistSetting("key_nav", settings.key_nav ~= true)
     page:refresh()
 end
 
 ACTIONS["debug-log"] = function(page, action, browser, settings)
-    browser:persistSetting("debug_log", not (settings.debug_log == true))
+    browser:persistSetting("debug_log", settings.debug_log ~= true)
     page:refresh()
 end
 

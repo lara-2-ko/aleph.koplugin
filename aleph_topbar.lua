@@ -19,7 +19,6 @@ local UIManager = require("ui/uimanager")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local _ = require("aleph_gettext")
 
-local Screen = Device.screen
 -- Its settings (G_reader_settings "aleph_topbar"; "quicktopbar" before 1.1.46,
 -- copied over by aleph_migrate.lua).
 local settings_key = "aleph_topbar"
@@ -54,13 +53,6 @@ function TopBar:isAppHidden(key)
     return type(hidden) == "table" and hidden[key] == true
 end
 
-function TopBar:setAppHidden(key, hide)
-    local hidden = self:read("hidden_apps")
-    if type(hidden) ~= "table" then hidden = {} end
-    hidden[key] = hide and true or nil
-    self:save("hidden_apps", hidden)
-end
-
 -- A held app in the Apps tab: change its icon or hide it, in a sheet.
 function TopBar:appTileOptions(menu, item)
     require("aleph_topmenu_page").appOptions(self.path, item, function()
@@ -82,8 +74,8 @@ function TopBar:controls(menu)
             menu:updateItems()
         end
     end
-    local function add(key, label, active, tap)
-        tiles[#tiles + 1] = { key = key, icon = key, label = label, active = active, tap = tap }
+    local function add(key, label, active, tap, hold)
+        tiles[#tiles + 1] = { key = key, icon = key, label = label, active = active, tap = tap, hold = hold }
     end
     if Device:hasWifiToggle() then
         local active = NetworkMgr:isWifiOn()
@@ -94,6 +86,23 @@ function TopBar:controls(menu)
             if NetworkMgr:isWifiOn() then NetworkMgr:toggleWifiOff(refresh, true)
             else NetworkMgr:toggleWifiOn(refresh, false, true) end
             refresh()
+        end, function()
+            -- Aleph modification, 2026-11-18: held, as KOReader's own Wi-Fi
+            -- item held: the networks in range. With Wi-Fi off it comes on
+            -- and the list follows (KOReader's long press); with it on, the
+            -- list at once. (The tile's icon is changed in Settings > Top
+            -- menu > Wi-Fi icon.)
+            UIManager:nextTick(function()
+                local ok, err = pcall(function()
+                    if NetworkMgr:isWifiOn() then
+                        NetworkMgr.wifi_toggle_long_press = true
+                        NetworkMgr:reconnectOrShowNetworkMenu(refresh, true)
+                    else
+                        NetworkMgr:toggleWifiOn(refresh, true, true)
+                    end
+                end)
+                if not ok then require("logger").warn("Aleph: Wi-Fi networks could not be shown:", err) end
+            end)
         end)
     end
     add("night", _("Night"), G_reader_settings:isTrue("night_mode"), function()

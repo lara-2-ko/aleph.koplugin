@@ -128,12 +128,7 @@ local function path(ui)
     return dir and (dir .. "/aleph_xray_story.lua") or nil
 end
 
-local function readFile(file)
-    local fn = file and loadfile(file) or nil
-    if not fn then return nil end
-    local ok, value = pcall(fn)
-    return ok and type(value) == "table" and value or nil
-end
+local readFile = require("aleph_file").read
 
 -- What is kept for the open book: { chapters = { [i] = { title, summary,
 -- done } }, recap = { text, page, percent, at }, previous = { title, text,
@@ -452,12 +447,6 @@ function Story.progress()
     return line
 end
 
-local function subprocess()
-    local ok, u = pcall(require, "ffi/util")
-    if ok and type(u) == "table" and type(u.runInSubProcess) == "function" and type(u.isSubProcessDone) == "function" then
-        return u
-    end
-end
 
 -- Puts what came back with the rest and saves it. Returns how many chapters
 -- were summarised, and why it stopped when it did.
@@ -539,38 +528,16 @@ function Story.update(ui, o, done)
         if done then try(done, n, stopped, more) end
         return j
     end
-    local u = subprocess()
-    if u then
-        local ok, pid = pcall(u.runInSubProcess, function()
-            pcall(Story.work, doc, plan, ask, out, progress)
-        end)
-        if ok and pid then
-            -- Each question may take as long as one is allowed to.
-            local wait = AI.WAIT * (math.min(Story.MAX_BATCHES, math.ceil(#pending / 2) + 1) + 2)
-            job = { pid = pid, started = os.time(), progress = progress }
-            local UIManager = require("ui/uimanager")
-            local function poll()
-                local j = job
-                if not j then return end
-                local got, over = pcall(u.isSubProcessDone, j.pid)
-                if not got then over = true end
-                local late = false
-                if not over and os.time() - j.started > wait then
-                    pcall(function()
-                        if u.terminateSubProcess then u.terminateSubProcess(j.pid) end
-                        u.isSubProcessDone(j.pid, true)
-                    end)
-                    over, late = true, true
-                end
-                if not over then
-                    UIManager:scheduleIn(2, poll)
-                    return
-                end
-                finish(late and "took too long" or nil)
-            end
-            UIManager:scheduleIn(2, poll)
-            return true
-        end
+    local Job = require("aleph_job")
+    local pid = Job.start(function() pcall(Story.work, doc, plan, ask, out, progress) end)
+    if pid then
+        -- Each question may take as long as one is allowed to.
+        local wait = AI.WAIT * (math.min(Story.MAX_BATCHES, math.ceil(#pending / 2) + 1) + 2)
+        job = { pid = pid, started = os.time(), progress = progress }
+        Job.watch(pid, { every = 2, timeout = wait, on_done = function(late)
+            if job then finish(late and "took too long" or nil) end
+        end })
+        return true
     end
     -- No background process on this device: asked here. The screen waits.
     job = { started = os.time() }

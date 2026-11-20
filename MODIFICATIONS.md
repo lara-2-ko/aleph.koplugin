@@ -1,5 +1,783 @@
 # Aleph (formerly Reading Board) — modifications, 2026-11-07 to 2026-11-15
 
+## 2026-11-20 — 1.3.0 (release)
+
+Everything from 1.2.8 to 1.2.59 (see below), released as 1.3.0:
+
+- **Goodreads inside Aleph**: Aleph keeps Goodreads up to date itself (Currently reading, progress, Read with the day and stars, offline queue), never marks a book Read twice, and warns about advokatb's plugin, whose sign-in, settings and book links it takes over.
+- **New widgets**: Goals (with rings on a large tile), Daily, Weekly and Monthly goal, Reading DNA, Monthly challenge, Reading rhythm, Year projection, Diversity score, Reading bingo, Weather, Hours read, Time read and Books and pages; every widget in its own colour.
+- **X-Ray**: a name's card shows where it comes up (chapters, first seen, most mentions, latest) and who it is often with; Detailed descriptions for main characters with AI.
+- **Library**: collections from Calibre's #collections column; rename and delete collections; sort Reading by progress; tap an author on a book's page.
+- **Home**: fonts for Home and the top menu; Home's text readable over any wallpaper (Auto, Dark, Light, Outline); the wallpaper picker opens in the device's images folder; Finish forecast from a new book's real pace.
+- **Reading**: a way back after any jump (contents, Go to page, links, bookmarks, pins); hold Wi-Fi in the top menu for the networks in range; Bluetooth switch with the Kobo plugin; pages follow the screen when it turns.
+- **French and Italian**; Portuguese and Spanish checked.
+- **Time read and Books and pages** (new in 1.3.0 itself; after the Reading Log plugin's charts of those names, written for Aleph; aleph_board_widgets.lua W.time_read and W.books_pages, aleph_board_data.lua year_months, aleph_stats_reader.lua Session:monthStats). Statistics, sizes XL and L like Year in reading. **Time read** (blue, picked at random): this year's hours month by month as bars, the year's total beside the title, the current month in the widget's ink with its hours over it, a scale of hours. **Books and pages** (green): books finished and pages read each month as two smooth lines (books on the left scale, pages on the right one, "15k" above 10,000), with the year's totals as the legend. Hours and pages come from KOReader's statistics in one query (each page at most ten minutes; a page counted once per book and month); books from the year's finished books, as the yearly goal counts them. Translated into Portuguese, Spanish, French and Italian. Tests: 113.
+- **A colour for each widget** (new in 1.3.0 itself; aleph_board_colour.lua CHOICES, tileKey, choiceName; aleph_board_host.lua boardColourBar; aleph_board_edit.lua edit-colour, edit-colour-set; saved as `colour` with each widget in the layout, aleph_board_store.lua). In Customize Home, a selected widget's bar has **Colour** on a colour screen: Default (the widget's own colour) or Yellow, Orange, Green, Blue, Red, Purple, Gold, Teal, Pink, Brown or Dark blue, shown as swatches with the chosen one ringed. It is kept for that one widget on that page (two shelves can differ) and drawn at once. No cost while drawing: the tile's colour family is looked up as before, from the chosen name first. Hidden with Colour off or on a screen without colour, where a chosen colour does nothing. Translations. Tests: 114.
+- **Wallpapers** (the repository's wallpapers folder and aleph-wallpapers.zip, not the plugin): seven, at the Kindle Colorsoft's 1264 × 1680, with Three Kings and St Patrick's Day new.
+- **Lighter and steadier**: background work waits when memory is low, Home frees memory when it runs low, a memory diary and the background jobs in crash.log, a fixed timer that piled up while reading, a tap on a text field always brings the keyboard up.
+
+## 2026-11-20 — 1.2.59 Gathering dust shows the book's cover
+
+- **Gathering dust** (aleph_board_decor.lua): the book showed Aleph's made-up title card instead of its cover on the days its cover had not been made yet. Home asks for covers only for the first few books of each list, and the day's dusty book can be anywhere among the unopened ones (a book never opened has often never been shown anywhere else either). The widget now asks for its book's cover itself; when it arrives, Home is drawn again with it.
+
+## 2026-11-20 — 1.2.58 Reading rhythm in orange
+
+- **Reading rhythm** (aleph_board_colour.lua) is orange instead of green.
+
+## 2026-11-20 — 1.2.57 Finish forecast: a new book's pace over the days it has been read
+
+- **Finish forecast** (aleph_board_data.lua, aleph_stats_reader.lua): the minutes a day were the book's reading time in the last 14 days divided by 14, always. For a book started two days before, half read since, that gave about a seventh of the real pace ("4 h 38 min left at ~21 min a day", finishing in two weeks). Now that time is divided by the days from the first time the book was read in those two weeks to today, both counted (1 to 14; `BoardData.paceDays`); a book read for longer is unchanged. Still at least 5 minutes a day.
+- Tests: 112 (112: the days counted and a forecast for a book started two days before).
+
+## 2026-11-20 — 1.2.56 Hours read: since when and this year on a narrow tile again
+
+- **Hours read** (aleph_board_widgets.lua): 1.2.55 left out a layout. On the small tile, where the books do not fit on the line and there is no room for a third line, it went down to this year alone. The layout 1.2.54 used there is back in the list: since when, then this year (without the books), tried before the one-line layouts.
+- Tests: test111 also draws that tile.
+
+## 2026-11-20 — 1.2.55 Hours read: its lines whole, in any tile
+
+- **Hours read** (aleph_board_widgets.lua): on a tile a little shorter (a medium tile in a short row) the widget fell back to its smallest layout and left out since when and the books; on a narrow one the books were cut ("124 h this year · 1…"). Now a line is used whole or not at all, and the layouts tried are, in turn: since when, then this year · the books; since when, this year and the books on three lines; all three on one line under the number (a wide, short tile); this year · the books; this year; the number alone.
+- Tests: test111 also draws a narrow, tall tile (three lines) and a wide, short one (one line).
+
+## 2026-11-20 — 1.2.54 Hours read widget
+
+- **Hours read** (Customize Home → Add widget → Statistics; small or medium; teal, picked at random): all the hours read on this device, since when ("since Mar 2024"), this year's hours and how many books they were spent on. Under 10 hours it shows a decimal (2.5 hours). Tapping it opens Reading insights. Each page counts for at most ten minutes, as in When you read, so a book left open does not add hours. New `Session:totalTime` / `StatsReader.getTotalTime` (one query over KOReader's statistics, kept until the database changes), `W.hours_total`.
+- Translated into Portuguese, Spanish, French and Italian.
+- Tests: 111 (111: the widget in four sizes, a decimal under 10 hours, the empty tile).
+
+## 2026-11-20 — 1.2.53 A tap on a text field always brings the keyboard up
+
+- **Aleph's text prompts** (search, owner information, collection names, keys and the rest, aleph_input.lua): a tap on the field now brings up the on-screen keyboard on a touchscreen. Reported: the keyboard did not come up to search or to type personal details. KOReader hides the on-screen keyboard, even when the field is tapped, when it thinks a keyboard is attached and Settings > Keyboard > Show virtual keyboard is off. A device with keys counts, and so does anything KOReader's External keyboard plugin takes for a keyboard (some Bluetooth page turners). KOReader's own fields behave the same way there; turning Show virtual keyboard on fixes those too. In Aleph's prompts the keyboard still does not open by itself in that case (for whoever really has a keyboard), but a tap on the field now opens it.
+
+## 2026-11-19 — 1.2.52 Every background job named in crash.log
+
+- **Background jobs started without a name are named after the file that started them** (aleph_job.lua): the test crash.log had "background job started: ?" three times (the library index going to sleep and at exit, the X-Ray descriptions); now "aleph_local", "aleph_xr_ai" and so on.
+- Checked in that log (1.2.51, 18:36 to 19:42): the reading memory line came once every 10 minutes (18:55, 19:05, 19:17 after a sleep, 19:27, 19:37), never twice; Home pages 1 to 4 and the X-Ray page built and drawn in portrait and landscape with no error; memory stayed between 280 and 450 MB left all session.
+
+## 2026-11-19 — 1.2.51 Low memory on Home: freed sooner, covers wait
+
+A crash.log: KOReader started with three new books. While Home's first page was built six times in 14 s (covers arriving), the device went from 372 MB left to 141 MB, as the covers were made in other processes, then back to 206 MB; after swiping to Home's second page 63 MB were left, after the third 38 MB, and the next tap froze the device for three minutes (a Kindle with that little left spends its time reading its own programs back from storage). The log does not say what took the memory between the second and third page: KOReader's process or another one.
+
+- **Home's line in crash.log says more** (aleph_board_host.lua, aleph_mem.lua): "Home page 2 built, device has 63 MB left, KOReader uses … MB, of which Lua … MB", so the next log tells whether Aleph's own process grew.
+- **Below 120 MB left, a Home page that has just been built frees what is no longer used** (`Mem.relieve`): a full garbage collection (pictures of widgets no longer on screen are freed only then) and Aleph's cover cache down to the covers last drawn; how much that gave back goes into crash.log.
+- **Covers wait below 80 MB left** (aleph_cover_job.lua): making them opens each book in another process, which took about 200 MB here; the books are tried again half a minute later.
+- **Every background process in crash.log** (aleph_job.lua): "Aleph: background job started: covers (3) - 150 MB left".
+- Version numbers go on from 1.2: 1.3.0 is now 1.2.49 and 1.3.1 is 1.2.50 (1.3 is not released yet).
+- Tests: 110 (110: freeing on low memory, covers waiting, the summary line).
+
+## 2026-11-19 — 1.2.50 This week's dots in its colour
+
+- **This week** (the goal widget, aleph_board_widgets.lua): the days read are filled with the widget's own colour, the dark purple of its icon, instead of black. Days not read keep their grey ring; on a screen without colour they stay black.
+
+## 2026-11-19 — 1.2.49 Checks before the 1.3 release
+
+Everything from 1.2.8 to 1.2.47, plus a last check before the release:
+
+- **The memory diary's timer piled up** (aleph_mem.lua). A block of the file had been pasted inside `Mem.availableKB()`, so each call defined the module's functions again with fresh state. The 10-minute "while reading" line lost track of its own timer: every book opened added one more that never stopped, and "changes since" compared with nothing. The file is whole again; one timer at a time.
+- **Pages follow the screen when it turns** (aleph_menu_page.lua, aleph_panel.lua). KOReader tells only the reader or the file browser that the screen turned, not the windows over them, so a page opened from a book (contents, bookmarks, X-Ray, the reader menu's pages, settings) kept the old size until it was closed. Now a page lays itself out again for the new size when it is next drawn (or hears SetDimensions); a sheet over a picture of the old screen, and a small panel placed for the old shape, close instead.
+- **What wakes KOReader many times a second is named** (aleph_redraw_watch.lua). A 1.2.47 crash.log had "not painting 1 covered widget(s)" 16 times a second while Home was open, with no redraw asked (so the watcher wrote nothing). That line is KOReader's, written each time its main loop wakes while Home covers the file browser, drawn or not. There it was a local server on port 8323 that HID Passthrough's page turner sends page turns to: a message queue, which KOReader looks at every 50 ms for as long as it is there (in the reader too, where the line is not written). Not Aleph's, and cheap. The watcher now also counts the loop's wake-ups (wrapping UIManager:_repaint) and, above 8 a second for 5 seconds, writes once which message queues and which scheduled task keep waking it.
+- **The Goals widget split up** (aleph_board_widgets.lua): its ring and its cell are functions of their own (`goalRing`, `goalRingArt`, `goalCell`); the widget is the same.
+- Checked: every file parses and luacheck finds no errors (53 style warnings: shadowed names and unused placeholders, none a fault); no function was left inside another by an edit; no leftover files; every text in the code is in the catalogue, and Portuguese, Spanish, French and Italian have all 1,670 (placeholders and line breaks match the English).
+- Tests: 109, all passing (107: the wallpaper folder; 108: the memory timer and turned pages; 109: the wake-up report).
+
+## 2026-11-19 — 1.2.47 The wallpaper picker opens in the images folder
+
+- **Choose a picture…** (Customize Home → Wallpaper, aleph_wallpaper.lua) now opens in the `images` folder at the root of the device's storage (`/mnt/us/images` on a Kindle, `/mnt/onboard/images` on a Kobo; `Images` works too) instead of KOReader's home folder. After a picture is chosen, the picker opens next time in the folder it came from (kept as `wallpaper_dir`); if that folder is gone it goes back to `images`, and without an `images` folder to KOReader's home folder as before. New `WP.startFolder`.
+
+## 2026-11-19 — 1.2.46 French and Italian; translation fixes
+
+- **French and Italian.** New catalogues `l10n/fr/aleph.po` and `l10n/it/aleph.po`, with every one of Aleph's 1,670 texts (plurals by each language's rule: French counts 0 as singular, Italian as plural). KOReader set to French or Italian now shows Aleph in that language; fr_CA, fr_BE, it_CH and the like use them too. Where KOReader has its own translation of a word, KOReader's is still used first.
+- **Portuguese and Spanish checked** against the English, text by text. Fixed: "score de diversidade" → "pontuação de diversidade" (twice); a Bingo text and a sleep text in Spanish; "Go to in book"; "Aqua" in Portuguese; the Goodreads sign-in screen's "a computer reached this e-reader"; "Home" left in English in three Portuguese and Spanish settings ("Igual à Home", "Home e widgets", "Home, widgets…") now "Início"/"Inicio"; Portuguese "Accents" no longer reads like "Highlights".
+- `aleph_gettext.lua`'s notes and the README list the four languages.
+
+## 2026-11-19 — 1.2.45 Rename and delete collections
+
+- **The Collection list** (Home's Collections link, or Library → the
+  collection button; aleph_browser.lua, aleph_library_view.lua): holding a
+  collection offers Rename and Delete, through KOReader's own collections
+  (aleph_local.lua), so the file browser shows the same. Deleting keeps the
+  books. Favorites, KOReader's own, is neither renamed nor deleted. A line
+  under the list says so: "Hold a collection to rename or delete it."
+- **A collection from Calibre's #collections column** asks first: Aleph
+  fills it from Calibre, so renamed or deleted on the device it comes back
+  with its books, beside any new name; the way to change it for good is in
+  Calibre. "Change here anyway" goes on; Aleph then forgets what it put in
+  it (aleph_calibre_collections.lua, CC.forget), so a renamed collection is
+  the device's own and is never emptied by the next run.
+
+## 2026-11-19 — 1.2.44 Reading bingo: medium tile, bigger bold squares
+
+- **Reading bingo widget** (aleph_board_widgets.lua): a 5 × 5 card in a
+  medium tile has no room for even the marks-only card, and the tile said
+  "Could not draw this widget". It now shows how many are read (3 / 24
+  read), a bar, and the bingos (or the rule while there are none); at the
+  smallest, the count beside the title.
+- **The card's page** (aleph_bingo_page.lua): the challenges one size
+  bigger (11 on a 5 × 5 card, 13 on a 4 × 3 one) and in bold.
+
+## 2026-11-19 — 1.2.43 Edit Home's buttons without the wallpaper text outline
+
+- **Edit Home** (aleph_board_host.lua): with "Text over the wallpaper" set
+  to Outline (or Light), the Done button at the top and the Add widget and
+  wallpaper buttons at the bottom took the outline (or the light colour)
+  meant for Home's text over the picture. They are buttons on their own
+  background, so they are now drawn as usual; the page title, its hint,
+  the page name and Pages keep the wallpaper's text style.
+
+## 2026-11-19 — 1.2.42 Goals rings: clear of the ring, names above
+
+- **Goals, large** (aleph_board_widgets.lua): "/ 30 min" under the count was
+  drawn from the left edge of the ring's inside and touched the ring; the
+  count and the goal are now centred in the middle three quarters of the
+  ring, the goal a size smaller or without its unit when it would not fit.
+  Each goal's name is centred above its ring instead of under it, with the
+  check right beside the name once the goal is met.
+
+## 2026-11-19 — 1.2.41 Goodreads: its answer in crash.log; a book it will not shelve found again
+
+- **What Goodreads answered** (aleph_gr_legacy.lua, aleph_gr.lua,
+  aleph_goodreads_track.lua). A crash.log showed Milk Fed never put on
+  Currently reading, with only "Could not parse the Goodreads response".
+  Now every answer of 400 or more to a change is written to crash.log with
+  its address, code and the start of its text ("POST /shelf/add_to_shelf
+  answered HTTP 404: Page not found"), and the failure lines of the
+  background tracking and of the waiting list end with it.
+- **A book Goodreads will not shelve under its id** (the Goodreads id from
+  Calibre, here 54310688): when shelving fails for a reason other than the
+  sign-in, Goodreads is searched for the same title (up to a subtitle) and
+  one of the author's names; a match on no shelf there is shelved instead,
+  and the book linked to it. The id given up is kept in the book's link as
+  unshelvable, so Send to Goodreads no longer goes back to it from Calibre's
+  id. Logged as "Aleph: Goodreads: relinked … (Goodreads would not shelve …)".
+
+## 2026-11-19 — 1.2.40 Colours for Reading DNA, Reading rhythm and Year projection
+
+- **Colours** (aleph_board_colour.lua): Reading DNA teal, Reading rhythm
+  green, Year projection orange. Monthly challenge, Reading bingo and
+  Weather stay blue, now named so instead of falling back to it.
+
+## 2026-11-19 — 1.2.39 Goals and Diversity score in their own colours; rings on a large Goals
+
+- **Colours** (aleph_board_colour.lua): the widgets added since 1.2.24 had
+  no colour family and all fell back to blue. Daily goal is now gold (like
+  Pick back up), Weekly goal violet (like Series), Monthly goal rose (like
+  Word of the day), Goals and Diversity score gold (like On device).
+- **Goals, large** (aleph_board_widgets.lua): a ring for each goal that
+  fills as the goal is reached (whole once met), done and / goal inside it,
+  its name under it with a check once met; two by two on a tall tile, in
+  one row on a wide, short one. Smaller tiles keep the bars and lines.
+
+## 2026-11-18 — 1.2.38 Startup: covers never made while the screen waits; cleanup
+
+- **Covers** (aleph_cover_job.lua, aleph_browser.lua). A crash.log showed
+  KOReader stopping for 5 minutes 35 seconds just after starting, while
+  Aleph drew a screen of covers, with the device so busy that drawing one
+  small icon took 11 seconds. When the background process that makes
+  covers could not be started once (memory short as KOReader starts, for
+  example), Aleph gave it up for the whole run and made every missing cover
+  in KOReader's own process, one after another every 0.02 seconds, the
+  screen waiting each time. Now a failed start is written to crash.log and
+  tried again after 30 seconds; covers are made in KOReader's process only
+  on a device that has no background processes at all, then one each half
+  second, with any cover taking 2 seconds or more written to crash.log.
+- **Startup tasks that never ran** (main.lua). The Goodreads plugin warning
+  and the memory diary's first line were in Board:onFileManagerReady, which
+  KOReader never sends to Aleph: they now run from the file browser's
+  first build, once a start.
+- **Cleanup** (checked with luacheck): functions nothing called (Statistics
+  reader's sync helpers from BookOrbit and their SQL, a title-bar
+  stand-in, Settings' old Library folders menu, a pinned-shelf adder,
+  a ZenOS check, a "time ago" formatter, an app-hiding setter, a cover
+  aspect helper and its cache, a font helper), unused imports and
+  variables, a list of name particles X-Ray never used, a duplicate icon
+  definition, two unused icon files (chevron-first, chevron-last), and the
+  translations of the removed menu.
+
+## 2026-11-18 — 1.2.37 X-Ray: detailed descriptions; where a name comes up and who with
+
+- **Detailed descriptions** (Settings → X-Ray, off unless turned on;
+  aleph_xr_ai.lua), after BookOrbit's Constellations, whose character
+  descriptions read better: ours came from two excerpts of a few words for
+  each of up to 60 names, in at most two sentences. With it on, the
+  question also holds the Story's chapter summaries (the latest 16,000
+  characters of them, when there are any), and for the 15 names mentioned
+  most: eight passages of a sentence or two each (the first mention, two in
+  the chapter it comes up most, the three latest, some between) and the
+  four names most often near it. Those 15 get 3–4 sentences (who, role,
+  relationships, what they have done so far); the others as before. The
+  question is several times longer: for accounts with a larger allowance.
+  Nothing from a page not read is sent. The passages are read from the
+  book in the background process with the question.
+- **A name's card** (aleph_xr_page.lua, aleph_xr_more.lua), on the device
+  with no AI, so not under the option: **Where it comes up**, a bar for each
+  chapter read (grouped past 40 chapters; the chapter being read in grey)
+  with First seen, Most mentions and Latest; **Often with**, the four names
+  most often within four mentions of it, each opening its own card. The
+  description shows up to 10 lines.
+
+## 2026-11-18 — 1.2.36 Goodreads sign-in row says whether it is signed in
+
+- **Settings → Library → Goodreads sign-in** shows "Signed in" or "Not
+  signed in" underneath (a sign-in saved, by Aleph or by advokatb's plugin,
+  in the shared Goodreads settings). Tapping it still opens the screen that
+  receives a new sign-in from the computer.
+
+## 2026-11-18 — 1.2.35 Who keeps asking for redraws; the Goodreads warning stays
+
+- **aleph_redraw_watch.lua**: two crash.logs showed "not painting 1 covered
+  widget(s)" about 16 times a second for as long as Home was open (once 37
+  minutes in a row): something kept asking KOReader to redraw a screen
+  hidden under another, keeping KOReader busy, and KOReader does not log who.
+  Aleph now counts UIManager:setDirty calls; when they stay above 8 a second
+  for 3 seconds, the next 40 are traced and the most frequent caller is
+  written to crash.log once, as "Aleph: redraw asked N times a second …,
+  mostly by <file:line> for widget "<name>"; traceback: …". Each caller once
+  a run, five at most.
+- **The "Goodreads is now part of Aleph" warning** (aleph_gr.lua) closes only
+  with its Turn off / Later buttons: a tap outside it (a page turn, when it
+  shows over a book) closed it before it was read. aleph_confirm.lua has a
+  `modal` option for this.
+
+## 2026-11-18 — 1.2.34 A memory diary in crash.log
+
+- **aleph_mem.lua**: a crash.log showed KOReader killed as the Kindle went to
+  sleep, with the memory left falling from about 340 MB to 46 MB over 44
+  minutes of reading, and nothing to tell what took it. Aleph now writes a
+  line when a book opens and closes, every 10 minutes while reading, as the
+  device goes to sleep and wakes up, and when the file browser is ready:
+  the memory the device has left, what KOReader's own process holds and how
+  much of that is Lua, each with the change since the previous line (for
+  example "Aleph: memory while reading: device has 260 MB left (-40),
+  KOReader uses 150 MB (+30), of which Lua 20 MB — changes since 18:01").
+  Memory falling while KOReader stays the same points at something outside
+  KOReader; KOReader growing points at a plugin; Lua growing points at a
+  plugin's Lua code. Below 50 MB the line is a warning.
+- **Bottom line** (aleph_bookends.lua): the last page of the last chapter
+  no longer leaves a warning in crash.log (KOReader gives no pages-left
+  number there).
+
+## 2026-11-18 — 1.2.33 Goodreads: warning about advokatb's plugin; only Aleph's own
+
+- **A warning while advokatb's Goodreads plugin is on** (aleph_gr.lua,
+  Core.warnPlugin): each time KOReader starts, a moment after the file
+  browser or a book is ready, "Goodreads is now part of Aleph" says the
+  plugin is no longer needed and that Aleph sends nothing while it is on.
+  **Turn off** turns it off as Plugin management does and offers to restart;
+  **Later** leaves it until the next start. Settings → Library has the same.
+- **Aleph no longer works through the plugin at all.** Removed: the
+  background tracking that stood in for the plugin's own calls (Track in the
+  background, its setting and the code swapping the plugin's functions);
+  sending the sign-in, Send to Goodreads and the reader menu's Goodreads
+  button through the plugin's code. All of them use Aleph's own Goodreads.
+  aleph_goodreads_track.lua now only tracks the open book for Aleph (and no
+  longer sends Read from the percentage: Read goes with the book's status).
+  Send to Goodreads is always in a book's ⋯ menu.
+- Unused parts of the plugin's code taken in 1.2.32 removed (its menu's
+  settings, status lists, removing a book from Goodreads, the connection
+  test, reading identifiers from the open document).
+- Tested end to end: opening, progress, Finished heard twice sent once,
+  re-finishing a Read book sends nothing, stars, offline queue, failures.
+
+## 2026-11-18 — 1.2.32 Goodreads inside Aleph
+
+- **Aleph keeps Goodreads up to date itself** (aleph_gr.lua), in place of
+  advokatb's Goodreads plugin, whose Goodreads code is taken in under MIT
+  (aleph_gr_api, aleph_gr_legacy, aleph_gr_parser, aleph_gr_ids,
+  aleph_gr_settings; THIRD_PARTY_NOTICES.md). It uses the plugin's own
+  files, so the sign-in, settings, book links and anything waiting to be
+  sent carry over as they are.
+- **Why**: the plugin marked a finished book Read twice ("Read 2 times"):
+  once from the end of the book, again from the status change, each time
+  shelving and dating it. Aleph now asks Goodreads first, every time: a book
+  that is Read there gets its stars only and is never shelved or dated
+  again, and nothing moves a book off Read automatically. The same change
+  heard twice (Aleph and KOReader) is put on the list once.
+- What is sent, always in a background process: a book linked on opening by
+  the Goodreads id in the book (Calibre) or its ISBN; Currently reading
+  (asked first, as before); the percentage at most once a minute and when
+  the book closes; status changes from the book page, Home or KOReader
+  (Finished → Read with the day and the stars, Reading → Currently reading,
+  On hold → Did not finish if the account has that shelf, Unread → Want to
+  read only for a book Goodreads does not have); stars changed on a Read
+  book. Not for many books changed at once.
+- Offline: changes wait and go when Goodreads can be reached (Wi-Fi is not
+  turned on); five failures put one aside. Settings → Library → Goodreads →
+  Waiting to send shows them, sends now, or drops the failed ones.
+- **Settings → Library → Goodreads**: Keep Goodreads up to date, Track every
+  book, Send the percentage, Send the stars. While the plugin is still on,
+  Aleph sends nothing and offers **Turn the plugin off** (as Plugin
+  management does, then a restart).
+- **The reader menu's Goodreads button**: this book on Goodreads, Send
+  progress now, Track / Stop tracking this book.
+- The background tracking of the plugin (while it is on) also asks Goodreads
+  before marking Read now.
+- Fixed in the plugin's code: the ISBN check (a pattern Lua does not
+  understand, and a list that stopped at the first missing name).
+
+## 2026-11-18 — 1.2.31 Goodreads: the book's own Goodreads id wins
+
+- **Send to Goodreads** (aleph_goodreads_send.lua). The Goodreads id
+  written for the book (Calibre's goodreads identifier) now always decides
+  which Goodreads book is used. A link saved before to another edition (a
+  search result, or a match made before the id was added) used to win and
+  could put the book on Goodreads twice; now, when the id differs from the
+  saved link, the book is looked up by its id, the old link and what the
+  Goodreads plugin kept of that edition (review, status, shelf) are
+  forgotten, and the new link is saved, so the plugin uses the right
+  edition from then on too. Logged in crash.log.
+- The id (and ISBN) is read from metadata.opf next to the book as well as
+  from the EPUB's OPF, in both of Calibre's forms (opf:scheme="GOODREADS"
+  and "goodreads:123"), so it works for books in a Calibre library folder
+  and for other formats beside one.
+
+## 2026-11-18 — 1.2.30 Tap an author on a book's page
+
+- **A book's page** (aleph_detail.lua): tapping the author's name opens the
+  list of that author's books, as "More by …" in the ⋯ menu does. With
+  several authors that fit on the line, each name opens its own; otherwise
+  the whole line opens the first author's.
+
+## 2026-11-18 — 1.2.29 Low memory: background work waits; memory in crash.log
+
+- **aleph_mem.lua**: memory available (MemAvailable in /proc/meminfo, or
+  MemFree + Buffers + Cached), and "low" below 50 MB. A crash.log showed a
+  Kindle at 23 MB drawing Home in 55 seconds (2 seconds an icon) and then
+  stopping: out of memory, everything swapping.
+- **Optional background work waits while memory is low** (aleph_job.lua,
+  Job.start(fn, { optional = true })): the weather update, Collections from
+  Calibre and Goodreads in the background are not started then (each
+  background process is a copy of KOReader's), and are tried again later
+  as usual (the weather after 15 minutes, collections at the next Home,
+  Goodreads at its next step). Work you ask for (X-Ray, covers, the library
+  index) is not held back.
+- **crash.log** gets a line each time a Home page is built: the memory
+  available and the widgets on it ("Aleph: Home page 1 built, memory
+  available 212 MB: hero, weather, light, ..."), and one each time
+  background work is put off.
+
+## 2026-11-18 — 1.2.28 Reading bingo
+
+- **Reading bingo** (Customize Home > Add widget > Stats; sizes L, XL, M;
+  aleph_bingo.lua, aleph_bingo_page.lua, W.bingo). A card of 12 (4 x 3) or
+  24 (5 x 5, free centre) challenges: half genre, a quarter places and
+  cultures, a quarter literary experiments, drawn from pools of 36, 24 and
+  24 and mixed so no row is all one kind; rows, columns and (5 x 5)
+  diagonals are bingos. The widget shows the card (the challenges, or
+  marks on a small tile; filled squares with the book's cover or title and
+  a check; bingo lines framed heavier) and "7/24 read · 1 bingo". The full
+  card page: per square Choose a book…, Another challenge, Write my own…,
+  Empty this square; New card (12 or 24). Saved in aleph.bingo.
+- **Filled by itself** when a book is finished (Local:setStatus, and
+  Local.refreshClosing when a book closes finished): first a square named
+  by Calibre, a #bingo column (read from the book's OPF, metadata.opf or
+  USB metadata.calibre, with aleph_calibre_collections.lua, now asked for
+  any column) or "bingo: …" tags (matched to a square's text, part of it,
+  its English text or its id; these tags no longer count as genres); then
+  a square whose rule the book meets (whole words among its genres and
+  tags, comic files, page count, release year); else a question listing
+  the open squares, with Not now. Several books marked Finished at once are
+  placed but never asked about.
+- Translatable pool texts are marked with N_ (the extractor reads them) and
+  translated where shown, so Calibre can name squares in English too.
+- New icon: grid-3x3 (Lucide). Translations (pt_BR, es).
+
+## 2026-11-18 — 1.2.27 Monthly challenge, Reading rhythm, Year projection, Diversity score
+
+- Four widgets after BookOrbit 3.8.0's of those names (Customize Home >
+  Add widget > Stats; aleph_more_stats.lua for the rules, from BookOrbit's
+  dashboard-widget.calculations.ts and .repository.ts; aleph_board_widgets.lua
+  W.challenge, W.rhythm, W.projection, W.diversity):
+  - **Monthly challenge** (M, S): one of BookOrbit's six, chosen from those
+    that suit how you read and kept for the month (aleph.challenge): Quick
+    Read, Genre Explorer, Clear the Backlog, Streak Builder, New Voice, Page
+    Turner. Its title, what to do, a bar and done / target, or Complete!
+    Genre Explorer and New Voice count only genres and authors you had not
+    finished before (BookOrbit counts any of the month's).
+  - **Reading rhythm** (M, W, L): the last 14 days as bars (a short line on
+    a day without reading, the day's initials under them), active days, the
+    consistency (their share) and the average a day.
+  - **Year projection** (M, L): at the last 30 days' pace, books by the end
+    of the year (finished so far plus the rest), pages and hours over a
+    year; trending up or down when that pace is 15% above or below the
+    year's own so far (BookOrbit's trend has nothing to compare with yet).
+  - **Diversity score** (L, M): the average of genres read of the library's,
+    authors per book, the span of release years (only when known, from the
+    extra filters; left out of the average otherwise) and languages; the
+    four as bars, a label (Deep Specialist to Literary Adventurer), from
+    three finished books.
+- Data: the dashboard hands over its finished and in-progress books (not
+  copied) and the library's genre count; pages read come from one new
+  statistics query (aleph_stats_reader.lua, pagesSince: distinct pages
+  since the month's start and the last 30 days), the days from the year's
+  heatmap. Each is worked out only when its widget is on Home.
+- New icons: trending-up, trending-down, move-right, telescope (Lucide).
+  Translations (pt_BR, es), close to BookOrbit's own.
+
+## 2026-11-18 — 1.2.26 Reading DNA widget
+
+- **Reading DNA** (Customize Home > Add widget > Stats; sizes L and M;
+  aleph_dna.lua, aleph_board_widgets.lua W.dna). After BookOrbit 3.8.0's
+  widget: the rules (scores, words and archetypes) are BookOrbit's
+  computeReadingDna (server/src/modules/dashboard/
+  dashboard-widget.calculations.ts), checked against BookOrbit's own test
+  cases. A name in quotes ("Rapid Explorer"), five bars between the
+  trait and its word (Length, Variety, Rhythm, Time, Speed), and "Based on
+  N books". Shown once five books are finished, as in BookOrbit; a small
+  tile shows the name alone. A tap opens Reading insights.
+- Fed from this device: the finished books' average page count (Calibre's
+  or KOReader's) and distinct genres from the library index (the
+  dashboard's dnaBooks); the share of the last 182 days with reading
+  (the year's heatmap); the hour read most in the last 90 days and pages an
+  hour over the last year (already read for When you read and Reading
+  records). Computed only when the widget is on Home.
+- New icon: dna (Lucide). Translations (pt_BR, es), the trait names as
+  BookOrbit's own Portuguese and Spanish have them.
+
+## 2026-11-18 — 1.2.25 Daily, weekly and monthly goal widgets
+
+- **Daily goal, Weekly goal, Monthly goal** (Customize Home > Add widget >
+  Stats; sizes S and M; aleph_board_widgets.lua goalOne). Each goal of the
+  Goals widget on its own (the yearly one is Goal pace): the label (Today,
+  This week, the month's name) with a target, or a check once met; done /
+  goal large; a bar; and what is left: "18 min to go", "2 days to go",
+  "1 book to go · 12 days left" (the month's days left), or Goal met.
+  The weekly one adds the week's days as dots under their initials:
+  filled where you read, ringed where you did not, faint for days to come,
+  today's initial in bold. Smaller tiles drop the line, then the bar.
+  A goal set to 0 says where to set it; a tap opens Settings > Profile.
+- aleph_board_data.lua: the week's goal also keeps each day of the week
+  (read, not, to come), its initials and today's place.
+- Translations (pt_BR, es); Spanish goal wording made "objetivo" throughout,
+  as Goal pace has it.
+
+## 2026-11-18 — 1.2.24 Goals widget: day, week, month and year
+
+- **Goals** (Customize Home > Add widget > Stats; sizes L and M;
+  aleph_board_widgets.lua W.goals). Four goals together, laid out like
+  Reading records: minutes read today, days read this week, books finished
+  this month and this year. Each shows done / goal, a bar and a check once
+  met; a short tile shows one line a goal. A goal set to 0 is left out;
+  with none set, the tile says where to set them. A tap opens
+  Settings > Profile.
+- **Settings > Profile > Goals widget**: Daily goal (minutes, 5 to 1440 in
+  steps of 5), Weekly goal (days, 1 to 7), Monthly goal (books, 1 to 100);
+  − below the least turns one off, + turns it on again, and the number can
+  be typed. Defaults 30 minutes, 5 days, 2 books. The yearly goal is the
+  Annual reading goal above them.
+- Data: aleph_local.lua (Local.goalSetting; the dashboard's readingGoal
+  gains the three goals and this month's finished books) and
+  aleph_board_data.lua (BoardData.goals: today's minutes, this week's days
+  with reading from this device's statistics, the week starting on the
+  first day KOReader's statistics calendar uses, Monday unless set). No
+  extra reading of the statistics.
+- Translations (pt_BR, es); "day" and "book" now have their plurals.
+
+## 2026-11-18 — 1.2.23 Sort by progress in Reading
+
+- **Library > Sort and filter** (aleph_browser.lua, sortsFor; the sheet in
+  aleph_library_view.lua). With Show set to Reading, Sort by has a sixth
+  choice, Progress, ordered Most read or Least read first (the library's
+  own progress sort, Local:query). Its toolbar label says which. Showing
+  anything else again puts Progress back to Last read. The six labels are
+  set a size smaller so they fit.
+- Translations (pt_BR, es).
+
+## 2026-11-18 — 1.2.22 Hold Wi-Fi in the top menu: networks in range
+
+- **Holding the Wi-Fi tile** in the top menu's Controls tab
+  (aleph_topbar.lua, TopBar:controls) does what holding KOReader's own
+  Wi-Fi item does instead of opening the icon chooser: with Wi-Fi off it
+  comes on and the list of networks in range follows (NetworkMgr's long
+  press); with it on, the list at once (reconnectOrShowNetworkMenu with the
+  long-press flag). The other tiles still change their icon when held.
+- **Settings > Top menu > Wi-Fi icon** changes that tile's icon now
+  (aleph_settings_page.lua, same setting as before).
+- Translations (pt_BR, es).
+
+## 2026-11-18 — 1.2.21 Fonts for Home and the top menu
+
+- **Settings > Home > Font** (aleph_fonts.lua; aleph.font_home). The font
+  of Home, its widgets, the library, book pages, sheets and Aleph's
+  windows, from KOReader's fonts (its own and its fonts folder, read from
+  its font cache, one per family, with its italic when there is one). Each
+  name is shown in its own font, a page at a time, so only the fonts on the
+  page are opened. Noto Sans unless chosen; a font no longer there falls
+  back to it. Only the sans faces change; quotes keep Noto Serif.
+  - aleph_board_metrics.lua: setSans swaps the sans faces; a line's height
+    follows the font (measured once against Noto Sans, never shorter than
+    Noto's, at most 1.9 em) so tall letters are not cut. font_gen counts
+    changes.
+  - aleph_board_ui.lua: BoardUI.resetFits forgets measured sizes and chosen
+    layouts after a change; text() takes a face (the picker's previews).
+- **Settings > Top menu > Font and Text size** (aleph.font_menu: Same as
+  Home unless chosen; aleph.menu_scale, 80% to 150%). The size scales the
+  whole top menu with its text (aleph_topbar_style.lua, Style.px and
+  Style.face): rows, icons, tabs and the Controls and Apps panels, whose
+  columns already follow the width. Takes effect the next time the menu
+  opens.
+- Light: KOReader opens a font once and keeps it; drawing is no slower.
+- New icon: a-large-small (Lucide). Translations (pt_BR, es).
+
+## 2026-11-18 — 1.2.20 Bluetooth switch with the Kobo plugin
+
+- **The reader menu's Bluetooth switch** (aleph_reader_sheet.lua,
+  Sheet.bluetooth) now also works with OGKevin's Kobo plugin
+  (kobo.koplugin), which turns a Kobo's own Bluetooth on and off and
+  handles page turners itself. On a Kobo it supports Bluetooth on (Libra 2
+  and the MTK models: its KoboBluetooth:isDeviceSupported), the switch shows
+  whether Bluetooth is on (isBluetoothEnabled) and a tap calls its
+  toggleBluetooth; elsewhere, BT Manager - HID Passthrough as before.
+  Turning on runs in the background in the plugin (a few seconds, Wi-Fi on
+  for it as the plugin does), so the switch is checked again after 3.5 and
+  7 seconds rather than at once. Nothing of the plugin is changed.
+
+## 2026-11-18 — 1.2.19 Home's text over a dark wallpaper
+
+- **Text over the wallpaper** (aleph_wallpaper.lua sheet: Auto, Dark,
+  Light; Outline). Home's own text, drawn straight over the wallpaper and
+  not on a widget (the greeting, date, Wi-Fi, battery, clock, search and
+  menu at the top; the arrows, page dots and page name at the foot, and the
+  same in Customize Home), was always black, so a dark picture hid it.
+  - **Auto** (the default) looks once at how light the picture is behind
+    the top and behind the foot, as drawn after the wallpaper opacity, and
+    uses light text over a dark part. Dark and Light choose it.
+  - **Outline** draws an edge in the other colour round each text, icon and
+    dot: the same thing painted in that colour a pixel away in eight
+    directions, then itself. No images or fonts are made.
+  - Done by an "ink" the board's drawing parts follow while only the header
+    and the foot are built (aleph_board_ui.lua: BoardUI.withInk, inkCol,
+    inkHex, Halo): grays inverted, colour-scheme colours kept. Nothing
+    changes without a wallpaper or with dark text and no outline; the
+    status corner's redraw each minute keeps the ink it was built with.
+  - Settings: aleph.wallpaper.text ("dark", "light"; none for Auto),
+    aleph.wallpaper.outline.
+- Widgets keep their own background, so their text is unchanged; over a
+  dark picture, a higher Widget opacity keeps them light.
+
+## 2026-11-18 — 1.2.18 Goodreads: Read never sent twice
+
+- **Send to Goodreads** (aleph_goodreads_send.lua, Send.send). A finished
+  book sent from its page could still show as read twice. Read is now
+  never sent on a guess:
+  - The book counts as Read already when Goodreads' page says so, or when
+    the Goodreads plugin has it as Read in the sidecar (marked by the
+    plugin or by Aleph's background tracking when the book was finished),
+    unless Goodreads' page says it is on another shelf. Goodreads' page can
+    come back without its shelf when its layout changes, which let Aleph
+    shelve and date the book again.
+  - A book already Read gets its rating only: no shelving and no date, not
+    even when no reading date is found (an extra date is the second
+    reading).
+  - When what Goodreads has cannot be asked at all, nothing is sent and the
+    page says so.
+  - What Goodreads had before sending (shelf, number of readings, review)
+    is written to crash.log, to tell what happened if it happens again.
+
+## 2026-11-17 — 1.2.17 Collections from Calibre; Aleph above Bookshelf
+
+- **Collections from Calibre** (aleph_calibre_collections.lua; Settings >
+  Library > Collections from Calibre, on unless turned off). A Calibre
+  column with the lookup name "collections" (#collections; "collection"
+  too), a list like tags or text split on commas, puts each book in the
+  KOReader collections of those names (made when missing), which are
+  Aleph's collections. Read from metadata.opf next to the book, the OPF
+  inside an EPUB (written by Calibre when it sends, saves or polishes with
+  metadata, OPF 2 and OPF 3), or Calibre's USB metadata.calibre. Calibre
+  is mirrored for what Aleph placed: a book sent again without a collection
+  leaves it; books added on the device and collections made there are never
+  touched. Each book is read once and again only when its file (or its
+  metadata.opf) changes, in a background process (sliced on the UI loop
+  where there is none), after each library scan and when Home opens, at
+  most once a minute; state in settings/aleph_calibre_collections.lua.
+- **Aleph stays up with Bookshelf** (aleph_shelf_guard.lua; main.lua
+  Board:onShowAleph). Bookshelf stays under a book opened from it and puts
+  itself back on top when that book closes, so Aleph Home from the reader
+  menu flashed Aleph and returned to Bookshelf. When Aleph is asked for
+  (reader menu, "Aleph: open" gesture, menu item, top-bar tab), Bookshelf's
+  screen is closed if it is above Aleph, then and for 3 seconds after, the
+  way Bookshelf's own "Bookshelf: open or close" closes it. Not at startup
+  (Bookshelf's Start with decides), not while Bookshelf has a book parked
+  under its screen, and nothing at all without Bookshelf loaded.
+- Translations (pt_BR, es).
+
+## 2026-11-16 — 1.2.16 Weather widget
+
+- **Weather** (aleph_weather.lua; Customize Home > + Add widget > Device >
+  Weather; sizes S, M, W). The temperature now, the sky in words and an
+  icon (sun or moon at night, cloud, rain, drizzle, snow, fog, storm),
+  today's high and low; a wide tile adds the next two days. A tap opens
+  Update now, the place (typed once and picked from Open-Meteo's places)
+  and °C or °F.
+- **Kept light.** The module is loaded only when the widget is on Home. It
+  never turns Wi-Fi on: it asks only when Home is drawn with Wi-Fi already
+  connected, at most once an hour (not again for 15 minutes after a
+  failure), in a background process (aleph_job.lua) so Home never waits.
+  No timers. The answer (about 1 KB) is kept in settings/aleph_weather.lua
+  and shown with its time when it is more than 6 hours old.
+- **Privacy.** Data from Open-Meteo (open-meteo.com, no account or key,
+  CC BY 4.0). Only the place's latitude and longitude, rounded to about a
+  kilometre, and the units are sent.
+- Seven Lucide weather icons added (aleph_icon_data.lua). Translations
+  (pt_BR, es); the weather words have the context "Weather" so "Clear"
+  does not clash with the button.
+
+## 2026-11-16 — 1.2.15 Go to most recent page after any jump
+
+- **A way back after every jump in a book** (aleph_search.lua,
+  Search.installJumpBack; Settings > Reader > Way back after a jump, on
+  unless turned off). The strip that searching leaves at the foot of the
+  page ("‹ Go to most recent page", "From page 102 to 1688", then "Return
+  to page 102 ›") now also comes after any jump KOReader keeps in its Go
+  back history: the table of contents, Go to page, a link or footnote, a
+  bookmark or highlight, a pin, the page browser, an X-Ray mention, a
+  chapter's "Go to chapter". KOReader notes the place left just before
+  each of them (ReaderLink:addCurrentLocationToStack); Aleph notes it too
+  and, once the jump is done and the page changed, shows the strip. Its
+  chevron, a tap on the page or a page turn put it away. While searching,
+  the search's own bar and way back are used instead.
+- New icon (Lucide, ISC): undo-2.
+
+## 2026-11-16 — 1.2.14 Time left: one estimate for Home and the book
+
+- **Continue reading and the book's own status bar now agree on the time
+  left** (aleph_stats_reader.lua, aleph_board_data.lua, aleph_bookends.lua).
+  They were worked out two ways:
+  - In the book, KOReader's statistics (and Aleph's "time left in book"):
+    the time on each page of the book's present layout, each page counted
+    at most 2 minutes (KOReader's "max_sec" setting), divided by the pages
+    read, times the pages after the one shown.
+  - On Home: every reading event counted up to 10 minutes, divided by the
+    page numbers ever read whatever the layout, times the largest page
+    count the book ever had. A long pause on a page, or a change of font
+    size (other page numbers), made it drift from the book's figure. It
+    was also worked out once a day, so it did not follow the reading.
+  KOReader's way is the fairer one (a pause on a page does not count as
+  reading, and pages are those of the layout read now), so Home now uses
+  it: the same capped time per page from the statistics' page_stat view,
+  the book's present page count, and the pages after the one reached. It
+  is worked out again whenever the statistics change. Aleph's own margin
+  counted the page shown as still to read; it now counts as KOReader does.
+
+## 2026-11-16 — 1.2.12 Goodreads: no second reading; Calibre page count
+
+- **Send to Goodreads no longer makes a book "read 2 times"**
+  (aleph_goodreads_send.lua). The Goodreads plugin marks a book Read when it
+  is finished. Sending from the book page then added it to the Read shelf
+  again, which Goodreads keeps as another reading. Aleph now asks Goodreads
+  for the book's state first (the plugin's own get_review_state); a book
+  already Read is not shelved again: its rating is sent when it differs, and
+  its finished day only when it has no reading session yet (the plugin's
+  set_date_finished adds a session only then). A book not yet Read is sent
+  as before. Books already doubled on Goodreads are not touched: delete the
+  extra reading on goodreads.com (the book's page, Reading sessions).
+
+- **Calibre's page count is found in an OPF that writes `<opf:meta>`**
+  (aleph_pages.lua, Pages.fromOpf). The parser looked only for `<meta`, so an
+  OPF whose Calibre columns are in `<opf:meta property="calibre:user_metadata">`
+  was missed and KOReader's own count (1,137 for one book) was shown instead of
+  Calibre's (306). A namespace prefix on the tag is accepted now, for both the
+  one-blob form (OPF 3) and the one-tag-per-column form (OPF 2).
+  A second fault was behind it: the first column whose name mentions "page" was
+  taken, and Calibre users often have "#npages", a text column of page-count
+  buckets whose value is "300s"; its leading digits were read as 300. A
+  column's value must now be a plain number, and a column named just "pages"
+  wins over one that only mentions pages. Tried on the OPF of the book above
+  (306) and on both forms, with and without the prefix.
+
+## 2026-11-16 — 1.2.11 (testing)
+
+Speed and battery:
+
+- **The reading page's minute tick repaints only when a line changed**
+  (aleph_bookends.lua, Bookends.stale). With battery, Wi-Fi or light on the
+  top or bottom line but no clock, the e-ink refresh every minute is gone;
+  with a clock it still happens each minute.
+- **The page turner's battery is asked without waiting** (new
+  aleph_local_get.lua; aleph_page_turner.lua). HID Passthrough's daemon was
+  asked from KOReader's own process, holding it up to two seconds when the
+  daemon was slow; now the question goes out and the answer is looked for
+  from KOReader's loop, the bottom line drawn again if the level changed.
+- **Without HID Passthrough, no page-turner work at all**
+  (aleph_page_turner.lua): a few seconds after a book opens Aleph looks
+  once; with the plugin not installed nothing is asked, nor looked for on
+  touches or paints, for that book.
+- **One paint hook for the page** (new aleph_reader_paint.lua): the margins
+  in scroll mode, the top and bottom lines, the pin badge and X-Ray's
+  underlines each wrapped KOReader's page paint; they now share one, in the
+  same order, and a part that fails no longer stops the others.
+
+Code shape (nothing meant to look or work differently):
+
+- **Background jobs and data files in one place** (new aleph_job.lua and
+  aleph_file.lua): X-Ray's scan, descriptions and story, Goodreads
+  tracking, covers, portraits and the library index each had their own
+  copy of starting a background process, watching it and stopping one that
+  takes too long, and four their own file reader and writer.
+- **Long functions split**: none is over 100 lines now (21 were, the
+  longest 299: Home's book being read). Among them the sync chain (one
+  function per step), the pin drawer and badge placer, the highlight sheet
+  and actions menu, the dictionary's restyling, the reader menu's buttons
+  (one function each instead of one long chain), Home's Add a widget
+  sheet, the series page, the bookmarks page and filter bar, the wallpaper
+  sheet, the Goodreads cookie receiver, the icon picker and the hero, link,
+  heatmap, forecast, goal and badge tiles. Nothing is nested deeper than
+  seven levels (three functions were at eight or nine).
+- **Long lines**: 71 lines over 200 characters broken after commas (the
+  rest are single texts to translate, kept whole).
+
+How this was checked: every reworked part was driven through its cases
+(screen sizes, tabs, data, taps, gestures, failures) in both 1.2.10 and
+1.2.11 and every widget it built and call it made recorded; the twelve
+recordings (about 400,000 lines) are identical. The line breaks change no
+token of the program.
+
+## 2026-11-15 — 1.2.10 (testing)
+
+GitHub issue #5 (N9TailedFOX, Kobo Libra Colour):
+
+- **Goal pace said only how far behind pace** (aleph_board_widgets.lua). The
+  count was right (pace is where the goal says you should be by today: 12
+  books a year is about 10.5 by 15 November, so 2 read is 8 behind pace)
+  but read as if it were what is left. It now says both when there is
+  room: "10 to go · 8 behind pace" (and "ahead"), down to "8 behind" when
+  narrow.
+- **Customize Home's bar at a large interface size** (aleph_board_host.lua):
+  the Pages button, right of + Add wallpaper, went off the screen. When the
+  bar does not fit, the page's name and the word "Pages" go first (an icon
+  is left), then + Add wallpaper becomes an icon.
+- **Empty pages are skipped** (aleph_board_store.lua, aleph_board_host.lua,
+  aleph_browser.lua): outside Customize Home a page with no widgets is not
+  turned to and has no dot (the first page always shows). Customizing still
+  shows all four, so widgets can be put on an empty one.
+- **Rename a page** (aleph_board_edit.lua): Customize Home > Pages > Rename
+  this page. The name is kept in Aleph's settings (page_names) and shows
+  under Home and on the dots' line; an empty name brings the usual one back.
+
+## 2026-11-15 — 1.2.9 (testing)
+
+- **Pins survive KOReader's Reset** (aleph_pins.lua). Pins are kept in the
+  book's own settings, which KOReader's Reset (book information or the file
+  browser: "document settings, progress, bookmarks, highlights, notes")
+  deletes, its .old backup included; a pin was lost with them. Aleph now
+  keeps a copy of every book's pins in settings/aleph_pins_backup.lua, by
+  the book's checksum (partial_md5_checksum), updated whenever a pin is
+  added or removed, and made the first time a book with pins opens. A book
+  that opens with no pins but a copy asks "Bring back this book's pins?":
+  Bring back restores them (picture pins too, their files being in
+  cache/aleph/pins), Forget them drops the copy, a tap outside asks again
+  next time. Removing pins by hand updates the copy, so it never asks for
+  pins that were removed on purpose.
+
+## 2026-11-15 — 1.2.8 (testing)
+
+- **X-Ray Story: the story so far, whole** (aleph_xr_page.lua). On the
+  Story tab the story so far is cut at 11 lines with "…", and nothing
+  showed the rest. Now a tap on it, or "Read all ›" beside "The story up to
+  page …" (shown only when it is cut), opens it whole: titled "The story so
+  far", with the page it reaches, in pages when it is longer than the sheet
+  holds (cut between sentences; the arrows, a swipe or the page keys turn
+  them), and The story to go back.
+
 ## 2026-11-15 — 1.2.7 (release)
 
 Released as 1.2.7: everything from 1.2.1 to 1.2.7 below, since the 1.2.0

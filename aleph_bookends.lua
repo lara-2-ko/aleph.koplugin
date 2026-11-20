@@ -242,7 +242,8 @@ function Bookends.state(ui)
     try(function() s.pages = ui.document:getPageCount() end)
     s.page, s.pages = tonumber(s.page), tonumber(s.pages)
     if s.page and s.pages and s.pages > 0 then s.percent = s.page / s.pages end
-    try(function() s.chapter_left = tonumber(ui.toc:getChapterPagesLeft(s.page)) end)
+    -- (nothing at all after the last chapter's last page: no number then)
+    try(function() s.chapter_left = tonumber((ui.toc:getChapterPagesLeft(s.page))) end)
     try(function() s.chapter = ui.toc:getTocTitleByPage(s.page) end)
     s.avg = avgSeconds(ui)
     local props = ui.doc_props or {}
@@ -274,7 +275,8 @@ function Bookends.value(id, s, ui)
         end
     elseif id == "book_time" then
         if s.page and s.pages and s.avg then
-            return { text = T(_("%1 left"), minutes((s.pages - s.page + 1) * s.avg / 60)) }
+            -- As KOReader's status bar and Home count it: the pages after this one.
+            return { text = T(_("%1 left"), minutes((s.pages - s.page) * s.avg / 60)) }
         end
     elseif id == "chapter" then
         if type(s.chapter) == "string" and s.chapter:match("%S") then return { text = s.chapter } end
@@ -346,18 +348,39 @@ end
 
 -- One slot's widget, items joined by " · ". `name` is the slot's place
 -- ("top/left"): its widget is kept under it.
-local function slotWidget(name, ids, s, ui, size, ink, max_w, bold)
-    local col = ink.col
-    local values = {}
-    local key = { Bookends._version, size, bold and "b" or "r", tostring(ink.hex), tostring(max_w), px(100) }
+-- What a slot's items show now, and those values as one string: two slots
+-- with the same string look the same.
+local function slotValues(ids, s, ui)
+    local values, parts = {}, {}
     for _i, id in ipairs(ids) do
         local ok, v = pcall(Bookends.value, id, s, ui)
         if ok and v then
             values[#values + 1] = v
-            key[#key + 1] = id .. "=" .. tostring(v.text) .. "/" .. tostring(v.icon) .. "/" .. tostring(v.battery) .. "/" .. tostring(v.charging)
+            parts[#parts + 1] = id .. "=" .. tostring(v.text) .. "/" .. tostring(v.icon) .. "/"
+                .. tostring(v.battery) .. "/" .. tostring(v.charging)
         end
     end
-    key = table.concat(key, "\1")
+    return values, table.concat(parts, "\1")
+end
+
+-- The ids of a slot as it is drawn: the bottom right ends with the page
+-- turner's battery, after a dot, when a Bluetooth page turner reports one
+-- (aleph_page_turner.lua).
+local function slotIds(edge, slot, slots)
+    local ids = slots[slot] or {}
+    if edge == "bottom" and slot == "right" then
+        local with = {}
+        for i, id in ipairs(ids) do with[i] = id end
+        with[#with + 1] = "page_turner"
+        return with
+    end
+    return ids
+end
+
+local function slotWidget(name, ids, s, ui, size, ink, max_w, bold)
+    local col = ink.col
+    local values, shown = slotValues(ids, s, ui)
+    local key = table.concat({ Bookends._version, size, bold and "b" or "r", tostring(ink.hex), tostring(max_w), px(100), shown }, "\1")
     local hit = slot_cache[name]
     if hit and hit.key == key then return hit.widget end
     if hit and hit.widget and hit.widget.free then pcall(hit.widget.free, hit.widget) end
@@ -372,7 +395,7 @@ local function slotWidget(name, ids, s, ui, size, ink, max_w, bold)
         end
     end
     if #parts == 0 then
-        slot_cache[name] = { key = key }
+        slot_cache[name] = { key = key, shown = shown }
         return nil
     end
     -- Text parts are made last, so a slot too wide for its room is cut in its
@@ -398,7 +421,7 @@ local function slotWidget(name, ids, s, ui, size, ink, max_w, bold)
         end
     end
     local widget = BoardUI.hstack({ gap = gap }, widgets)
-    slot_cache[name] = { key = key, widget = widget }
+    slot_cache[name] = { key = key, shown = shown, widget = widget }
     return widget
 end
 
@@ -406,20 +429,11 @@ end
 -- sides have what is left either side of it.
 local function band(edge, slots, s, ui, size, ink, w, mx, bold)
     local h = BoardMetrics.lh1(size) + px(2)
-    local middle = slotWidget(edge .. "/middle", slots.middle or {}, s, ui, size, ink, floor(w * 0.5), bold)
+    local middle = slotWidget(edge .. "/middle", slotIds(edge, "middle", slots), s, ui, size, ink, floor(w * 0.5), bold)
     local mw = middle and middle:getSize().w or 0
     local side = floor((w - 2 * mx - mw) / 2) - px(12)
-    local left = slotWidget(edge .. "/left", slots.left or {}, s, ui, size, ink, side, bold)
-    local right_ids = slots.right or {}
-    if edge == "bottom" then
-        -- The page turner's battery ends the bottom right, after a dot, when
-        -- a Bluetooth page turner reports one (aleph_page_turner.lua).
-        local with = {}
-        for i, id in ipairs(right_ids) do with[i] = id end
-        with[#with + 1] = "page_turner"
-        right_ids = with
-    end
-    local right = slotWidget(edge .. "/right", right_ids, s, ui, size, ink, side, bold)
+    local left = slotWidget(edge .. "/left", slotIds(edge, "left", slots), s, ui, size, ink, side, bold)
+    local right = slotWidget(edge .. "/right", slotIds(edge, "right", slots), s, ui, size, ink, side, bold)
     local layers = {}
     local function place(widget, x)
         local wh = widget:getSize().h
@@ -599,6 +613,25 @@ local function uncovered(ui)
     return top == nil or top == ui or top == ui.dialog or (top.name == "ReaderUI")
 end
 
+-- Whether a line would read differently from what is on the page now: the
+-- minute tick repaints only then. (With a clock shown that is every minute;
+-- with only the battery, Wi-Fi or the light, hardly ever, and the e-ink
+-- refresh each minute is saved.)
+function Bookends.stale(ui)
+    local c = Bookends.current()
+    local s = Bookends.state(ui)
+    for _i, edge in ipairs({ "top", "bottom" }) do
+        if c[edge] then
+            for _j, slot in ipairs({ "left", "middle", "right" }) do
+                local _values, shown = slotValues(slotIds(edge, slot, c.slots[edge]), s, ui)
+                local hit = slot_cache[edge .. "/" .. slot]
+                if not hit or hit.shown ~= shown then return true end
+            end
+        end
+    end
+    return false
+end
+
 -- Whether these settings show anything that changes with time, worked out
 -- once per settings (c is Bookends.current()'s, kept until they change).
 function Bookends.timed(c)
@@ -634,25 +667,17 @@ local function tick(ui)
     local wanted = enabledHere() and Bookends.timed(Bookends.current())
     if not wanted then return end
     if Bookends.showing(ui) and uncovered(ui) then
-        Bookends.repaint(ui)
+        local ok, changed = pcall(Bookends.stale, ui)
+        if not ok or changed then Bookends.repaint(ui) end
     end
     Bookends.arm(ui)
 end
 
 -- ---------------------------------------------------------------- install
 function Bookends.install()
-    local View = require("apps/reader/modules/readerview")
-    if View._aleph_bookends then return end
-    View._aleph_bookends = true
-    local paint = View.paintTo
-    View.paintTo = function(self, bb, x, y)
-        paint(self, bb, x, y)
-        local ok, err = pcall(Bookends.paint, self, bb)
-        if not ok and not Bookends._warned then
-            Bookends._warned = true
-            require("logger").warn("Aleph: bookends failed:", err)
-        end
-    end
+    local Paint = require("aleph_reader_paint")
+    if Paint.has("lines") then return end
+    Paint.add("lines", 20, function(view, bb) Bookends.paint(view, bb) end)
     -- Never in the forked thumbnail renderer (Bookends: its battery and other
     -- reads can block there, and a thumbnail has no room for them).
     try(function()

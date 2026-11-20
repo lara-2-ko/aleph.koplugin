@@ -16,7 +16,11 @@ Where the level comes from:
   instead of 5 minutes later.
 
 When the daemon cannot be reached, Aleph stops asking until the next
-5-minute look. Settings: Book margins > Page turner battery (aleph setting
+5-minute look. The daemon is asked without waiting for it
+(aleph_local_get.lua): the answer comes a moment later and the bottom line
+is drawn again if the level changed, so a daemon that is slow to answer
+never holds up a page turn. Without HID Passthrough installed, found out a
+few seconds after a book opens, nothing is asked or looked at for that book. Settings: Book margins > Page turner battery (aleph setting
 bookends.page_turner, on unless turned off).
 ]]
 
@@ -25,7 +29,7 @@ local PT = {}
 PT.QUICK = 20   -- seconds between looks while no level is known
 PT.SLOW = 300   -- seconds between looks once known, or with the daemon down
 
-local state = { level = nil, asked_at = nil, daemon_down = false, ui = nil, hooked = false, task = nil, pending = false }
+local state = { level = nil, asked_at = nil, daemon_down = false, ui = nil, hooked = false, task = nil, asking = false, absent = false }
 
 local function hidOf(ui)
     local p = ui and rawget(ui, "hidpassthrough")
@@ -60,6 +64,7 @@ end
 
 -- The level to show, 0-100, or nil.
 function PT.level(ui)
+    if state.absent then return nil end
     local hid = hidOf(ui)
     if not hid then return nil end
     -- Aleph's own look when it is recent (it also sees a page turner that
@@ -80,15 +85,25 @@ local function repaint()
     pcall(function() require("aleph_bookends").repaint(ui) end)
 end
 
--- Asks the daemon now. Repaints the bottom line when the level changed.
-function PT.ask(ui)
-    ui = ui or state.ui
-    local hid = hidOf(ui)
-    state.asked_at = os.time()
-    if not (hid and type(hid._httpGetJson) == "function") then return end
-    local ok, data, err = pcall(hid._httpGetJson, hid, "/status")
+local function decode(body)
+    local data
+    for _i, name in ipairs({ "rapidjson", "json" }) do
+        local ok, lib = pcall(require, name)
+        if ok and type(lib) == "table" and type(lib.decode) == "function" then
+            local good, value = pcall(lib.decode, body)
+            if good and type(value) == "table" then data = value; break end
+        end
+    end
+    return data
+end
+
+-- The daemon's answer (or none): the level kept, and the bottom line drawn
+-- again when it changed.
+local function answered(body)
+    state.asking = false
     local before = state.level
-    if not ok or not data then
+    local data = body and decode(body) or nil
+    if not data then
         state.daemon_down = true
         state.level = nil
     else
@@ -98,21 +113,36 @@ function PT.ask(ui)
     if state.level ~= before then repaint() end
 end
 
+-- Asks the daemon now, without waiting for it: the answer comes to
+-- `answered` a moment later.
+function PT.ask(ui)
+    ui = ui or state.ui
+    local hid = hidOf(ui)
+    if not hid or state.asking then return end
+    state.asked_at = os.time()
+    state.asking = true
+    local host = type(hid.API_HOST) == "string" and hid.API_HOST or "127.0.0.1"
+    local port = tonumber(hid.API_PORT) or 8321
+    local ok, err = pcall(function() require("aleph_local_get").get(host, port, "/status", answered) end)
+    if not ok then
+        state.asking = false
+        state.daemon_down = true
+        require("aleph_try").report("aleph_page_turner.lua ask", err)
+    end
+end
+
 -- Any input while a book is open (a page turned by the page turner, or a
--- tap): a quick look when no level is known yet.
+-- tap): a quick look when no level is known yet. Without HID Passthrough
+-- this returns at its first line.
 local Listener = {}
 function Listener:onInputEvent()
+    if state.absent or state.asking or state.daemon_down then return end
     local ui = state.ui
-    if not (ui and ui.document) or state.pending then return end
-    if state.daemon_down or PT.level(ui) then return end
+    if not (ui and ui.document) then return end
+    if PT.level(ui) then return end
     if state.asked_at and os.time() - state.asked_at < PT.QUICK then return end
     if not (PT.wanted() and hidOf(ui)) then return end
-    state.pending = true
-    local UIManager = require("ui/uimanager")
-    UIManager:nextTick(function()
-        state.pending = false
-        PT.ask(ui)
-    end)
+    PT.ask(ui)
 end
 -- The hook container wraps this; Listener is never closed.
 function Listener:onCloseWidget() end
@@ -124,7 +154,7 @@ function PT.attach(ui)
     -- when asking, not now.)
     local UIManager = require("ui/uimanager")
     state.ui = ui
-    state.level, state.asked_at, state.daemon_down = nil, nil, false
+    state.level, state.asked_at, state.daemon_down, state.asking, state.absent = nil, nil, false, false, false
     if not state.hooked and UIManager.event_hook then
         local ok = pcall(function() UIManager.event_hook:registerWidget("InputEvent", Listener) end)
         state.hooked = ok
@@ -132,6 +162,12 @@ function PT.attach(ui)
     if state.task then UIManager:unschedule(state.task) end
     state.task = function()
         if not (state.ui and state.ui.document) then return end
+        -- Every plugin is loaded by now: without HID Passthrough there is
+        -- nothing to ask for this book, on a timer or on input.
+        if not hidOf(state.ui) then
+            state.absent = true
+            return
+        end
         if PT.wanted() then
             state.daemon_down = false
             PT.ask(state.ui)
@@ -153,7 +189,7 @@ end
 -- For tests.
 function PT._state() return state end
 function PT._reset()
-    state = { level = nil, asked_at = nil, daemon_down = false, ui = nil, hooked = state.hooked, task = nil, pending = false }
+    state = { level = nil, asked_at = nil, daemon_down = false, ui = nil, hooked = state.hooked, task = nil, asking = false, absent = false }
 end
 
 return PT

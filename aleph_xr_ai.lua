@@ -25,6 +25,22 @@ not give away what comes later. They can be asked for again further on.
 
 The request runs in a process of its own where the device allows one, so
 the screen answers meanwhile; where it does not, the screen waits for it.
+
+Aleph modification, 2026-11-18 (1.2.37): "Detailed descriptions" (Settings >
+X-Ray, off unless turned on), for accounts with a larger allowance. The
+question then also holds, more than three times as long:
+
+  - the chapter summaries already written for the story so far
+    (aleph_xr_story.lua), when there are any;
+  - for the AI.MAIN names mentioned most, AI.PASSAGES passages of a
+    sentence or two each (the first mention, the chapter it comes up most
+    in, the latest, some between; aleph_xr_more.lua) and the names most
+    often near it;
+
+and asks for 3 to 4 sentences about each of those: who they are, their
+role, their relationships, what they have done so far. The other names are
+described as before. Still nothing from a page not read yet. The passages
+are read from the book in the background process with the question.
 ]]
 
 local Prefs = require("aleph_prefs")
@@ -42,6 +58,13 @@ AI.PROVIDERS = {
 }
 -- How many names are described in one question.
 AI.MAX_NAMES = 60
+-- Detailed descriptions: the names given more, the passages for each, and
+-- how much of the chapter summaries is sent at most.
+AI.MAIN = 15
+AI.PASSAGES = 8
+AI.STORY_CHARS = 16000
+
+function AI.rich() return Prefs.is("xray_ai_rich") end
 AI.KINDS = { person = true, place = true, group = true, thing = true, other = true }
 -- How long an answer may take.
 AI.WAIT = 240
@@ -77,24 +100,44 @@ local function oneLine(str)
     return (tostring(str or ""):gsub("%s+", " "):gsub("^ ", ""):gsub(" $", ""))
 end
 
--- items: { { n = index, name, aliases, excerpts = { "...", ... } }, ... }
-function AI.prompt(book, items, percent)
+-- items: { { n = index, name, aliases, excerpts = { "...", ... }, main,
+-- often = { "name", ... } }, ... }. story: { { title, summary }, ... } or
+-- nil (detailed descriptions only).
+function AI.prompt(book, items, percent, story)
+    local main = false
+    for _i, item in ipairs(items) do if item.main then main = true end end
     local lines = {
         "You are helping a reader keep track of the names in a book they are reading.",
         string.format('Book: "%s"%s. The reader is %d%% of the way through it.',
             oneLine(book.title ~= "" and book.title or "untitled"),
             book.author and book.author ~= "" and (" by " .. oneLine(book.author)) or "", percent),
-        "Below are names found in the book, each with short excerpts from the part already read.",
-        "For each name say what it is and describe it in at most two sentences, using only what a reader at this point would know."
-            .. " Do not reveal anything that happens later in the book."
-            .. " If a name is not a person, place, group or thing of the story (a common word, a nationality, a month), give it the kind \"other\" and an empty description.",
-        "Answer with a JSON array only, one object per name: {\"n\": <the name's number>, \"kind\": \"person\" | \"place\" | \"group\" | \"thing\" | \"other\", \"about\": \"<description>\"}."
-            .. " Write the descriptions in the language of the excerpts.",
-        "",
     }
+    if story and #story > 0 then
+        lines[#lines + 1] = ""
+        lines[#lines + 1] = "What has happened so far, chapter by chapter (summaries written earlier from the pages read):"
+        for _i, c in ipairs(story) do
+            lines[#lines + 1] = "- " .. oneLine(c.title) .. ": " .. oneLine(c.summary)
+        end
+        lines[#lines + 1] = ""
+    end
+    lines[#lines + 1] = "Below are names found in the book, each with excerpts from the part already read."
+    if main then
+        lines[#lines + 1] = "For each name say what it is. Names marked MAIN are the most important so far: describe each of them in three to four sentences"
+            .. " (who they are, their role in the story, their relationships to the other names, and what they have done so far)."
+            .. " Describe every other name in at most two sentences."
+    else
+        lines[#lines + 1] = "For each name say what it is and describe it in at most two sentences."
+    end
+    lines[#lines] = lines[#lines] .. " Use only what a reader at this point would know."
+        .. " Do not reveal anything that happens later in the book."
+        .. " If a name is not a person, place, group or thing of the story (a common word, a nationality, a month), give it the kind \"other\" and an empty description."
+    lines[#lines + 1] = "Answer with a JSON array only, one object per name: {\"n\": <the name's number>, \"kind\": \"person\" | \"place\" | \"group\" | \"thing\" | \"other\", \"about\": \"<description>\"}."
+        .. " Write the descriptions in the language of the excerpts."
+    lines[#lines + 1] = ""
     for _i, item in ipairs(items) do
         local also = item.aliases and #item.aliases > 0 and (" (also: " .. table.concat(item.aliases, ", ") .. ")") or ""
-        lines[#lines + 1] = item.n .. ". " .. oneLine(item.name) .. also
+        local often = item.often and #item.often > 0 and (" — often near: " .. table.concat(item.often, ", ")) or ""
+        lines[#lines + 1] = item.n .. ". " .. (item.main and "MAIN " or "") .. oneLine(item.name) .. also .. often
         for _j, excerpt in ipairs(item.excerpts or {}) do
             lines[#lines + 1] = '   - "' .. oneLine(excerpt):gsub('"', "'") .. '"'
         end
@@ -102,8 +145,23 @@ function AI.prompt(book, items, percent)
     return table.concat(lines, "\n")
 end
 
+-- The chapter summaries to send: the latest ones when they are too long
+-- together, in the book's order.
+function AI.storyFor(told, limit)
+    limit = limit or AI.STORY_CHARS
+    local out, used = {}, 0
+    for i = #told, 1, -1 do
+        local c = told[i]
+        local size = #(c.title or "") + #(c.summary or "") + 4
+        if used + size > limit then break end
+        table.insert(out, 1, { title = c.title, summary = c.summary })
+        used = used + size
+    end
+    return out
+end
+
 -- Where to send the question, with what headers and body, for a provider.
-function AI.request(config, prompt)
+function AI.request(config, prompt, max_tokens)
     local json = require("json")
     local headers = { ["Content-Type"] = "application/json", ["Accept"] = "application/json" }
     local url, body
@@ -111,7 +169,7 @@ function AI.request(config, prompt)
         url = "https://api.anthropic.com/v1/messages"
         headers["x-api-key"] = config.key
         headers["anthropic-version"] = "2023-06-01"
-        body = { model = config.model, max_tokens = 4096, messages = { { role = "user", content = prompt } } }
+        body = { model = config.model, max_tokens = max_tokens or 4096, messages = { { role = "user", content = prompt } } }
     elseif config.provider == "gemini" then
         url = "https://generativelanguage.googleapis.com/v1beta/models/" .. config.model .. ":generateContent"
         headers["x-goog-api-key"] = config.key
@@ -167,7 +225,7 @@ function AI.parse(text, count)
             local kind = type(item.kind) == "string" and item.kind:lower() or "other"
             if not AI.KINDS[kind] then kind = "other" end
             local about = type(item.about) == "string" and oneLine(item.about) or ""
-            if #about > 600 then about = about:sub(1, 600):gsub("[\128-\191]*$", ""):gsub("%s+%S*$", "") .. "…" end
+            if #about > 1000 then about = about:sub(1, 1000):gsub("[\128-\191]*$", ""):gsub("%s+%S*$", "") .. "…" end
             out[index] = { kind = kind, about = about }
             n = n + 1
         end
@@ -216,16 +274,12 @@ local job
 
 function AI.busy() return job ~= nil end
 
-local function subprocess()
-    local ok, u = pcall(require, "ffi/util")
-    if ok and type(u) == "table" and type(u.runInSubProcess) == "function" and type(u.isSubProcessDone) == "function" then
-        return u
-    end
-end
 
 -- The names to describe: the most mentioned so far, each with two excerpts
--- from the pages read (its first mention and one about half-way).
-function AI.items(ui)
+-- from the pages read (its first mention and one about half-way). rich:
+-- the AI.MAIN most mentioned get AI.PASSAGES longer passages and the names
+-- most often near them (aleph_xr_more.lua) instead.
+function AI.items(ui, rich)
     local XR = require("aleph_xr")
     local data = XR.names(ui)
     local hits = XR.hits(ui)
@@ -241,26 +295,56 @@ function AI.items(ui)
         if a.seen ~= b.seen then return a.seen > b.seen end
         return a.index < b.index
     end)
+    local More, chapters
+    if rich then
+        More = require("aleph_xr_more")
+        chapters = require("aleph_xr_story").chapters(ui)
+    end
     local items = {}
     for i = 1, math.min(#ranked, AI.MAX_NAMES) do
         local r = ranked[i]
         local entry = data.names[r.index]
-        local list = hits.by[r.index]
-        local picks = { 1 }
-        if r.seen >= 4 then picks[2] = math.ceil(r.seen / 2) end
-        local excerpts = {}
-        for _j, nth in ipairs(picks) do
-            local before, name, after = XR.snippet(ui, list[nth])
-            if before then excerpts[#excerpts + 1] = before .. name .. after end
+        local item = { n = r.index, name = entry.name, aliases = entry.aliases, excerpts = {} }
+        if rich and i <= AI.MAIN then
+            item.main = true
+            for _j, p in ipairs(More.passages(ui, r.index, AI.PASSAGES, chapters)) do
+                item.excerpts[#item.excerpts + 1] = (p.chapter and (p.chapter .. ": ") or "") .. p.text
+            end
+            item.often = {}
+            for _j, o in ipairs(More.oftenWith(ui, r.index, 4)) do item.often[#item.often + 1] = o.name end
+        else
+            local list = hits.by[r.index]
+            local picks = { 1 }
+            if r.seen >= 4 then picks[2] = math.ceil(r.seen / 2) end
+            for _j, nth in ipairs(picks) do
+                local before, name, after = XR.snippet(ui, list[nth])
+                if before then item.excerpts[#item.excerpts + 1] = before .. name .. after end
+            end
         end
-        items[#items + 1] = { n = r.index, name = entry.name, aliases = entry.aliases, excerpts = excerpts }
+        items[#items + 1] = item
     end
     return items
 end
 
+-- The whole question: { url, headers, body }. Reads the book for the
+-- passages when rich (in the background process where there is one).
+function AI.question(ui, config, percent, rich)
+    local props = ui.doc_props or {}
+    local authors = props.authors
+    if type(authors) == "table" then authors = table.concat(authors, ", ") end
+    local items = AI.items(ui, rich)
+    local story
+    if rich then
+        try(function() story = AI.storyFor(require("aleph_xr_story").told(ui)) end)
+    end
+    local prompt = AI.prompt({ title = props.display_title or props.title or "", author = authors or "" }, items, percent, story)
+    local url, headers, body = AI.request(config, prompt, rich and 8192 or nil)
+    return url, headers, body
+end
+
 -- Puts an answer in the book's names. Returns how many were described, or
 -- nil and why.
-function AI.apply(ui, config, raw, percent)
+function AI.apply(ui, config, raw, percent, rich)
     local XR = require("aleph_xr")
     local data = XR.names(ui)
     if not data then return nil, "this book's names could not be read" end
@@ -273,7 +357,7 @@ function AI.apply(ui, config, raw, percent)
         entry.kind = d.kind
         if d.about ~= "" then entry.about = d.about end
     end
-    data.ai = { at = os.time(), percent = percent, model = config.model, described = n }
+    data.ai = { at = os.time(), percent = percent, model = config.model, described = n, rich = rich or nil }
     XR.save(ui)
     return n
 end
@@ -284,35 +368,34 @@ function AI.describe(ui, done)
     local XR = require("aleph_xr")
     if job then return false, "busy" end
     if not AI.ready() then return false, "no key" end
-    local items = AI.items(ui)
-    if #items == 0 then return false, "no names" end
+    if #AI.items(ui) == 0 then return false, "no names" end
     local config = AI.config()
+    local rich = AI.rich()
     local percent = 0
     try(function()
         percent = math.floor((ui:getCurrentPage() / math.max(1, ui.document:getPageCount())) * 100 + 0.5)
     end)
-    local props = ui.doc_props or {}
-    local authors = props.authors
-    if type(authors) == "table" then authors = table.concat(authors, ", ") end
-    local prompt = AI.prompt({ title = props.display_title or props.title or "", author = authors or "" }, items, percent)
-    local url, headers, body = AI.request(config, prompt)
     local dir = XR.dir(ui)
     local file = ui.document and ui.document.file
     local function finish(raw, why)
         job = nil
         local n, reason
         -- The book may have been reopened by KOReader since the question.
-        if raw then n, reason = AI.apply(XR.target(ui, file), config, raw, percent) else reason = why end
+        if raw then n, reason = AI.apply(XR.target(ui, file), config, raw, percent, rich) else reason = why end
         -- In crash.log, so a failure can be told from the log alone.
-        pcall(function() require("logger").info("Aleph X-Ray: descriptions", n and (tostring(n) .. " names") or ("failed: " .. tostring(reason)), "| " .. tostring(config.provider), tostring(config.model)) end)
+        pcall(function() require("logger").info("Aleph X-Ray: descriptions",
+            n and (tostring(n) .. " names") or ("failed: " .. tostring(reason)), "| " .. tostring(config.provider),
+            tostring(config.model), rich and "detailed" or "") end)
         if done then try(done, n, reason) end
     end
-    local u = subprocess()
-    if u and dir then
+    local Job = require("aleph_job")
+    if Job.available() and dir then
         local out = dir .. "/aleph_xray_answer.txt"
         os.remove(out)
-        local ok, pid = pcall(u.runInSubProcess, function()
-            local raw, why = post(url, headers, body)
+        local pid = Job.start(function()
+            local raw, why
+            local ok, url, headers, body = pcall(AI.question, ui, config, percent, rich)
+            if ok then raw, why = post(url, headers, body) else why = "could not prepare: " .. tostring(url) end
             local f = io.open(out .. ".part", "w")
             if f then
                 f:write(raw and "ok\n" or "error\n", raw or tostring(why))
@@ -320,26 +403,10 @@ function AI.describe(ui, done)
                 os.rename(out .. ".part", out)
             end
         end)
-        if ok and pid then
+        if pid then
             job = { pid = pid, started = os.time() }
-            local UIManager = require("ui/uimanager")
-            local function poll()
-                local j = job
-                if not j then return end
-                local got, over = pcall(u.isSubProcessDone, j.pid)
-                if not got then over = true end
-                local late = false
-                if not over and os.time() - j.started > AI.WAIT then
-                    pcall(function()
-                        if u.terminateSubProcess then u.terminateSubProcess(j.pid) end
-                        u.isSubProcessDone(j.pid, true)
-                    end)
-                    over, late = true, true
-                end
-                if not over then
-                    UIManager:scheduleIn(1, poll)
-                    return
-                end
+            Job.watch(pid, { timeout = AI.WAIT, on_done = function(late)
+                if not job then return end
                 local f = io.open(out, "r")
                 local content = f and f:read("*a") or nil
                 if f then f:close() end
@@ -347,14 +414,15 @@ function AI.describe(ui, done)
                 local status, rest = (content or ""):match("^(%a+)\n(.*)$")
                 if status == "ok" then finish(rest)
                 else finish(nil, late and "took too long" or (rest ~= "" and rest or "no answer")) end
-            end
-            UIManager:scheduleIn(1, poll)
+            end })
             return true
         end
     end
     -- No background process on this device: asked here. The screen waits.
     job = { started = os.time() }
-    local raw, why = post(url, headers, body)
+    local raw, why
+    local ok, url, headers, body = pcall(AI.question, ui, config, percent, rich)
+    if ok then raw, why = post(url, headers, body) else why = "could not prepare: " .. tostring(url) end
     finish(raw, why)
     return true
 end

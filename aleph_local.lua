@@ -50,6 +50,8 @@ local function bookGenres(props, path)
     local function add(s)
         s = util.trim(tostring(s or ""))
         local key = s:lower()
+        -- "bingo: ..." tags are for Reading bingo (aleph_bingo.lua), not genres.
+        if key:match("^bingo%s*:") then return end
         if s ~= "" and not seen[key] then seen[key] = true; out[#out+1] = s end
     end
     local kw = props and props.keywords
@@ -213,35 +215,18 @@ function Local.writeIndexFile(file, text)
     return true
 end
 
-local writer_pid, writer_again, writer_poll
+local writer_pid, writer_again
 
-local function subprocesses()
-    local ok, u = pcall(require, "ffi/util")
-    if ok and type(u) == "table" and type(u.runInSubProcess) == "function" and type(u.isSubProcessDone) == "function" then
-        return u
+-- The background writer has finished: writes again if asked to meanwhile.
+-- (Looked for once a second, so it does not linger as a finished process:
+-- aleph_job.lua.)
+local function written(pid)
+    if writer_pid ~= pid then return end
+    writer_pid = nil
+    if writer_again and shared then
+        writer_again = false
+        shared:saveIndex()
     end
-end
-
--- Looks, once a second, for the background writer to have finished (so it
--- does not linger as a finished process), then writes again if asked to
--- meanwhile.
-local function watchWriter()
-    if writer_poll then return end
-    local u = subprocesses()
-    local ok_ui, UIManager = pcall(require, "ui/uimanager")
-    if not (u and ok_ui and UIManager.scheduleIn) then return end
-    writer_poll = function()
-        if writer_pid and not u.isSubProcessDone(writer_pid) then
-            UIManager:scheduleIn(1, writer_poll)
-            return
-        end
-        writer_poll, writer_pid = nil, nil
-        if writer_again and shared then
-            writer_again = false
-            shared:saveIndex()
-        end
-    end
-    UIManager:scheduleIn(1, writer_poll)
 end
 
 function Local:saveIndex(opts)
@@ -253,21 +238,20 @@ function Local:saveIndex(opts)
         if self.cache.flush then self.cache:flush() end
         return true
     end
-    local u = not (opts and opts.wait) and subprocesses() or nil
-    if u then
-        if writer_pid and not u.isSubProcessDone(writer_pid) then
+    local Job = require("aleph_job")
+    if not (opts and opts.wait) and Job.available() then
+        if writer_pid and not Job.finished(writer_pid) then
             -- One is being written: this one follows when it is done.
             writer_again = true
-            watchWriter()
             return true
         end
         local data = self.cache.data
-        local pid = u.runInSubProcess(function()
+        local pid = Job.start(function()
             Local.writeIndexFile(file, Local.indexText(data))
         end)
         if pid then
             writer_pid = pid
-            watchWriter()
+            Job.watch(pid, { on_done = function() written(pid) end })
             return true
         end
     end
@@ -688,6 +672,17 @@ function Local.refreshClosing(ui)
             book.cover_path, book.cover_checked = old.cover_path, old.cover_checked
         end
         lib.books[index] = book
+        -- Aleph modification, 2026-11-18: finished as it closed: a square of
+        -- the Reading bingo card (aleph_bingo.lua).
+        if book.readStatus == "read" and old.readStatus ~= "read" then
+            try(function() require("aleph_bingo").onFinished(book) end)
+        end
+        -- Aleph modification, 2026-11-18: a status set in the reader goes to
+        -- Goodreads (aleph_gr.lua; it is sent once however often it is heard).
+        if book.readStatus ~= old.readStatus then
+            try(function() require("aleph_gr").statusChanged(path, book.readStatus,
+                { rating = book.rating, finishedOn = book.finishedOn }) end)
+        end
     end
     lib:touch()
     lib:markDirty()
@@ -803,6 +798,33 @@ function Local:createCollection(name)
     readCollections()
     if RC.coll and RC.coll[name] then return end
     RC:addCollection(name)
+end
+
+-- Aleph modification, 2026-11-19: renaming and deleting a collection
+-- (held in the Collection list), through KOReader's own collections.
+-- Favorites, KOReader's own, is neither.
+function Local.isFavorites(name)
+    local ok, RC = pcall(require, "readcollection")
+    return ok and type(RC) == "table" and name == RC.default_collection_name or false
+end
+
+function Local:renameCollection(name, new_name)
+    local ok, RC = pcall(require, "readcollection")
+    if not ok or type(RC) ~= "table" or not RC.renameCollection then error("This KOReader cannot rename collections") end
+    readCollections()
+    if Local.isFavorites(name) then error("Favorites cannot be renamed") end
+    if RC.coll[new_name] then error("A collection of that name already exists") end
+    RC:renameCollection(name, new_name)
+    if not pcall(RC.write, RC, { [name] = true, [new_name] = true }) then pcall(RC.write, RC) end
+end
+
+function Local:deleteCollection(name)
+    local ok, RC = pcall(require, "readcollection")
+    if not ok or type(RC) ~= "table" or not RC.removeCollection then error("This KOReader cannot delete collections") end
+    readCollections()
+    if Local.isFavorites(name) then error("Favorites cannot be deleted") end
+    RC:removeCollection(name)
+    if not pcall(RC.write, RC, { [name] = true }) then pcall(RC.write, RC) end
 end
 
 -- Every file format in the library with its number of books.
@@ -1064,17 +1086,31 @@ function Local:setRating(book, rating)
         end
     end)
     book.rating = rating
+    -- Aleph modification, 2026-11-18: the stars of a Read book, to Goodreads.
+    if rating then try(function() require("aleph_gr").ratingChanged(book.path, rating) end) end
 end
 
 local STATUS_IN_SIDECAR = { unread = "new", reading = "reading", read = "complete", on_hold = "abandoned" }
-function Local:setStatus(book, status)
+-- opts.bulk: one of many set at once (no question from Reading bingo).
+function Local:setStatus(book, status, opts)
     local summary = self:saveSummary(book, function(summary)
         summary.status = STATUS_IN_SIDECAR[status]
         if status == "read" then summary.modified = os.date("%Y-%m-%d") end
     end)
+    local was = book.readStatus
     book.readStatus = status
     book.finishedOn = status == "read" and summary.modified or nil
     try(require("aleph_finished_log").update, book)
+    -- Aleph modification, 2026-11-18: a square of the Reading bingo card.
+    if status == "read" and was ~= "read" then
+        try(function() require("aleph_bingo").onFinished(book, { no_ask = opts and opts.bulk }) end)
+    end
+    -- Aleph modification, 2026-11-18: and to Goodreads (aleph_gr.lua). Not
+    -- for many books at once: that would date them all today.
+    if status ~= was and not (opts and opts.bulk) then
+        try(function() require("aleph_gr").statusChanged(book.path, status,
+            { rating = book.rating, finishedOn = book.finishedOn }) end)
+    end
 end
 
 -- Up to `limit` books sharing genres with `book`, best match first. Books of
@@ -1315,6 +1351,15 @@ function Local:dashboardLists()
     return lists
 end
 
+-- Aleph modification, 2026-11-18: the goals of the Goals widget, as set
+-- (Settings > Profile), their defaults until then; 0 is off.
+Local.GOAL_DEFAULTS = { day_goal = 30, week_goal = 5, month_goal = 2 }
+function Local.goalSetting(settings, key)
+    local v = type(settings) == "table" and tonumber(settings[key])
+    if v == nil then return Local.GOAL_DEFAULTS[key] end
+    return math.max(0, math.floor(v))
+end
+
 function Local:dashboard()
     local lists = self:dashboardLists()
     local reading, unread, finished = lists.reading, lists.unread, lists.finished
@@ -1352,8 +1397,22 @@ function Local:dashboard()
     local function labels(groups) local a = {}; for _i, g in ipairs(groups) do a[#a+1]=g.name end; return a end
     return {displayName = self.settings.display_name, generatedAt = iso(os.time()),
         totalBooks = #self.books, continueReading = reading, discover = random,
-        finishedThisYear = done, readingGoal = {year=tonumber(year), goalBooks=self.settings.year_goal or 12, completedBooks=#done},
+        finishedThisYear = done, readingGoal = {year=tonumber(year), goalBooks=self.settings.year_goal or 12, completedBooks=#done,
+            -- Aleph modification, 2026-11-18: the day's, week's and month's
+            -- goals (Settings > Profile; 0 is off) and this month's books.
+            dayMinutes = Local.goalSetting(self.settings, "day_goal"), weekDays = Local.goalSetting(self.settings, "week_goal"),
+            monthBooks = Local.goalSetting(self.settings, "month_goal"),
+            monthDone = (function()
+                local month, n = os.date("%Y-%m"), 0
+                for _i, b in ipairs(done) do if b.finishedOn:sub(1, 7) == month then n = n + 1 end end
+                return n
+            end)()},
         readingStreak = {currentStreak=current, longestStreak=longest},
+        -- Aleph modification, 2026-11-18: Reading DNA's books part (aleph_dna.lua).
+        dnaBooks = require("aleph_dna").fromBooks(finished),
+        -- And for Monthly challenge, Year projection and Diversity score
+        -- (aleph_more_stats.lua): the books themselves, not copied.
+        finishedBooks = finished, readingBooks = reading, libraryGenres = #self:genres(),
         highlightOfTheDay = #highlights > 0 and highlights[(tonumber(os.date("%j"))-1) % #highlights+1] or nil,
         browseCounts = {authors=#authors,series=#series,inProgress=#reading,read=#finished,libraries=#(self.settings.library_roots or {}),
             collections=#self:collectionList()},

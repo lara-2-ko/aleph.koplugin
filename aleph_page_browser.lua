@@ -280,8 +280,10 @@ local function foot(page, w)
         text(PageBrowser.progress(page.focus, page.total), { s = 14, col = INK.g3, w = mid_w, align = "center" }),
     })
     local row1 = hstack({ w = w, h = math.max(px(56), hOf(block)) }, { grid, flex(px(8)), block, flex(px(8)), search })
-    local left = BoardUI.hit(hstack({ w = px(44), h = px(48) }, { flex(0), icon("chevron-left", px(26), { sw = 2.25, col = page.focus > 1 and "black" or "gb" }), flex(0) }), { kind = "step", delta = -1 })
-    local right = BoardUI.hit(hstack({ w = px(44), h = px(48) }, { flex(0), icon("chevron-right", px(26), { sw = 2.25, col = page.focus < page.total and "black" or "gb" }), flex(0) }), { kind = "step", delta = 1 })
+    local left = BoardUI.hit(hstack({ w = px(44), h = px(48) }, { flex(0), icon("chevron-left", px(26), { sw = 2.25, col = page.focus > 1 and "black" or "gb" }), flex(0) }),
+        { kind = "step", delta = -1 })
+    local right = BoardUI.hit(hstack({ w = px(44), h = px(48) }, { flex(0), icon("chevron-right", px(26), { sw = 2.25, col = page.focus < page.total and "black" or "gb" }), flex(0) }),
+        { kind = "step", delta = 1 })
     local sw_ = w - 2 * px(44) - 2 * px(12)
     page.slider_x = page.mx + px(44) + px(12)
     local row2 = hstack({ w = w, h = px(48) }, { left, space(px(12), 1), slider(page, sw_), space(px(12), 1), right })

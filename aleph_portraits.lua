@@ -269,32 +269,10 @@ local LOOKUP_WAIT = 60
 local no_background = false
 local job
 
-local function subprocess()
-    if no_background then return nil end
-    local ok, u = pcall(require, "ffi/util")
-    if ok and type(u) == "table" and type(u.runInSubProcess) == "function" and type(u.isSubProcessDone) == "function" then
-        return u
-    end
-end
-
-local function pollLookup()
+-- The lookup has ended (late: stopped for taking too long).
+local function lookedUp(late)
     local j = job
     if not j then return end
-    local u = subprocess()
-    local ok, done = pcall(u.isSubProcessDone, j.pid)
-    if not ok then done = true end
-    local late = false
-    if not done and os.time() - j.started > LOOKUP_WAIT then
-        pcall(function()
-            if u.terminateSubProcess then u.terminateSubProcess(j.pid) end
-            u.isSubProcessDone(j.pid, true)
-        end)
-        done, late = true, true
-    end
-    if not done then
-        UIManager:scheduleIn(0.3, pollLookup)
-        return
-    end
     job = nil
     running = false
     local outcome, file, source, err = "error", nil, nil, late and "took too long" or "no answer"
@@ -317,11 +295,11 @@ end
 
 -- Starts the background lookup. False when it could not be started.
 local function lookupInBackground(name)
-    local u = subprocess()
-    if not u then return false end
+    local Job = require("aleph_job")
+    if no_background or not Job.available() then return false end
     local note = dir() .. "/" .. keyOf(name) .. ".note"
     os.remove(note)
-    local ok, pid = pcall(u.runInSubProcess, function()
+    local pid = Job.start(function()
         local outcome, file, source, err = lookupToFile(name)
         local f = io.open(note .. ".part", "w")
         if f then
@@ -330,14 +308,14 @@ local function lookupInBackground(name)
             os.rename(note .. ".part", note)
         end
     end)
-    if not ok or not pid then
+    if not pid then
         no_background = true
         return false
     end
     job = { pid = pid, name = name, note = note, started = os.time() }
     -- Nothing else is looked up until this one is back.
     running = true
-    UIManager:scheduleIn(0.3, pollLookup)
+    Job.watch(pid, { every = 0.3, timeout = LOOKUP_WAIT, on_done = lookedUp })
     return true
 end
 

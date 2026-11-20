@@ -101,102 +101,117 @@ local function pager(w, page)
     return require("aleph_text_pages").pager(w, page.index, page.count)
 end
 
+-- The icons of this page as tiles in rows, the one in use ringed and ticked.
+local function iconsGrid(ch, cols, cw, gap, page, per, selected, shown, w)
+    local grid = {}
+    if #shown == 0 then
+        grid[1] = vstack({ w = w, h = px(120) }, { flex(0), text(_("No icon has that name."), { s = 15, col = INK.g4, w = w, align = "center" }), flex(0) })
+    end
+    local first = (page.index - 1) * per + 1
+    local line = {}
+    for n = first, math.min(#shown, first + per - 1) do
+        local item = shown[n]
+        local on = item.icon_file == selected
+        local glyph = math.min(px(40), floor(ch * 0.42))
+        local inner = vstack({ w = cw, h = ch, align = "center" }, {
+            flex(0),
+            hstack({ w = cw, h = glyph }, { flex(0), picture(item.icon_file, glyph), flex(0) }),
+            space(nil, px(8)),
+            text(item.text, { s = 12, b = on, w = cw - 2 * px(8), align = "center", data = true }),
+            flex(0),
+        })
+        local border = on and math.max(2, px(2.5)) or MenuUI.line()
+        local tile = BoardUI.overlay(cw, ch, {
+            { widget = BoardUI.box({ w = cw, h = ch, radius = px(12), border = border, border_col = on and INK.black or INK.g8, bg = INK.white }) },
+            { widget = inner, x = 0, y = 0 },
+            on and { widget = MenuUI.check(), x = cw - px(8) - px(24), y = px(8) } or {},
+        })
+        line[#line + 1] = BoardUI.hit(tile, { kind = "pick", value = item.icon_value })
+        if #line == cols or n == math.min(#shown, first + per - 1) then
+            if #grid > 0 then grid[#grid + 1] = space(nil, gap) end
+            grid[#grid + 1] = hstack({ gap = gap, valign = "top" }, line)
+            line = {}
+        end
+    end
+    return grid
+end
+
+-- The icon picker is drawn from one table, `k`: items (every icon there is),
+-- selected (the one in use), title, and on_select (told the icon picked).
+local function iconsBuild(k, page, sw, sh)
+    local items, selected, title = k.items, k.selected, k.title
+    local mx = MenuUI.mx()
+    local w = sw - 2 * mx
+    local top, bottom = px(6), px(8)
+    local search = MenuUI.iconButton("search", { kind = "filter" }, { size = 22, sw = 2.25 })
+    local header = MenuUI.pageHeader(w, title, { sub = _("Top menu"), right = search, right_inset = MenuUI.tapInset(22) })
+    local shown = {}
+    for _i, item in ipairs(items) do
+        if page.filter == "" or item.text:lower():find(page.filter, 1, true) then shown[#shown + 1] = item end
+    end
+    local head_items = { header, space(nil, px(8)) }
+    if page.filter ~= "" then
+        head_items[#head_items + 1] = hstack({ w = w, h = px(40), gap = px(10) }, {
+            text(T(_("Names with “%1”: %2"), page.filter, #shown), { s = 14, col = INK.g4, data = true }),
+            flex(0),
+            MenuUI.pill(_("Clear"), { kind = "outline", h = 34, s = 13, pad_x = 12, icon = "x", icon_size = 14, action = { kind = "clear" } }),
+        })
+        head_items[#head_items + 1] = space(nil, px(8))
+    end
+    local head_h = 0
+    for _i, it in ipairs(head_items) do head_h = head_h + it:getSize().h end
+    local gap = px(10)
+    local avail = sh - top - bottom - head_h - px(8) - px(40)
+    local cols = math.max(3, math.min(6, floor((w + gap) / (px(104) + gap))))
+    local cw = floor((w - (cols - 1) * gap) / cols)
+    local ch = math.min(px(112), cw)
+    local rows = math.max(1, floor((avail + gap) / (ch + gap)))
+    local per = cols * rows
+    page.count = math.max(1, math.ceil(#shown / per))
+    page.index = math.max(1, math.min(page.index, page.count))
+    local grid = iconsGrid(ch, cols, cw, gap, page, per, selected, shown, w)
+    local items_ = head_items
+    items_[#items_ + 1] = vstack({ w = w, h = avail }, { vstack({ w = w }, grid), flex(0) })
+    items_[#items_ + 1] = space(nil, px(8))
+    items_[#items_ + 1] = pager(w, page)
+    return vstack({ w = sw, h = sh, pad = { top, mx, bottom, mx }, top = true }, items_)
+end
+
+local function iconsAction(k, page, action)
+    local on_select = k.on_select
+    if action.kind == "pick" then
+        page:close()
+        on_select(action.value)
+    elseif action.kind == "page" then
+        turn(page, action.delta)
+    elseif action.kind == "clear" then
+        page.filter, page.index = "", 1
+        page:refresh()
+    elseif action.kind == "filter" then
+        require("aleph_input").prompt{
+            title = _("Filter icons by name"), text = page.filter, hint = _("Icon name"), ok_label = _("Filter"),
+            on_ok = function(value)
+                page.filter, page.index = tostring(value or ""):lower(), 1
+                page:refresh()
+            end,
+        }
+    end
+    return true
+end
+
 -- ---------------------------------------------------------- icon picker
 -- on_select(value): value is what Icons.path reads (nil for the default).
 function TopMenu.pickIcon(root, title, value, default, on_select)
     local Icons = require("aleph_topbar_icons")
     local items = Icons.items(root, default)
     local selected = Icons.path(root, value, default)
+    local k = { items = items, selected = selected, title = title, on_select = on_select }
     local page = MenuPage:new{
         name = "aleph_topmenu_icons",
         index = 1,
         filter = "",
-        build = function(page, sw, sh)
-            local mx = MenuUI.mx()
-            local w = sw - 2 * mx
-            local top, bottom = px(6), px(8)
-            local search = MenuUI.iconButton("search", { kind = "filter" }, { size = 22, sw = 2.25 })
-            local header = MenuUI.pageHeader(w, title, { sub = _("Top menu"), right = search, right_inset = MenuUI.tapInset(22) })
-            local shown = {}
-            for _i, item in ipairs(items) do
-                if page.filter == "" or item.text:lower():find(page.filter, 1, true) then shown[#shown + 1] = item end
-            end
-            local head_items = { header, space(nil, px(8)) }
-            if page.filter ~= "" then
-                head_items[#head_items + 1] = hstack({ w = w, h = px(40), gap = px(10) }, {
-                    text(T(_("Names with “%1”: %2"), page.filter, #shown), { s = 14, col = INK.g4, data = true }),
-                    flex(0),
-                    MenuUI.pill(_("Clear"), { kind = "outline", h = 34, s = 13, pad_x = 12, icon = "x", icon_size = 14, action = { kind = "clear" } }),
-                })
-                head_items[#head_items + 1] = space(nil, px(8))
-            end
-            local head_h = 0
-            for _i, it in ipairs(head_items) do head_h = head_h + it:getSize().h end
-            local gap = px(10)
-            local avail = sh - top - bottom - head_h - px(8) - px(40)
-            local cols = math.max(3, math.min(6, floor((w + gap) / (px(104) + gap))))
-            local cw = floor((w - (cols - 1) * gap) / cols)
-            local ch = math.min(px(112), cw)
-            local rows = math.max(1, floor((avail + gap) / (ch + gap)))
-            local per = cols * rows
-            page.count = math.max(1, math.ceil(#shown / per))
-            page.index = math.max(1, math.min(page.index, page.count))
-            local grid = {}
-            if #shown == 0 then
-                grid[1] = vstack({ w = w, h = px(120) }, { flex(0), text(_("No icon has that name."), { s = 15, col = INK.g4, w = w, align = "center" }), flex(0) })
-            end
-            local first = (page.index - 1) * per + 1
-            local line = {}
-            for n = first, math.min(#shown, first + per - 1) do
-                local item = shown[n]
-                local on = item.icon_file == selected
-                local glyph = math.min(px(40), floor(ch * 0.42))
-                local inner = vstack({ w = cw, h = ch, align = "center" }, {
-                    flex(0),
-                    hstack({ w = cw, h = glyph }, { flex(0), picture(item.icon_file, glyph), flex(0) }),
-                    space(nil, px(8)),
-                    text(item.text, { s = 12, b = on, w = cw - 2 * px(8), align = "center", data = true }),
-                    flex(0),
-                })
-                local border = on and math.max(2, px(2.5)) or MenuUI.line()
-                local tile = BoardUI.overlay(cw, ch, {
-                    { widget = BoardUI.box({ w = cw, h = ch, radius = px(12), border = border, border_col = on and INK.black or INK.g8, bg = INK.white }) },
-                    { widget = inner, x = 0, y = 0 },
-                    on and { widget = MenuUI.check(), x = cw - px(8) - px(24), y = px(8) } or {},
-                })
-                line[#line + 1] = BoardUI.hit(tile, { kind = "pick", value = item.icon_value })
-                if #line == cols or n == math.min(#shown, first + per - 1) then
-                    if #grid > 0 then grid[#grid + 1] = space(nil, gap) end
-                    grid[#grid + 1] = hstack({ gap = gap, valign = "top" }, line)
-                    line = {}
-                end
-            end
-            local items_ = head_items
-            items_[#items_ + 1] = vstack({ w = w, h = avail }, { vstack({ w = w }, grid), flex(0) })
-            items_[#items_ + 1] = space(nil, px(8))
-            items_[#items_ + 1] = pager(w, page)
-            return vstack({ w = sw, h = sh, pad = { top, mx, bottom, mx }, top = true }, items_)
-        end,
-        on_action = function(page, action)
-            if action.kind == "pick" then
-                page:close()
-                on_select(action.value)
-            elseif action.kind == "page" then
-                turn(page, action.delta)
-            elseif action.kind == "clear" then
-                page.filter, page.index = "", 1
-                page:refresh()
-            elseif action.kind == "filter" then
-                require("aleph_input").prompt{
-                    title = _("Filter icons by name"), text = page.filter, hint = _("Icon name"), ok_label = _("Filter"),
-                    on_ok = function(value)
-                        page.filter, page.index = tostring(value or ""):lower(), 1
-                        page:refresh()
-                    end,
-                }
-            end
-            return true
-        end,
+        build = function(page, sw, sh) return iconsBuild(k, page, sw, sh) end,
+        on_action = function(page, action) return iconsAction(k, page, action) end,
         on_swipe = function(page, ges)
             if ges.direction == "west" then turn(page, 1) return true end
             if ges.direction == "east" then turn(page, -1) return true end

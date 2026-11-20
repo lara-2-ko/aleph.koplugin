@@ -19,7 +19,6 @@ If anything fails while restyling, the pop-up is left as KOReader built it.
 ]]
 
 local Prefs = require("aleph_prefs")
-local Device = require("device")
 local Geom = require("ui/geometry")
 local Widget = require("ui/widget/widget")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
@@ -123,88 +122,26 @@ function Dict.highlightNow(self, button)
     }, { __index = button })
 end
 
--- -------------------------------------------------------------- restyle
-function Dict.restyle(self)
-    local Size = require("ui/size")
-    local TextWidget = require("ui/widget/textwidget")
-    local frame = self.dict_frame
-    local group = frame[1]
-    local old_h = frame:getSize().h
-    local inner_w = self.width - 2 * Size.border.window
-    local pad = px(10)
-
-    frame.radius = px(16)
-    frame.color = INK.g6
-    frame.bordersize = math.max(1, px(1.5))
-
-    -- Header.
-    local box = px(44)
-    local menu = Cell:new{ w = box, h = box, icon_name = "menu", bare = true, source = {
-        enabled = true,
-        callback = function()
-            local f = self.dict_title.left_icon_tap_callback
-            if f then f() end
-        end,
-        hold_callback = function()
-            local f = self.dict_title.left_icon_hold_callback
-            if f then f() end
-        end,
-    } }
-    local close = Cell:new{ w = box, h = box, icon_name = "x", bare = true, source = {
-        enabled = true,
-        callback = function() self.dict_title.close_callback() end,
-        hold_callback = function()
-            local f = self.dict_title.close_hold_callback
-            if f then f() end
-        end,
-    } }
-    local title = TitleText:new{ owner = self, w = inner_w - 2 * box - 2 * px(8) }
-    local row = BoardUI.hstack({ w = inner_w, h = px(52) }, {
-        BoardUI.space(px(8), 1), menu, title, BoardUI.flex(0), close, BoardUI.space(px(8), 1),
-    })
-    local header = Header:new{ owner = self, w = inner_w, h = px(52), row = row }
-    local rule = BoardUI.rect(inner_w, math.max(1, px(1)), INK.gc)
-    group[1] = BoardUI.vstack({ w = inner_w }, { header, rule })
-
-    -- The looked up word, its count and the pencil, in the board's font.
-    local word_row = group[3] and group[3][1]
-    if word_row then
-        local size = self.is_wiki and math.max(18, self.dict_font_size) or math.max(22, self.dict_font_size)
-        local face = BoardMetrics.face(size, "sans")
-        local old_word = self.lookup_word_text
-        local word = TextWidget:new{
-            text = self.displayword, face = face, bold = true,
-            max_width = old_word and old_word.max_width or inner_w, padding = 0, lang = self.lang_in,
-        }
-        for i, child in ipairs(word_row) do
-            if child == old_word then word_row[i] = word end
-        end
-        self.lookup_word_text = word
-        if self.displaynb_text then
-            local nb = TextWidget:new{ text = self.displaynb, face = face, padding = 0 }
-            for _i, child in ipairs(word_row) do
-                if type(child) == "table" and child[1] == self.displaynb_text then child[1] = nb end
-            end
-            self.displaynb_text = nb
-        end
-        -- The pencil: the board's own icon, same two actions.
-        for i, child in ipairs(word_row) do
-            if type(child) == "table" and child.icon == "edit" then
-                local edit = Cell:new{ w = px(34), h = px(34), icon_name = "pen-line", bare = true, icon_size = 20, source = {
-                    enabled = true,
-                    callback = function() self:onLookupInputWord(self.word) end,
-                    hold_callback = function() self:onLookupInputWord(self.lookupword) end,
-                } }
-                edit.overlap_align = "right"
-                word_row[i] = edit
-            end
+-- Docked to the bottom of the screen, whichever word was looked up.
+local function restyleDock(self)
+    if not self.is_wiki then
+        local Device = require("device")
+        local sw, sh = Device.screen:getWidth(), Device.screen:getHeight()
+        self.region = Geom:new{ x = 0, y = 0, w = sw, h = sh - px(8) }
+        self.align = "bottom"
+        if self[1] then
+            self[1].align = "bottom"
+            self[1].dimen = self.region
         end
     end
 
-    -- Buttons: KOReader's own buttons, laid out again. A button with words
-    -- (the vocabulary builder, plugin buttons) gets a row of its own with the
-    -- words centred; every button with an icon goes into one row of bare
-    -- icons, hairlines between the rows.
+end
+
+-- Buttons: KOReader's own buttons, laid out again. A button with words
+-- (the vocabulary builder, plugin buttons) gets a row of its own with the
+-- words centred; every button with an icon goes into one row of bare
+-- icons, hairlines between the rows.
+local function restyleButtons(self, group, inner_w, pad)
     local table_ = self.button_table
     local layout = table_ and table_.buttons_layout
     if layout then
@@ -262,18 +199,94 @@ function Dict.restyle(self)
             group[#group] = BoardUI.vstack({ w = inner_w, pad = { 0, pad, px(4), pad } }, rows)
         end
     end
+end
 
-    -- Docked to the bottom of the screen, whichever word was looked up.
-    if not self.is_wiki then
-        local Device = require("device")
-        local sw, sh = Device.screen:getWidth(), Device.screen:getHeight()
-        self.region = Geom:new{ x = 0, y = 0, w = sw, h = sh - px(8) }
-        self.align = "bottom"
-        if self[1] then
-            self[1].align = "bottom"
-            self[1].dimen = self.region
+-- The looked up word, its count and the pencil, in the board's font.
+local function restyleWord(self, TextWidget, group, inner_w)
+    local word_row = group[3] and group[3][1]
+    if word_row then
+        local size = self.is_wiki and math.max(18, self.dict_font_size) or math.max(22, self.dict_font_size)
+        local face = BoardMetrics.face(size, "sans")
+        local old_word = self.lookup_word_text
+        local word = TextWidget:new{
+            text = self.displayword, face = face, bold = true,
+            max_width = old_word and old_word.max_width or inner_w, padding = 0, lang = self.lang_in,
+        }
+        for i, child in ipairs(word_row) do
+            if child == old_word then word_row[i] = word end
+        end
+        self.lookup_word_text = word
+        if self.displaynb_text then
+            local nb = TextWidget:new{ text = self.displaynb, face = face, padding = 0 }
+            for _i, child in ipairs(word_row) do
+                if type(child) == "table" and child[1] == self.displaynb_text then child[1] = nb end
+            end
+            self.displaynb_text = nb
+        end
+        -- The pencil: the board's own icon, same two actions.
+        for i, child in ipairs(word_row) do
+            if type(child) == "table" and child.icon == "edit" then
+                local edit = Cell:new{ w = px(34), h = px(34), icon_name = "pen-line", bare = true, icon_size = 20, source = {
+                    enabled = true,
+                    callback = function() self:onLookupInputWord(self.word) end,
+                    hold_callback = function() self:onLookupInputWord(self.lookupword) end,
+                } }
+                edit.overlap_align = "right"
+                word_row[i] = edit
+            end
         end
     end
+end
+
+-- The header: the menu, the dictionary's name, close.
+local function restyleHeader(self, group, inner_w)
+    local box = px(44)
+    local menu = Cell:new{ w = box, h = box, icon_name = "menu", bare = true, source = {
+        enabled = true,
+        callback = function()
+            local f = self.dict_title.left_icon_tap_callback
+            if f then f() end
+        end,
+        hold_callback = function()
+            local f = self.dict_title.left_icon_hold_callback
+            if f then f() end
+        end,
+    } }
+    local close = Cell:new{ w = box, h = box, icon_name = "x", bare = true, source = {
+        enabled = true,
+        callback = function() self.dict_title.close_callback() end,
+        hold_callback = function()
+            local f = self.dict_title.close_hold_callback
+            if f then f() end
+        end,
+    } }
+    local title = TitleText:new{ owner = self, w = inner_w - 2 * box - 2 * px(8) }
+    local row = BoardUI.hstack({ w = inner_w, h = px(52) }, {
+        BoardUI.space(px(8), 1), menu, title, BoardUI.flex(0), close, BoardUI.space(px(8), 1),
+    })
+    local header = Header:new{ owner = self, w = inner_w, h = px(52), row = row }
+    local rule = BoardUI.rect(inner_w, math.max(1, px(1)), INK.gc)
+    group[1] = BoardUI.vstack({ w = inner_w }, { header, rule })
+end
+
+-- -------------------------------------------------------------- restyle
+function Dict.restyle(self)
+    local Size = require("ui/size")
+    local TextWidget = require("ui/widget/textwidget")
+    local frame = self.dict_frame
+    local group = frame[1]
+    local old_h = frame:getSize().h
+    local inner_w = self.width - 2 * Size.border.window
+    local pad = px(10)
+
+    frame.radius = px(16)
+    frame.color = INK.g6
+    frame.bordersize = math.max(1, px(1.5))
+
+    restyleHeader(self, group, inner_w)
+    restyleWord(self, TextWidget, group, inner_w)
+    restyleButtons(self, group, inner_w, pad)
+    restyleDock(self)
 
     -- Never taller than KOReader worked out, so a large window still fits the
     -- screen: anything the new parts add is taken from the space above the

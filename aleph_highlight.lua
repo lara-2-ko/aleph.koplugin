@@ -423,180 +423,202 @@ function Highlight.saveChosen(hl)
     return index
 end
 
+-- The sheet is kept in one table, `c`: hl (the reader's highlight module),
+-- index (which highlight), opts, class and styles (KOReader's), what is shown
+-- (show_style, show_color), the window on the styles when there are more than
+-- four (style_offset, style_step), and finished (a new highlight was saved).
+local function sheetItem(c)
+    local hl, index, opts = c.hl, c.index, c.opts
+    if opts.new then return hl.selected_text end
+    return hl.ui.annotation.annotations[index]
+end
+
+local function sheetFinish(c)
+    local hl, opts = c.hl, c.opts
+    if c.finished then return end
+    c.finished = true
+    local made = Highlight.saveChosen(hl)
+    hl:clear()
+    if opts.caller_callback then opts.caller_callback(made) end
+end
+
+local function sheetChange(c, field, value)
+    local hl, index, opts = c.hl, c.index, c.opts
+    if opts.new then sheetItem(c)[field] = value else applyChange(hl, index, field, value) end
+end
+
+local function sheetBuild(c, p, sw, sh)
+    local hl, index, opts, class, styles, show_style, show_color = c.hl, c.index, c.opts, c.class, c.styles, c.show_style, c.show_color
+    local it = sheetItem(c)
+    if not it then p:close(); return BoardUI.overlay(sw, sh, {}) end
+    local w = math.min(px(500), sw - 2 * px(12))
+    local pad = px(16)
+    local iw = w - 2 * pad
+    local drawer = it.drawer or hl.view.highlight.saved_drawer
+    local color_id = it.color or hl.view.highlight.saved_color
+    local muted = drawer == "invert"
+    local header = BoardUI.hstack({ w = iw, h = px(44) }, {
+        BoardUI.text(opts.new and _("New highlight") or _("Highlight"), { s = 20, b = true }), BoardUI.flex(0), MenuUI.iconButton("x", { kind = "close" }),
+    })
+    local function label(str) return BoardUI.text(str, { s = 13, b = true, col = INK.g4, w = iw }) end
+    -- Styles.
+    -- Four slots. More styles than that (a patch or a modified
+    -- KOReader adds them): three at a time, swipe the sheet sideways
+    -- for the next ones, the fourth slot opens them all.
+    local gap = px(8)
+    local tile_w = floor((iw - 3 * gap) / 4)
+    local tiles = {}
+    local selected_at
+    for i, style in ipairs(styles) do if style[2] == drawer then selected_at = i end end
+    local first, last, off, more, step = Highlight.styleWindow(#styles, 4, c.style_offset, selected_at)
+    c.style_offset, c.style_step = off, step
+    for i = first, last do
+        local style = styles[i]
+        table.insert(tiles, styleTile(style, tile_w, px(78), drawer == style[2], Palette.hex(color_id)))
+    end
+    if more then
+        table.insert(tiles, moreTile(tile_w, px(78), #styles - (last - first + 1), { kind = "style-more" }))
+    end
+    -- Colors, three to a row.
+    local cols = 3
+    local cgap = px(8)
+    local cw = floor((iw - (cols - 1) * cgap) / cols)
+    local rows = {}
+    local row = {}
+    for _i, entry in ipairs(class.highlight_colors) do
+        table.insert(row, colorCell(class, entry[2], cw, px(50), entry[2] == color_id, muted))
+        if #row == cols then
+            table.insert(rows, BoardUI.hstack({ w = iw, gap = cgap }, row))
+            row = {}
+        end
+    end
+    if #row > 0 then table.insert(rows, BoardUI.hstack({ w = iw, gap = cgap }, row)) end
+    local items = { header, BoardUI.space(nil, px(6)) }
+    if show_style then
+        if c.style_step > 0 then
+            table.insert(items, BoardUI.hstack({ w = iw }, {
+                BoardUI.text(_("Style"), { s = 13, b = true, col = INK.g4 }), BoardUI.flex(px(8)),
+                BoardUI.text(T(_("%1–%2 of %3 · swipe for more"), first, last, #styles), { s = 12, col = INK.g4 }),
+            }))
+        else
+            table.insert(items, label(_("Style")))
+        end
+        table.insert(items, BoardUI.space(nil, px(6)))
+        table.insert(items, BoardUI.hstack({ w = iw, gap = gap }, tiles))
+    end
+    if show_color then
+        if show_style then table.insert(items, BoardUI.space(nil, px(14))) end
+        table.insert(items, label(_("Color")))
+        for _i, r in ipairs(rows) do
+            table.insert(items, BoardUI.space(nil, px(8)))
+            table.insert(items, r)
+        end
+        table.insert(items, BoardUI.space(nil, px(12)))
+        table.insert(items, BoardUI.text(
+            (muted and show_style) and _("Invert has no color. Hold a name to rename it, a swatch to change it.")
+                or _("Hold a name to rename it. Hold a swatch to change the color."),
+            { s = 12, col = INK.g4, w = iw, lines = 2 }))
+    end
+    if opts.new then
+        table.insert(items, BoardUI.space(nil, px(12)))
+        table.insert(items, MenuUI.pill(_("Highlight"), { kind = "dark", w = iw, h = 48, s = 16, action = { kind = "done" } }))
+    end
+    local content = BoardUI.vstack({ w = w, pad = pad }, items)
+    local border = math.max(1, px(1.5))
+    local ph = content:getSize().h + 2 * border
+    local widget = BoardUI.box({ w = w, h = ph, radius = px(16), bg = INK.white, border = border, border_col = INK.g6 }, content)
+    local x, y = floor((sw - w) / 2), sheetPosition(hl, index, ph)
+    p.panel_rect = Geom:new{ x = x, y = y, w = w, h = ph }
+    return BoardUI.overlay(sw, sh, { { widget = widget, x = x, y = y } })
+end
+
+local function sheetAction(c, p, action)
+    local hl, styles = c.hl, c.styles
+    if action.kind == "style" then
+        sheetChange(c, "drawer", action.id)
+        p:refresh()
+    elseif action.kind == "style-more" then
+        local it = sheetItem(c)
+        Highlight.openStylePicker{
+            styles = styles,
+            selected = it and (it.drawer or hl.view.highlight.saved_drawer),
+            hex = Palette.hex(it and it.color or hl.view.highlight.saved_color),
+            title = _("Highlight style"),
+            on_pick = function(id)
+                sheetChange(c, "drawer", id)
+                c.style_offset = nil -- show the one picked
+                p:refresh()
+            end,
+        }
+    elseif action.kind == "color" then
+        sheetChange(c, "color", action.id)
+        p:refresh()
+    elseif action.kind == "done" then
+        p:close()
+    end
+end
+
+-- A swipe across the sheet: the next or the previous styles.
+local function sheetSwipe(c, p, ges)
+    local styles, show_style = c.styles, c.show_style
+    if not show_style or c.style_step == 0 or ges.ges ~= "swipe" then return end
+    local max_off = #styles - c.style_step
+    local before = c.style_offset
+    if ges.direction == "west" then c.style_offset = math.min(max_off, c.style_offset + c.style_step)
+    elseif ges.direction == "east" then c.style_offset = math.max(0, c.style_offset - c.style_step)
+    else return end
+    if c.style_offset ~= before then p:refresh() end
+    return true
+end
+
+-- A hold on a colour: its name to rename it, its swatch to change it.
+local function sheetHold(c, p, action)
+    local hl, class = c.hl, c.class
+    if action.kind ~= "color" then return end
+    local id = action.id
+    if action.hold == "rename" then
+        require("aleph_input").prompt{
+            title = _("Rename color"), text = Palette.name(class, id), ok_label = _("Save"),
+            on_ok = function(text)
+                Palette.setName(class, id, text)
+                p:refresh()
+            end,
+        }
+    else
+        require("aleph_color_wheel").open{
+            title = Palette.name(class, id), hex = Palette.hex(id),
+            on_use = function(hex)
+                Palette.setHex(class, id, hex)
+                UIManager:setDirty(hl.dialog, "ui")
+                p:refresh()
+            end,
+            on_reset = function()
+                Palette.resetHex(class, id)
+                UIManager:setDirty(hl.dialog, "ui")
+                p:refresh()
+            end,
+        }
+    end
+end
+
 -- opts.new: the highlight is being made (KOReader's "Highlight prompt" setting):
 -- the sheet edits the selection, and closing it makes the highlight, as
 -- KOReader's own prompts do. opts.only: "style" or "color" to show just that.
 function Highlight.openSheet(hl, index, opts)
     opts = opts or {}
     local class = require("apps/reader/modules/readerhighlight")
-    local function item()
-        if opts.new then return hl.selected_text end
-        return hl.ui.annotation.annotations[index]
-    end
-    if not item() then return end
-    local styles = class.getHighlightStyles()
-    local show_style, show_color = opts.only ~= "color", opts.only ~= "style"
-    local finished = false
-    local function finish()
-        if finished then return end
-        finished = true
-        local made = Highlight.saveChosen(hl)
-        hl:clear()
-        if opts.caller_callback then opts.caller_callback(made) end
-    end
-    local function change(field, value)
-        if opts.new then item()[field] = value else applyChange(hl, index, field, value) end
-    end
-    local style_offset, style_step = nil, 0
-    local panel
-    panel = Panel:new{
-        build = function(p, sw, sh)
-            local it = item()
-            if not it then p:close(); return BoardUI.overlay(sw, sh, {}) end
-            local w = math.min(px(500), sw - 2 * px(12))
-            local pad = px(16)
-            local iw = w - 2 * pad
-            local drawer = it.drawer or hl.view.highlight.saved_drawer
-            local color_id = it.color or hl.view.highlight.saved_color
-            local muted = drawer == "invert"
-            local header = BoardUI.hstack({ w = iw, h = px(44) }, {
-                BoardUI.text(opts.new and _("New highlight") or _("Highlight"), { s = 20, b = true }), BoardUI.flex(0), MenuUI.iconButton("x", { kind = "close" }),
-            })
-            local function label(str) return BoardUI.text(str, { s = 13, b = true, col = INK.g4, w = iw }) end
-            -- Styles.
-            -- Four slots. More styles than that (a patch or a modified
-            -- KOReader adds them): three at a time, swipe the sheet sideways
-            -- for the next ones, the fourth slot opens them all.
-            local gap = px(8)
-            local tile_w = floor((iw - 3 * gap) / 4)
-            local tiles = {}
-            local selected_at
-            for i, style in ipairs(styles) do if style[2] == drawer then selected_at = i end end
-            local first, last, off, more, step = Highlight.styleWindow(#styles, 4, style_offset, selected_at)
-            style_offset, style_step = off, step
-            for i = first, last do
-                local style = styles[i]
-                table.insert(tiles, styleTile(style, tile_w, px(78), drawer == style[2], Palette.hex(color_id)))
-            end
-            if more then
-                table.insert(tiles, moreTile(tile_w, px(78), #styles - (last - first + 1), { kind = "style-more" }))
-            end
-            -- Colors, three to a row.
-            local cols = 3
-            local cgap = px(8)
-            local cw = floor((iw - (cols - 1) * cgap) / cols)
-            local rows = {}
-            local row = {}
-            for _i, entry in ipairs(class.highlight_colors) do
-                table.insert(row, colorCell(class, entry[2], cw, px(50), entry[2] == color_id, muted))
-                if #row == cols then
-                    table.insert(rows, BoardUI.hstack({ w = iw, gap = cgap }, row))
-                    row = {}
-                end
-            end
-            if #row > 0 then table.insert(rows, BoardUI.hstack({ w = iw, gap = cgap }, row)) end
-            local items = { header, BoardUI.space(nil, px(6)) }
-            if show_style then
-                if style_step > 0 then
-                    table.insert(items, BoardUI.hstack({ w = iw }, {
-                        BoardUI.text(_("Style"), { s = 13, b = true, col = INK.g4 }), BoardUI.flex(px(8)),
-                        BoardUI.text(T(_("%1–%2 of %3 · swipe for more"), first, last, #styles), { s = 12, col = INK.g4 }),
-                    }))
-                else
-                    table.insert(items, label(_("Style")))
-                end
-                table.insert(items, BoardUI.space(nil, px(6)))
-                table.insert(items, BoardUI.hstack({ w = iw, gap = gap }, tiles))
-            end
-            if show_color then
-                if show_style then table.insert(items, BoardUI.space(nil, px(14))) end
-                table.insert(items, label(_("Color")))
-                for _i, r in ipairs(rows) do
-                    table.insert(items, BoardUI.space(nil, px(8)))
-                    table.insert(items, r)
-                end
-                table.insert(items, BoardUI.space(nil, px(12)))
-                table.insert(items, BoardUI.text(
-                    (muted and show_style) and _("Invert has no color. Hold a name to rename it, a swatch to change it.")
-                        or _("Hold a name to rename it. Hold a swatch to change the color."),
-                    { s = 12, col = INK.g4, w = iw, lines = 2 }))
-            end
-            if opts.new then
-                table.insert(items, BoardUI.space(nil, px(12)))
-                table.insert(items, MenuUI.pill(_("Highlight"), { kind = "dark", w = iw, h = 48, s = 16, action = { kind = "done" } }))
-            end
-            local content = BoardUI.vstack({ w = w, pad = pad }, items)
-            local border = math.max(1, px(1.5))
-            local ph = content:getSize().h + 2 * border
-            local widget = BoardUI.box({ w = w, h = ph, radius = px(16), bg = INK.white, border = border, border_col = INK.g6 }, content)
-            local x, y = floor((sw - w) / 2), sheetPosition(hl, index, ph)
-            p.panel_rect = Geom:new{ x = x, y = y, w = w, h = ph }
-            return BoardUI.overlay(sw, sh, { { widget = widget, x = x, y = y } })
-        end,
-        on_action = function(p, action)
-            if action.kind == "style" then
-                change("drawer", action.id)
-                p:refresh()
-            elseif action.kind == "style-more" then
-                local it = item()
-                Highlight.openStylePicker{
-                    styles = styles,
-                    selected = it and (it.drawer or hl.view.highlight.saved_drawer),
-                    hex = Palette.hex(it and it.color or hl.view.highlight.saved_color),
-                    title = _("Highlight style"),
-                    on_pick = function(id)
-                        change("drawer", id)
-                        style_offset = nil -- show the one picked
-                        p:refresh()
-                    end,
-                }
-            elseif action.kind == "color" then
-                change("color", action.id)
-                p:refresh()
-            elseif action.kind == "done" then
-                p:close()
-            end
-        end,
-        on_gesture = function(p, ges)
-            if not show_style or style_step == 0 or ges.ges ~= "swipe" then return end
-            local max_off = #styles - style_step
-            local before = style_offset
-            if ges.direction == "west" then style_offset = math.min(max_off, style_offset + style_step)
-            elseif ges.direction == "east" then style_offset = math.max(0, style_offset - style_step)
-            else return end
-            if style_offset ~= before then p:refresh() end
-            return true
-        end,
+    local c = { hl = hl, index = index, opts = opts, class = class, style_step = 0, finished = false }
+    if not sheetItem(c) then return end
+    c.styles = class.getHighlightStyles()
+    c.show_style, c.show_color = opts.only ~= "color", opts.only ~= "style"
+    local panel = Panel:new{
+        build = function(p, sw, sh) return sheetBuild(c, p, sw, sh) end,
+        on_action = function(p, action) return sheetAction(c, p, action) end,
+        on_gesture = function(p, ges) return sheetSwipe(c, p, ges) end,
         on_close = function()
-            if opts.new then finish() end
+            if opts.new then sheetFinish(c) end
         end,
-        on_hold = function(p, action)
-            if action.kind ~= "color" then return end
-            local id = action.id
-            if action.hold == "rename" then
-                require("aleph_input").prompt{
-                    title = _("Rename color"), text = Palette.name(class, id), ok_label = _("Save"),
-                    on_ok = function(text)
-                        Palette.setName(class, id, text)
-                        p:refresh()
-                    end,
-                }
-            else
-                require("aleph_color_wheel").open{
-                    title = Palette.name(class, id), hex = Palette.hex(id),
-                    on_use = function(hex)
-                        Palette.setHex(class, id, hex)
-                        UIManager:setDirty(hl.dialog, "ui")
-                        p:refresh()
-                    end,
-                    on_reset = function()
-                        Palette.resetHex(class, id)
-                        UIManager:setDirty(hl.dialog, "ui")
-                        p:refresh()
-                    end,
-                }
-            end
-        end,
+        on_hold = function(p, action) return sheetHold(c, p, action) end,
     }
     panel:show()
     return panel
@@ -638,101 +660,112 @@ function Highlight.pin(hl, it)
     hl.selected_text = nil
 end
 
+-- The menu is kept in one table, `c`: hl (the reader's highlight module),
+-- index (which highlight), and by_letter (the arrows move by a letter, not a word).
+local function actionsItem(c) return c.hl.ui.annotation.annotations[c.index] end
+
+local function actionsBuild(c, p, sw, sh)
+    local hl, index = c.hl, c.index
+    local it = actionsItem(c)
+    if not it then p:close(); return BoardUI.overlay(sw, sh, {}) end
+    local w = math.min(px(500), sw - 2 * px(12))
+    local pad = px(12)
+    local iw = w - 2 * pad
+    local movable = not it.text_edited
+    -- The actions, each an icon over its name; Pin when pins are on.
+    local actions = {
+        { "trash", _("Delete"), "delete" }, { "palette", _("Style"), "style" },
+        { "pen-line", _("Note"), "note" },
+    }
+    if Highlight.pinButton(hl) then actions[#actions + 1] = { "pin", Highlight.pinLabel(hl, it), "pin" } end
+    actions[#actions + 1] = { "info", _("Details"), "details" }
+    actions[#actions + 1] = { "ellipsis", _("More"), "more" }
+    local n = #actions
+    local gap = px(6)
+    local cw = floor((iw - (n - 1) * gap) / n)
+    local ch = px(58)
+    local border = math.max(1, px(1.25))
+    local cells = {}
+    for i, a in ipairs(actions) do
+        local this_w = i == n and (iw - (n - 1) * (cw + gap)) or cw
+        local inner = BoardUI.vstack({ w = this_w - 2 * border, h = ch - 2 * border, align = "center" }, {
+            BoardUI.flex(0), BoardUI.icon(a[1], px(20), { sw = 2.25 }), BoardUI.space(nil, px(4)),
+            BoardUI.text(a[2], { s = 12, b = true, w = this_w - px(6), align = "center", data = true }), BoardUI.flex(0),
+        })
+        table.insert(cells, BoardUI.hit(BoardUI.box({ w = this_w, h = ch, radius = px(12), border = border, border_col = INK.g6, bg = INK.white }, inner),
+            { kind = a[3] }))
+    end
+    -- The arrows: start and end, each earlier or later, with the step
+    -- (a word or a letter) between them, all on one line.
+    local function arrow(side, dir)
+        local name = dir < 0 and "chevron-left" or "chevron-right"
+        local aw, ah = px(42), px(36)
+        local box = BoardUI.box({ w = aw, h = ah, radius = px(10), border = border, border_col = movable and INK.g6 or INK.gd, bg = INK.white },
+            BoardUI.hstack({ w = aw - 2 * border, h = ah - 2 * border }, { BoardUI.flex(0),
+                BoardUI.icon(name, px(18), { col = movable and "black" or "gb", sw = 2.5 }), BoardUI.flex(0) }))
+        return movable and BoardUI.hit(box, { kind = "move", side = side, dir = dir }) or box
+    end
+    local function lab(str) return BoardUI.text(str, { s = 12, b = true, col = INK.g4 }) end
+    local moves = BoardUI.hstack({ w = iw, gap = px(6) }, {
+        lab(_("Start")), arrow(0, -1), arrow(0, 1), BoardUI.flex(0),
+        MenuUI.pill(c.by_letter and _("Letter") or _("Word"), { kind = "outline", h = 32, s = 12, pad_x = 12, action = { kind = "step" } }),
+        BoardUI.flex(0),
+        arrow(1, -1), arrow(1, 1), lab(_("End")),
+    })
+    local items = { BoardUI.hstack({ w = iw, gap = gap }, cells), BoardUI.space(nil, px(10)), moves }
+    if not movable then
+        table.insert(items, BoardUI.space(nil, px(8)))
+        table.insert(items, BoardUI.text(_("The text of this highlight was edited, so its ends cannot be moved."), { s = 12, col = INK.g4, w = iw, lines = 2 }))
+    end
+    local content = BoardUI.vstack({ w = w, pad = pad }, items)
+    local b2 = math.max(1, px(1.5))
+    local ph = content:getSize().h + 2 * b2
+    local widget = BoardUI.box({ w = w, h = ph, radius = px(16), bg = INK.white, border = b2, border_col = INK.g6 }, content)
+    local x, y = floor((sw - w) / 2), placeAway(hl, index, ph) or sheetPosition(hl, index, ph)
+    p.panel_rect = Geom:new{ x = x, y = y, w = w, h = ph }
+    return BoardUI.overlay(sw, sh, { { widget = widget, x = x, y = y } })
+end
+
+local function actionsAction(c, p, action)
+    local hl, index, util = c.hl, c.index, c.util
+    local k = action.kind
+    if k == "delete" then p:close(); hl:deleteHighlight(index)
+    elseif k == "style" then p:close(); Highlight.openSheet(hl, index)
+    elseif k == "note" then p:close(); hl:editNote(index)
+    elseif k == "details" then p:close(); hl.ui.bookmark:showBookmarkDetails(index)
+    elseif k == "pin" then
+        local it = actionsItem(c)
+        p:close()
+        if it then Highlight.pin(hl, it) end
+    elseif k == "more" then
+        local it = actionsItem(c)
+        p:close()
+        if it then
+            hl.selected_text = util.tableDeepCopy(it)
+            hl:onShowHighlightMenu(index)
+        end
+    elseif k == "move" then hl:updateHighlight(index, action.side, action.dir, c.by_letter)
+    elseif k == "step" then c.by_letter = not c.by_letter; p:refresh()
+    end
+end
+
+-- A hold on an arrow moves that end by one letter.
+local function actionsHold(c, p, action)
+    local hl, index = c.hl, c.index
+    if action.kind == "move" then
+        c.by_letter = not c.by_letter
+        hl:updateHighlight(index, action.side, action.dir, true)
+        p:refresh()
+    end
+end
+
 function Highlight.openActions(hl, index)
-    local util = require("util")
-    local function item() return hl.ui.annotation.annotations[index] end
-    if not item() then return end
-    local by_letter = false
-    local panel
-    panel = Panel:new{
-        build = function(p, sw, sh)
-            local it = item()
-            if not it then p:close(); return BoardUI.overlay(sw, sh, {}) end
-            local w = math.min(px(500), sw - 2 * px(12))
-            local pad = px(12)
-            local iw = w - 2 * pad
-            local movable = not it.text_edited
-            -- The actions, each an icon over its name; Pin when pins are on.
-            local actions = {
-                { "trash", _("Delete"), "delete" }, { "palette", _("Style"), "style" },
-                { "pen-line", _("Note"), "note" },
-            }
-            if Highlight.pinButton(hl) then actions[#actions + 1] = { "pin", Highlight.pinLabel(hl, it), "pin" } end
-            actions[#actions + 1] = { "info", _("Details"), "details" }
-            actions[#actions + 1] = { "ellipsis", _("More"), "more" }
-            local n = #actions
-            local gap = px(6)
-            local cw = floor((iw - (n - 1) * gap) / n)
-            local ch = px(58)
-            local border = math.max(1, px(1.25))
-            local cells = {}
-            for i, a in ipairs(actions) do
-                local this_w = i == n and (iw - (n - 1) * (cw + gap)) or cw
-                local inner = BoardUI.vstack({ w = this_w - 2 * border, h = ch - 2 * border, align = "center" }, {
-                    BoardUI.flex(0), BoardUI.icon(a[1], px(20), { sw = 2.25 }), BoardUI.space(nil, px(4)),
-                    BoardUI.text(a[2], { s = 12, b = true, w = this_w - px(6), align = "center", data = true }), BoardUI.flex(0),
-                })
-                table.insert(cells, BoardUI.hit(BoardUI.box({ w = this_w, h = ch, radius = px(12), border = border, border_col = INK.g6, bg = INK.white }, inner),
-                    { kind = a[3] }))
-            end
-            -- The arrows: start and end, each earlier or later, with the step
-            -- (a word or a letter) between them, all on one line.
-            local function arrow(side, dir)
-                local name = dir < 0 and "chevron-left" or "chevron-right"
-                local aw, ah = px(42), px(36)
-                local box = BoardUI.box({ w = aw, h = ah, radius = px(10), border = border, border_col = movable and INK.g6 or INK.gd, bg = INK.white },
-                    BoardUI.hstack({ w = aw - 2 * border, h = ah - 2 * border }, { BoardUI.flex(0),
-                        BoardUI.icon(name, px(18), { col = movable and "black" or "gb", sw = 2.5 }), BoardUI.flex(0) }))
-                return movable and BoardUI.hit(box, { kind = "move", side = side, dir = dir }) or box
-            end
-            local function lab(str) return BoardUI.text(str, { s = 12, b = true, col = INK.g4 }) end
-            local moves = BoardUI.hstack({ w = iw, gap = px(6) }, {
-                lab(_("Start")), arrow(0, -1), arrow(0, 1), BoardUI.flex(0),
-                MenuUI.pill(by_letter and _("Letter") or _("Word"), { kind = "outline", h = 32, s = 12, pad_x = 12, action = { kind = "step" } }),
-                BoardUI.flex(0),
-                arrow(1, -1), arrow(1, 1), lab(_("End")),
-            })
-            local items = { BoardUI.hstack({ w = iw, gap = gap }, cells), BoardUI.space(nil, px(10)), moves }
-            if not movable then
-                table.insert(items, BoardUI.space(nil, px(8)))
-                table.insert(items, BoardUI.text(_("The text of this highlight was edited, so its ends cannot be moved."), { s = 12, col = INK.g4, w = iw, lines = 2 }))
-            end
-            local content = BoardUI.vstack({ w = w, pad = pad }, items)
-            local b2 = math.max(1, px(1.5))
-            local ph = content:getSize().h + 2 * b2
-            local widget = BoardUI.box({ w = w, h = ph, radius = px(16), bg = INK.white, border = b2, border_col = INK.g6 }, content)
-            local x, y = floor((sw - w) / 2), placeAway(hl, index, ph) or sheetPosition(hl, index, ph)
-            p.panel_rect = Geom:new{ x = x, y = y, w = w, h = ph }
-            return BoardUI.overlay(sw, sh, { { widget = widget, x = x, y = y } })
-        end,
-        on_action = function(p, action)
-            local k = action.kind
-            if k == "delete" then p:close(); hl:deleteHighlight(index)
-            elseif k == "style" then p:close(); Highlight.openSheet(hl, index)
-            elseif k == "note" then p:close(); hl:editNote(index)
-            elseif k == "details" then p:close(); hl.ui.bookmark:showBookmarkDetails(index)
-            elseif k == "pin" then
-                local it = item()
-                p:close()
-                if it then Highlight.pin(hl, it) end
-            elseif k == "more" then
-                local it = item()
-                p:close()
-                if it then
-                    hl.selected_text = util.tableDeepCopy(it)
-                    hl:onShowHighlightMenu(index)
-                end
-            elseif k == "move" then hl:updateHighlight(index, action.side, action.dir, by_letter)
-            elseif k == "step" then by_letter = not by_letter; p:refresh()
-            end
-        end,
-        on_hold = function(p, action)
-            if action.kind == "move" then
-                by_letter = not by_letter
-                hl:updateHighlight(index, action.side, action.dir, true)
-                p:refresh()
-            end
-        end,
+    local c = { hl = hl, index = index, util = require("util"), by_letter = false }
+    if not actionsItem(c) then return end
+    local panel = Panel:new{
+        build = function(p, sw, sh) return actionsBuild(c, p, sw, sh) end,
+        on_action = function(p, action) return actionsAction(c, p, action) end,
+        on_hold = function(p, action) return actionsHold(c, p, action) end,
     }
     -- Posts at both ends of the highlight; dragging one hides this menu so
     -- the text is in view, and the menu returns when the finger lifts.
@@ -898,15 +931,10 @@ Highlight.styleTile = styleTile
 function Highlight.installHandles(class)
     local time = require("ui/time")
     local Viewport = require("aleph_viewport")
-    local ReaderView = require("apps/reader/modules/readerview")
-    if not ReaderView._aleph_viewport then
-        ReaderView._aleph_viewport = true
-        local paint = ReaderView.paintTo
-        ReaderView.paintTo = function(self, bb, x, y)
-            paint(self, bb, x, y)
-            if wanted() then Viewport.paintMargins(self, bb, x, y) end
-        end
-    end
+    -- (One hook on the reader's paint for all of Aleph: aleph_reader_paint.lua.)
+    require("aleph_reader_paint").add("margins", 10, function(view, bb, x, y)
+        if wanted() then Viewport.paintMargins(view, bb, x, y) end
+    end)
     local ReaderUI = require("apps/reader/readerui")
     if not ReaderUI._aleph_tap_guard then
         ReaderUI._aleph_tap_guard = true

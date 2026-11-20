@@ -18,7 +18,6 @@ local GestureRange = require("ui/gesturerange")
 local InputContainer = require("ui/widget/container/inputcontainer")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local NetworkMgr = require("ui/network/manager")
-local VerticalSpan = require("ui/widget/verticalspan")
 local T = require("ffi/util").template
 local _ = require("aleph_gettext")
 
@@ -103,20 +102,6 @@ function TileSlot:paintTo(bb, x, y)
     self[1]:paintTo(bb, x, y)
 end
 
--- A zero-height stand-in for KOReader's title bar while the board is shown:
--- the board draws its own header.
-local TitleBarStub = VerticalSpan:extend{ width = 0 }
-function TitleBarStub:getHeight() return 0 end
-function TitleBarStub:setTitle() end
-function TitleBarStub:setSubTitle() end
-function TitleBarStub:setLeftIcon() end
-function TitleBarStub:generateVerticalLayout() return {} end
-function TitleBarStub:generateHorizontalLayout() return {} end
-
-function BoardHost:boardTitleBar()
-    return TitleBarStub:new{}
-end
-
 -- -------------------------------------------------------------- context
 function BoardHost:boardHasLight()
     return Device:hasFrontlight()
@@ -138,6 +123,33 @@ function BoardHost:boardPageNames(cols)
     return BoardStore.pageNames(self:boardPages(cols))
 end
 
+-- The pages Home turns through: every page while customizing, else the
+-- pages with widgets (an emptied page is skipped, not shown blank).
+function BoardHost:boardShownPages()
+    if self.board_edit then
+        local all = {}
+        for index = 1, BoardStore.PAGE_COUNT do all[index] = index end
+        return all
+    end
+    local cols = self._board_geometry and self._board_geometry.cols or BoardLayout.columnsFor(BoardMetrics.layoutW())
+    local ok, shown = pcall(function() return BoardStore.shownPages(self:boardPages(cols), self:boardPage()) end)
+    if ok and type(shown) == "table" and #shown > 0 then return shown end
+    local all = {}
+    for index = 1, BoardStore.PAGE_COUNT do all[index] = index end
+    return all
+end
+
+-- The page shown next to `page` going `delta` (1 or -1), or nil.
+function BoardHost:boardNextPage(page, delta)
+    local shown = self:boardShownPages()
+    local best
+    for _i, index in ipairs(shown) do
+        if delta > 0 and index > page and (not best or index < best) then best = index end
+        if delta < 0 and index < page and (not best or index > best) then best = index end
+    end
+    return best
+end
+
 -- The page shown, kept on the dashboard context so going into a book and
 -- back returns to the same page.
 function BoardHost:boardPage()
@@ -154,8 +166,13 @@ function BoardHost:boardHeader(d, w, mode, page_name)
         return BoardUI.hit(btn, action), nudge
     end
     if mode == "edit" then
-        local done_inner = hstack({ h = px(40) }, { space(px(20), 1), text(_("Done"), { s = 15, b = true, col = INK.white }), space(px(20), 1) })
-        local done = BoardUI.hit(BoardUI.box({ w = done_inner:getSize().w, h = px(40), radius = px(20), bg = INK.black }, done_inner), { kind = "edit-done" })
+        -- Aleph modification, 2026-11-19: the Done button is a button, not
+        -- text over the wallpaper: drawn without the text colour and outline
+        -- of "Text over the wallpaper".
+        local done = BoardUI.withInk(nil, function()
+            local done_inner = hstack({ h = px(40) }, { space(px(20), 1), text(_("Done"), { s = 15, b = true, col = INK.white }), space(px(20), 1) })
+            return BoardUI.hit(BoardUI.box({ w = done_inner:getSize().w, h = px(40), radius = px(20), bg = INK.black }, done_inner), { kind = "edit-done" })
+        end)
         local tw = w - done:getSize().w - px(12)
         local edit_page = self.board_edit and self.board_edit.pages[self:boardPage()]
         local hidden = edit_page and edit_page.hidden and #edit_page.hidden or 0
@@ -208,31 +225,57 @@ function BoardHost:boardFooter(w, page, mode)
         return BoardUI.hit(btn, enabled and { kind = "page", delta = delta } or { kind = "noop" })
     end
     local dot_items = {}
-    for index = 1, BoardStore.PAGE_COUNT do
+    for _i, index in ipairs(self:boardShownPages()) do
         table.insert(dot_items, BoardUI.dot(px(7), index == page, { off = INK.g8 }))
     end
     local dots = hstack({ gap = px(6) }, dot_items)
     if mode == "edit" then
-        local add_inner = hstack({ h = px(38), gap = px(8) }, { space(px(6), 1), icon("plus", px(17), { col = "white", sw = 2.75 }), text(_("Add widget"), { s = 14, b = true, col = INK.white }), space(px(10), 1) })
-        local add = BoardUI.hit(BoardUI.box({ w = add_inner:getSize().w, h = px(38), radius = px(19), bg = INK.black }, add_inner), { kind = "edit-add" })
-        -- Beside it, the wallpaper (aleph_wallpaper.lua).
-        local wall_inner = hstack({ h = px(38), gap = px(8) }, { space(px(6), 1), icon("plus", px(17), { sw = 2.75 }), text(_("Add wallpaper"), { s = 14, b = true }), space(px(10), 1) })
+        -- Aleph modification, 2026-11-19: the buttons (Add widget, the
+        -- wallpaper) are drawn without the text colour and outline of "Text
+        -- over the wallpaper"; the page name and Pages keep them.
         local border = math.max(1, px(1.5))
-        local wall = BoardUI.hit(BoardUI.box({ w = wall_inner:getSize().w + 2 * border, h = px(38), radius = px(19), bg = INK.white, border = border, border_col = INK.black },
-            hstack({ w = wall_inner:getSize().w, h = px(38) - 2 * border }, { wall_inner })), { kind = "edit-wallpaper" })
+        local built = BoardUI.withInk(nil, function()
+            local add_inner = hstack({ h = px(38), gap = px(8) },
+                { space(px(6), 1), icon("plus", px(17), { col = "white", sw = 2.75 }), text(_("Add widget"), { s = 14, b = true, col = INK.white }), space(px(10), 1) })
+            local add_b = BoardUI.hit(BoardUI.box({ w = add_inner:getSize().w, h = px(38), radius = px(19), bg = INK.black }, add_inner), { kind = "edit-add" })
+            -- Beside it, the wallpaper (aleph_wallpaper.lua).
+            local wall_inner = hstack({ h = px(38), gap = px(8) }, { space(px(6), 1), icon("plus", px(17), { sw = 2.75 }), text(_("Add wallpaper"), { s = 14, b = true }), space(px(10), 1) })
+            local wall_b = BoardUI.hit(BoardUI.box({ w = wall_inner:getSize().w + 2 * border, h = px(38), radius = px(19), bg = INK.white, border = border, border_col = INK.black },
+                hstack({ w = wall_inner:getSize().w, h = px(38) - 2 * border }, { wall_inner })), { kind = "edit-wallpaper" })
+            local wall_i = BoardUI.hit(BoardUI.box({ w = px(38), h = px(38), radius = px(19), bg = INK.white, border = border, border_col = INK.black },
+                hstack({ w = px(38) - 2 * border, h = px(38) - 2 * border }, { flex(0), icon("image", px(17), { sw = 2.25 }), flex(0) })), { kind = "edit-wallpaper" })
+            return { add_b, wall_b, wall_i }
+        end)
+        local add, wall, wall_icon = built[1], built[2], built[3]
         local side = px(120)
-        return hstack({ w = w, h = fh }, {
-            hstack({ w = side, gap = px(8) }, { dots, text(names[page], { s = 13, b = true }), flex(0) }),
-            flex(0), add, space(px(10), 1), wall, flex(0),
-            BoardUI.hit(hstack({ w = side, gap = px(4) }, { flex(0), icon("layout-grid", px(16), { sw = 2.25 }), text(_("Pages"), { s = 13, b = true }) }), { kind = "edit-pages" }),
-        })
+        local function pagesButton(with_label)
+            local items = { flex(0), icon("layout-grid", px(16), { sw = 2.25 }) }
+            if with_label then items[#items + 1] = text(_("Pages"), { s = 13, b = true }) end
+            return BoardUI.hit(hstack({ w = with_label and side or px(44), h = fh, gap = px(4) }, items), { kind = "edit-pages" })
+        end
+        -- Everything on one line when it fits; at a large interface size the
+        -- page name and the word "Pages" go first, then the wallpaper
+        -- button keeps only its icon, so Pages is never pushed off screen.
+        local function need(left, mid_w, right) return left + mid_w + right + 2 * px(4) end
+        local addw, wallw, dotw = add:getSize().w, wall:getSize().w, dots:getSize().w
+        if need(side, addw + px(10) + wallw, side) <= w then
+            return hstack({ w = w, h = fh }, {
+                hstack({ w = side, gap = px(8) }, { dots, text(names[page], { s = 13, b = true, w = side - dotw - px(8), data = true }) }),
+                flex(0), add, space(px(10), 1), wall, flex(0),
+                pagesButton(true),
+            })
+        end
+        if need(dotw, addw + px(10) + wallw, px(44)) <= w then
+            return hstack({ w = w, h = fh }, { dots, flex(0), add, space(px(10), 1), wall, flex(0), pagesButton(false) })
+        end
+        return hstack({ w = w, h = fh }, { dots, flex(0), add, space(px(10), 1), wall_icon, flex(0), pagesButton(false) })
     end
     return hstack({ w = w, h = fh }, {
         flex(0),
-        chev("chevron-left", page > 1, -1), space(px(6), 1),
+        chev("chevron-left", self:boardNextPage(page, -1) ~= nil, -1), space(px(6), 1),
         dots, space(px(6), 1), space(px(4), 1), space(px(6), 1),
         text(names[page], { s = 13, b = true }), space(px(6), 1),
-        chev("chevron-right", page < BoardStore.PAGE_COUNT, 1),
+        chev("chevron-right", self:boardNextPage(page, 1) ~= nil, 1),
         flex(0),
     })
 end
@@ -263,6 +306,8 @@ function BoardHost:boardItemAction(item, d)
         return { kind = "book", book = lead, resume = tap_resumes, list = { label = _("Continue reading"), books = d.continue_reading } }
     elseif t == "silverfish" then
         return { kind = "silverfish" }
+    elseif t == "weather" then
+        return { kind = "weather" }
     elseif t == "streak" then
         -- Reading insights (readinginsights.koplugin), when it is installed.
         return { kind = "insights", view = "streak" }
@@ -274,11 +319,25 @@ function BoardHost:boardItemAction(item, d)
     elseif t == "week" or t == "today" then
         -- Its popup has the yearly reading goal and today among all time.
         return { kind = "insights", view = "insights" }
-    elseif t == "records" then
+    elseif t == "time_read" or t == "books_pages" then
+        return { kind = "insights", view = "insights" }
+    elseif t == "hours_total" then
+        -- Reading insights opens on all time.
+        return { kind = "insights", view = "insights" }
+    elseif t == "records" or t == "dna" or t == "diversity" then
         return { kind = "insights", view = "records" }
+    elseif t == "goals" or t == "goal_day" or t == "goal_week" or t == "goal_month" then
+        -- Where the goals are set.
+        return { kind = "goal-settings" }
     elseif t == "hours" then
         -- Reading habits has the time of day breakdown.
         return { kind = "insights", view = "habits" }
+    elseif t == "bingo" then
+        return { kind = "bingo" }
+    elseif t == "rhythm" or t == "challenge" then
+        return { kind = "insights", view = "streak" }
+    elseif t == "projection" then
+        return { kind = "shelf", source = "finished", props = { source = "finished" } }
     elseif t == "calendar" then
         return { kind = "insights", view = "streak" }
     elseif t == "dust" then
@@ -323,15 +382,72 @@ local function sizeLabel(code)
     return type(l) == "function" and l() or l
 end
 
-function BoardHost:boardEditBar(item, index, g)
+-- Aleph modification, 2026-11-20: the selected widget's colours, in place
+-- of its bar: Default (its own colour), then each family as a swatch, the
+-- one chosen ringed; its name on the left. Two rows if one is too wide.
+function BoardHost:boardColourBar(item, g)
+    local BoardColour = require("aleph_board_colour")
     local bar_h = px(52)
+    local d = px(28)
+    local ring = math.max(2, px(2.5))
+    local chosen = type(item.colour) == "string" and BoardColour.FAM[item.colour] and item.colour or nil
+    local function swatch(fam_name, hex)
+        local on = chosen == fam_name
+        local disc = BoardUI.circle(d, { border = math.max(1, px(1)), border_col = INK.white, bg = BoardColour.paint(hex) }, space(1, 1))
+        local cell = on and BoardUI.circle(d + 2 * ring + px(2), { border = ring, border_col = INK.white, bg = INK.black }, disc) or disc
+        return BoardUI.hit(hstack({ w = d + 2 * ring + px(2), h = bar_h }, { flex(0), cell, flex(0) }), { kind = "edit-colour-set", fam = fam_name })
+    end
+    local own = BoardColour.keyFor(item.type, item.props)
+    local default_hex = BoardColour.FAM[BoardColour.HUE[own] or "blue"] and BoardColour.FAM[BoardColour.HUE[own] or "blue"].ink or BoardColour.FAM.blue.ink
+    local function defaultPill()
+        local label = text(_("Default"), { s = 12, b = true, col = chosen and INK.white or INK.black })
+        local w = label:getSize().w + d + px(16)
+        local inner = hstack({ h = px(32), gap = px(5) }, { space(px(3), 1),
+            BoardUI.circle(px(16), { border = math.max(1, px(1)), border_col = INK.white, bg = BoardColour.paint(default_hex) }, space(1, 1)), label })
+        return BoardUI.hit(hstack({ h = bar_h }, { space(px(4), 1), BoardUI.box({ w = w, h = px(32), radius = px(16), bg = not chosen and INK.white or nil,
+            border = chosen and math.max(1, px(1)) or 0, border_col = INK.g8 }, inner), space(px(4), 1) }), { kind = "edit-colour-set" })
+    end
+    local function back()
+        return BoardUI.hit(hstack({ h = bar_h }, { space(px(8), 1), icon("check", px(19), { col = "white", sw = 2.5 }), space(px(10), 1) }), { kind = "edit-colour" })
+    end
+    local name = text(chosen and BoardColour.choiceName(chosen) or _("Default"), { s = 11, b = true, col = INK.gb })
+    local swatches = {}
+    for _i, c in ipairs(BoardColour.CHOICES) do swatches[#swatches + 1] = swatch(c.fam, BoardColour.FAM[c.fam].ink) end
+    local function row(list) return hstack({ h = bar_h, gap = px(2) }, list) end
+    local head = { space(px(10), 1), name, space(px(8), 1), defaultPill() }
+    local one = {}
+    for _i, v in ipairs(head) do one[#one + 1] = v end
+    for _i, s in ipairs(swatches) do one[#one + 1] = s end
+    one[#one + 1] = back()
+    local inner = row(one)
+    if inner:getSize().w > g.w - px(8) then
+        local first, second = {}, {}
+        for _i, v in ipairs(head) do first[#first + 1] = v end
+        for i, s in ipairs(swatches) do if i <= 5 then first[#first + 1] = s else second[#second + 1] = s end end
+        second[#second + 1] = back()
+        inner = vstack({ align = "center" }, { row(first), row(second) })
+    end
+    local w, h = inner:getSize().w + px(8), inner:getSize().h
+    local outer = 2
+    return BoardUI.overlay(w + 2 * outer, h + 2 * outer, {
+        { widget = BoardUI.rect(w + 2 * outer, h + 2 * outer, INK.white, px(12) + outer) },
+        { widget = BoardUI.box({ w = w, h = h, radius = px(12), bg = INK.black }, hstack({ w = w, h = h }, { flex(0), inner, flex(0) })), x = outer, y = outer },
+    })
+end
+
+function BoardHost:boardEditBar(item, index, g)
+    if self.board_edit and self.board_edit.colour_open then return self:boardColourBar(item, g) end
+    local bar_h = px(52)
+    -- Aleph modification, 2026-11-20: without their names (icons only) when
+    -- the bar with them would be wider than the screen.
+    local compact = false
     local function button(name, label, action)
-        local inner = vstack({ align = "center" }, {
+        local inner = compact and icon(name, px(21), { col = "white", sw = 2.25 }) or vstack({ align = "center" }, {
             icon(name, px(19), { col = "white", sw = 2.25 }),
             space(nil, px(2)),
             text(label, { s = 11, b = true, col = INK.white }),
         })
-        return BoardUI.hit(hstack({ h = bar_h }, { space(px(10), 1), inner, space(px(10), 1) }), action)
+        return BoardUI.hit(hstack({ h = bar_h }, { space(px(compact and 8 or 10), 1), inner, space(px(compact and 8 or 10), 1) }), action)
     end
     local function divider()
         return BoardUI.rect(math.max(1, px(1)), px(30), INK.g5)
@@ -355,7 +471,8 @@ function BoardHost:boardEditBar(item, index, g)
             table.insert(segs, BoardUI.hit(seg, { kind = "edit-size", code = code }))
         end
     end
-    local inner = hstack({ h = bar_h, gap = px(2) }, {
+    local function build()
+    return hstack({ h = bar_h, gap = px(2) }, {
         space(px(6) - px(2), 1),
         button("chevron-left", _("Earlier"), { kind = "edit-move", delta = -1 }),
         button("chevron-right", _("Later"), { kind = "edit-move", delta = 1 }),
@@ -364,9 +481,17 @@ function BoardHost:boardEditBar(item, index, g)
         space(px(8), 1),
         divider(),
         button("layout-grid", _("Page"), { kind = "edit-page" }),
+        -- Aleph modification, 2026-11-20: its colour, on a colour screen.
+        require("aleph_board_colour").on(self._board_ctx) and button("palette", _("Colour"), { kind = "edit-colour" }) or false,
         button("x", _("Remove"), { kind = "edit-remove", index = index }),
         space(px(6) - px(2), 1),
     })
+    end
+    local inner = build()
+    if inner:getSize().w > g.w - px(8) then
+        compact = true
+        inner = build()
+    end
     local w = inner:getSize().w
     local ring = px(2)
     return BoardUI.overlay(w + 2 * ring, bar_h + 2 * ring, {
@@ -393,17 +518,58 @@ function BoardHost:boardPreview(ctx, entry, box_w, box_h, g)
     return BoardUI.box({ w = box_w, h = box_h, radius = px(12), bg = INK.ge }, hstack({ w = box_w, h = box_h }, { flex(0), shot, flex(0) }))
 end
 
-function BoardHost:boardSheet(ctx, g, screen_w, screen_h)
-    local edit = self.board_edit
-    local sheet_h = math.floor(screen_h * 0.7 + 0.5)
-    local mx = g.mx
-    local w = screen_w - 2 * mx
-    local pad = px(18)
-    local entries, new_count = {}, 0
-    for _i, entry in ipairs(BoardEdit.LIBRARY) do
-        if entry.new then new_count = new_count + 1 end
-        if (edit.sheet_tab == "new" and entry.new) or entry.tab == edit.sheet_tab then table.insert(entries, entry) end
+-- A card's caption in the Add a widget sheet: the name with its sizes beside
+-- it, the description under them. look.stacked is set (and stays set) once
+-- a name does not fit beside its sizes: every caption then puts them under.
+local function sheetCaption(entry, card_w, look)
+    local chips = {}
+    for _i, code in ipairs(entry.sizes) do
+        local label = text(sizeLabel(code), { s = 11, b = true, col = INK.g3 })
+        table.insert(chips, BoardUI.box({ w = label:getSize().w + 2 * px(5), h = label:getSize().h, radius = px(4), border = math.max(1, px(1)), border_col = INK.g8 },
+            hstack({ w = label:getSize().w + 2 * px(5) - 2 * math.max(1, px(1)) }, { flex(0), label, flex(0) })))
     end
+    local chip_row = hstack({ gap = px(4) }, chips)
+    local name_w = card_w - chip_row:getSize().w - px(6)
+    local name_s = BoardUI.fitSize(entry.name(), { s = 14, b = true }, name_w, 12)
+    -- A name that does not fit beside its sizes even at 12 takes the
+    -- line, with the sizes under it, and then so does every name so the
+    -- cards line up on every tab.
+    if text(entry.name(), { s = name_s, b = true }):getSize().w > name_w then look.stacked = true end
+    local name_row
+    if not look.stacked then
+        name_row = BoardUI.spread(card_w, text(entry.name(), { s = name_s, b = true, w = name_w }), chip_row)
+    else
+        local s2 = BoardUI.fitSize(entry.name(), { s = 14, b = true }, card_w, 11)
+        name_row = vstack({ w = card_w }, { text(entry.name(), { s = s2, b = true, w = card_w }), space(nil, px(4)), chip_row })
+    end
+    return vstack({ w = card_w }, {
+        space(nil, px(6)),
+        name_row,
+        space(nil, px(6)),
+        text(entry.desc(), { s = 12, col = INK.g4, lines = 2, w = card_w }),
+    })
+end
+
+-- Rows are as tall as their tallest caption (a description can take two
+-- lines). Every widget's caption is measured, not just this tab's, so
+-- each tab keeps the same rows and cards per page.
+local function sheetCaptionHeight(caption)
+    local text_h = 0
+    local measured = BoardEdit.LIBRARY
+    for _i, entry in ipairs(measured) do
+        local sample = caption(entry)
+        if sample.free then sample:free() end
+    end
+    for _i, entry in ipairs(measured) do
+        local sample = caption(entry)
+        text_h = math.max(text_h, sample:getSize().h)
+        if sample.free then sample:free() end
+    end
+    return text_h
+end
+
+-- The tabs across the top of the sheet, the chosen one underlined.
+local function sheetTabs(edit, w)
     local tabs = {}
     for _i, tab in ipairs(BoardEdit.TABS) do
         local on = tab.id == edit.sheet_tab
@@ -416,39 +582,61 @@ function BoardHost:boardSheet(ctx, g, screen_w, screen_h)
         hstack({ w = w, h = px(40), gap = px(BoardMetrics.layoutW() < 560 and 16 or 22), valign = "bottom" }, tabs),
         BoardUI.rect(w, math.max(1, px(1)), INK.gb),
     })
+    return tab_row
+end
+
+-- The page arrows and "1 of 3" at the foot of the sheet.
+local function sheetPager(edit, pager_h, pages, w)
+    local function chev(name, enabled, delta)
+        local b = hstack({ w = px(44), h = pager_h }, { flex(0), icon(name, px(22), { sw = 2.5, col = enabled and "black" or "gb" }), flex(0) })
+        return BoardUI.hit(b, enabled and { kind = "sheet-page", delta = delta } or { kind = "noop" })
+    end
+    local pager = vstack({ w = w }, {
+        BoardUI.rect(w, math.max(1, px(0.75)), INK.gc),
+        hstack({ w = w, h = pager_h - math.max(1, px(0.75)), gap = px(18) }, {
+            flex(0), chev("chevron-left", edit.sheet_page > 1, -1),
+            text(T(_("%1 of %2"), edit.sheet_page, pages), { s = 13, b = true }),
+            chev("chevron-right", edit.sheet_page < pages, 1), flex(0),
+        }),
+    })
+    return pager
+end
+
+-- The cards of this page, in rows.
+local function sheetGrid(card, cols_n, entries, first, gap, rows_fit, vgap)
+    local grid_rows = {}
+    for r = 0, rows_fit - 1 do
+        local cards = {}
+        for c = 0, cols_n - 1 do
+            local entry = entries[first + r * cols_n + c]
+            if entry then table.insert(cards, card(entry)) end
+        end
+        if #cards > 0 then
+            if #grid_rows > 0 then table.insert(grid_rows, space(nil, vgap)) end
+            table.insert(grid_rows, hstack({ gap = gap, valign = "top" }, cards))
+        end
+    end
+    return grid_rows
+end
+
+function BoardHost:boardSheet(ctx, g, screen_w, screen_h)
+    local edit = self.board_edit
+    local sheet_h = math.floor(screen_h * 0.7 + 0.5)
+    local mx = g.mx
+    local w = screen_w - 2 * mx
+    local pad = px(18)
+    local entries, new_count = {}, 0
+    for _i, entry in ipairs(BoardEdit.LIBRARY) do
+        if entry.new then new_count = new_count + 1 end
+        if (edit.sheet_tab == "new" and entry.new) or entry.tab == edit.sheet_tab then table.insert(entries, entry) end
+    end
+    local tab_row = sheetTabs(edit, w)
     local cols_n = BoardMetrics.layoutW() >= 700 and 3 or 2
     local gap = px(14)
     local card_w = math.floor((w - (cols_n - 1) * gap) / cols_n)
     local preview_h
-    local stacked = false
-    local function caption(entry)
-        local chips = {}
-        for _i, code in ipairs(entry.sizes) do
-            local label = text(sizeLabel(code), { s = 11, b = true, col = INK.g3 })
-            table.insert(chips, BoardUI.box({ w = label:getSize().w + 2 * px(5), h = label:getSize().h, radius = px(4), border = math.max(1, px(1)), border_col = INK.g8 },
-                hstack({ w = label:getSize().w + 2 * px(5) - 2 * math.max(1, px(1)) }, { flex(0), label, flex(0) })))
-        end
-        local chip_row = hstack({ gap = px(4) }, chips)
-        local name_w = card_w - chip_row:getSize().w - px(6)
-        local name_s = BoardUI.fitSize(entry.name(), { s = 14, b = true }, name_w, 12)
-        -- A name that does not fit beside its sizes even at 12 takes the
-        -- line, with the sizes under it, and then so does every name so the
-        -- cards line up on every tab.
-        if text(entry.name(), { s = name_s, b = true }):getSize().w > name_w then stacked = true end
-        local name_row
-        if not stacked then
-            name_row = BoardUI.spread(card_w, text(entry.name(), { s = name_s, b = true, w = name_w }), chip_row)
-        else
-            local s2 = BoardUI.fitSize(entry.name(), { s = 14, b = true }, card_w, 11)
-            name_row = vstack({ w = card_w }, { text(entry.name(), { s = s2, b = true, w = card_w }), space(nil, px(4)), chip_row })
-        end
-        return vstack({ w = card_w }, {
-            space(nil, px(6)),
-            name_row,
-            space(nil, px(6)),
-            text(entry.desc(), { s = 12, col = INK.g4, lines = 2, w = card_w }),
-        })
-    end
+    local look = { stacked = false }
+    local function caption(entry) return sheetCaption(entry, card_w, look) end
     local function card(entry)
         return BoardUI.hit(vstack({ w = card_w }, {
             self:boardPreview(ctx, entry, card_w, preview_h, g),
@@ -460,17 +648,7 @@ function BoardHost:boardSheet(ctx, g, screen_w, screen_h)
     -- Rows are as tall as their tallest caption (a description can take two
     -- lines). Every widget's caption is measured, not just this tab's, so
     -- each tab keeps the same rows and cards per page.
-    local text_h = 0
-    local measured = BoardEdit.LIBRARY
-    for _i, entry in ipairs(measured) do
-        local sample = caption(entry)
-        if sample.free then sample:free() end
-    end
-    for _i, entry in ipairs(measured) do
-        local sample = caption(entry)
-        text_h = math.max(text_h, sample:getSize().h)
-        if sample.free then sample:free() end
-    end
+    local text_h = sheetCaptionHeight(caption)
     local vgap = px(16)
     -- As many rows as fit with previews at least 80dp tall, the previews then
     -- grown to fill the sheet (up to a little taller than a card is wide), so
@@ -484,30 +662,8 @@ function BoardHost:boardSheet(ctx, g, screen_w, screen_h)
     local pages = math.max(1, math.ceil(#entries / per_page))
     edit.sheet_page = math.min(edit.sheet_page or 1, pages)
     local first = (edit.sheet_page - 1) * per_page + 1
-    local grid_rows = {}
-    for r = 0, rows_fit - 1 do
-        local cards = {}
-        for c = 0, cols_n - 1 do
-            local entry = entries[first + r * cols_n + c]
-            if entry then table.insert(cards, card(entry)) end
-        end
-        if #cards > 0 then
-            if #grid_rows > 0 then table.insert(grid_rows, space(nil, vgap)) end
-            table.insert(grid_rows, hstack({ gap = gap, valign = "top" }, cards))
-        end
-    end
-    local function chev(name, enabled, delta)
-        local b = hstack({ w = px(44), h = pager_h }, { flex(0), icon(name, px(22), { sw = 2.5, col = enabled and "black" or "gb" }), flex(0) })
-        return BoardUI.hit(b, enabled and { kind = "sheet-page", delta = delta } or { kind = "noop" })
-    end
-    local pager = vstack({ w = w }, {
-        BoardUI.rect(w, math.max(1, px(0.75)), INK.gc),
-        hstack({ w = w, h = pager_h - math.max(1, px(0.75)), gap = px(18) }, {
-            flex(0), chev("chevron-left", edit.sheet_page > 1, -1),
-            text(T(_("%1 of %2"), edit.sheet_page, pages), { s = 13, b = true }),
-            chev("chevron-right", edit.sheet_page < pages, 1), flex(0),
-        }),
-    })
+    local grid_rows = sheetGrid(card, cols_n, entries, first, gap, rows_fit, vgap)
+    local pager = sheetPager(edit, pager_h, pages, w)
     local close = BoardUI.hit(BoardUI.circle(px(40), { border = math.max(1, px(1.5)), bg = INK.white }, icon("x", px(20), { sw = 2.5 })), { kind = "sheet-close" })
     local title = vstack({}, {
         text(_("Add a widget"), { s = 20, b = true }),
@@ -608,8 +764,20 @@ function BoardHost:boardBuildScreen(ctx, g, page, screen_w, screen_h, opts)
     end
     local grid = BoardUI.overlay(g.w, packed.grid_h, layers)
     local mode = edit and "edit" or "normal"
-    local header = self:boardRegion(function() return self:boardHeader(d, g.w, mode, self:boardPageNames(g.cols)[page]) end)
-    local footer = self:boardRegion(function() return self:boardFooter(g.w, page, mode) end)
+    -- Over a wallpaper, Home's own text in the colour chosen for it, or the
+    -- one the picture behind it needs (aleph_wallpaper.lua, inkFor).
+    local ink_head, ink_foot
+    if wall then
+        local head_h, foot_h = px(64), px(40)
+        ink_head = Wallpaper.inkFor(wall, screen_w, screen_h, g.top, g.top + head_h)
+        ink_foot = Wallpaper.inkFor(wall, screen_w, screen_h, screen_h - g.bottom - foot_h, screen_h - g.bottom)
+    end
+    local header = self:boardRegion(function()
+        return BoardUI.withInk(ink_head, function() return self:boardHeader(d, g.w, mode, self:boardPageNames(g.cols)[page]) end)
+    end)
+    local footer = self:boardRegion(function()
+        return BoardUI.withInk(ink_foot, function() return self:boardFooter(g.w, page, mode) end)
+    end)
     local board = vstack({ w = screen_w, h = screen_h, pad = { g.top, g.mx, g.bottom, g.mx } }, {
         header,
         space(nil, g.header_gap),
@@ -624,6 +792,18 @@ function BoardHost:boardBuildScreen(ctx, g, page, screen_w, screen_h, opts)
         })
     end
     if not opts.snapshot then
+        -- Aleph modification, 2026-11-18: memory left and the widgets on the
+        -- page, in crash.log, to tell what happened if the device slows down
+        -- (aleph_mem.lua).
+        pcall(function()
+            local types = {}
+            for _i, entry in ipairs(tiles) do types[#types + 1] = entry.item.type end
+            local Mem = require("aleph_mem")
+            require("logger").info("Aleph: Home page " .. tostring(page) .. " built, " .. Mem.summary() .. ": " .. table.concat(types, ", "))
+            -- Aleph modification, 2026-11-19 (1.2.51): memory low: what is
+            -- no longer used is given back now, not when Lua next gets to it.
+            Mem.relieve("after Home page " .. tostring(page))
+        end)
         self._board_tiles = tiles
         self._board_header = header
         self._board_origin = { x = g.mx, y = g.top + g.header_h + g.header_gap }

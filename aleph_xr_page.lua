@@ -177,6 +177,68 @@ local function listBody(sheet, w, max_body)
 end
 
 -- ------------------------------------------------------------------ a name
+-- Aleph modification, 2026-11-18: where a name comes up and who with, from
+-- its mentions on this device (aleph_xr_more.lua): mentions per chapter as
+-- bars, first seen / most mentions / latest, and the names often near it.
+-- Kept for the sheet while the page read does not change.
+local function entryDetails(sheet, w)
+    local ui = sheet.ui
+    local More = require("aleph_xr_more")
+    local key = tostring(sheet.entry) .. "|" .. tostring(XR.readSoFar(ui))
+    if sheet._details_key ~= key then
+        sheet._details = { stats = More.stats(ui, sheet.entry), often = More.oftenWith(ui, sheet.entry, 4) }
+        sheet._details_key = key
+    end
+    local st, often = sheet._details.stats, sheet._details.often
+    local items = {}
+    if st.first then
+        -- The bars: one a chapter up to the one being read (grouped when
+        -- there are many).
+        local upto = st.upto
+        local per = math.max(1, math.ceil(upto / 40))
+        local cols = math.ceil(upto / per)
+        local gap = px(cols > 24 and 2 or 4)
+        local bw = math.max(px(2), floor((w - gap * (cols - 1)) / cols))
+        local bh = px(40)
+        local sums, top = {}, 1
+        for c = 1, cols do
+            local n = 0
+            for ch = (c - 1) * per + 1, math.min(c * per, upto) do n = n + (st.counts[ch] or 0) end
+            sums[c] = n
+            top = math.max(top, n)
+        end
+        local bars = {}
+        for c = 1, cols do
+            local n = sums[c]
+            local here = st.current and st.current > (c - 1) * per and st.current <= c * per
+            local h = n > 0 and math.max(px(4), floor(bh * n / top)) or px(2)
+            bars[#bars + 1] = BoardUI.rect(bw, h, n > 0 and (here and INK.g4 or INK.black) or INK.g8, 0)
+        end
+        items[#items + 1] = MenuUI.label(w, _("Where it comes up"))
+        items[#items + 1] = hstack({ w = w, h = bh, gap = gap, valign = "bottom" }, bars)
+        local third = floor((w - 2 * px(10)) / 3)
+        local function cell(label, value)
+            return BoardUI.vstack({ w = third }, {
+                text(label, { s = 12, col = INK.g4, w = third, lines = 1 }),
+                text(value or "–", { s = 14, b = true, w = third, lines = 2, data = true }),
+            })
+        end
+        local function title(c) return c and st.chapters[c] and st.chapters[c].title or nil end
+        items[#items + 1] = hstack({ w = w, gap = px(10), valign = "top" }, {
+            cell(_("First seen"), title(st.first)),
+            cell(_("Most mentions"), st.busiest and (title(st.busiest) .. " (" .. st.busiest_n .. ")") or nil),
+            cell(_("Latest"), title(st.latest)),
+        })
+    end
+    if #often > 0 then
+        local chips = {}
+        for _i, o in ipairs(often) do chips[#chips + 1] = SheetUI.chip(o.name, w, { kind = "entry", index = o.index }) end
+        items[#items + 1] = MenuUI.label(w, _("Often with"))
+        items[#items + 1] = SheetUI.wrap(w, chips)
+    end
+    return items
+end
+
 local function entryBody(sheet, w, max_body)
     local ui = sheet.ui
     local iw = MenuUI.rowsIn(w)
@@ -188,12 +250,15 @@ local function entryBody(sheet, w, max_body)
     local counted = XR.spoilers() and T(_("%1 mentions"), total) or T(_("%1 mentions so far"), seen)
     local items = { SheetUI.titleRow(w, entry.name, kind and (kind .. " · " .. counted) or counted) }
     if entry.about and entry.about ~= "" then
-        items[#items + 1] = text(entry.about, { s = 15, w = w, lines = 6, data = true })
+        items[#items + 1] = text(entry.about, { s = 15, w = w, lines = 10, data = true })
     end
     if #(entry.aliases or {}) > 0 then
         items[#items + 1] = text(T(_("Also: %1"), table.concat(entry.aliases, ", ")), { s = 13, col = INK.g4, w = w, lines = 2, data = true })
     end
-    local per = math.max(2, math.min(5, floor(((max_body or px(600)) - px(250)) / px(76))))
+    local details = {}
+    try(function() details = entryDetails(sheet, w) end)
+    for _i, d in ipairs(details) do items[#items + 1] = d end
+    local per = math.max(2, math.min(5, floor(((max_body or px(600)) - px(250) - (#details > 0 and px(170) or 0)) / px(76))))
     sheet.mper = per
     local pages = pagesOf(seen, per)
     sheet.mpage = math.max(1, math.min(sheet.mpage or 1, pages))
@@ -247,8 +312,16 @@ local function storyBody(sheet, w, max_body)
                 or _("Reading the chapters and asking. You can close this and keep reading."), { lines = 3 })
     end
     if story.recap and story.recap.text then
-        items[#items + 1] = text(story.recap.text, { s = 15, w = w, lines = 11, data = true })
-        items[#items + 1] = text(T(_("The story up to page %1 (%2%)"), story.recap.page or "?", story.recap.percent or 0), { s = 12, col = INK.g4, w = w })
+        -- Cut short at 11 lines; a tap on it, or "Read all", shows it whole.
+        local whole = require("aleph_text_pages").linesNeeded(story.recap.text, { s = 15 }, w) <= 11
+        items[#items + 1] = BoardUI.hit(text(story.recap.text, { s = 15, w = w, lines = 11, data = true }), { kind = "recap" })
+        local when = text(T(_("The story up to page %1 (%2%)"), story.recap.page or "?", story.recap.percent or 0), { s = 12, col = INK.g4 })
+        if whole then
+            items[#items + 1] = hstack({ w = w }, { when, flex(0) })
+        else
+            local more = BoardUI.hit(hstack({ h = px(32), gap = px(4) }, { text(_("Read all"), { s = 13, b = true }), BoardUI.icon("chevron-right", px(16), { sw = 2.5 }) }), { kind = "recap" })
+            items[#items + 1] = hstack({ w = w }, { when, flex(px(8)), more })
+        end
     elseif not Story.busy() then
         items[#items + 1] = SheetUI.note(w, "info",
             AI.ready() and _("What happened in each chapter you have read, and the story so far, written by the AI provider set in Settings.")
@@ -286,6 +359,54 @@ local function storyBody(sheet, w, max_body)
         if p then items[#items + 1] = p end
     end
     return items
+end
+
+-- The story so far, whole: in pages when it is longer than the sheet holds,
+-- cut between sentences.
+local function recapBody(sheet, w, max_body)
+    local ui = sheet.ui
+    local Story = require("aleph_xr_story")
+    local TextPages = require("aleph_text_pages")
+    local recap = Story.read(ui).recap
+    if not (recap and recap.text) then return { SheetUI.titleRow(w, _("X-Ray"), nil) } end
+    local title = SheetUI.titleRow(w, _("The story so far"), T(_("The story up to page %1 (%2%)"), recap.page or "?", recap.percent or 0))
+    local pill_h = px(44)
+    local room = (max_body or px(600)) - title:getSize().h - pill_h - px(48) - 3 * px(12)
+    local per = math.max(4, math.floor(room / BoardMetrics.lh(15)))
+    -- Sentences packed into pages of at most `per` lines.
+    if sheet.recap_key ~= recap.text .. "#" .. w .. "#" .. per then
+        local sentences, rest = {}, 1
+        for sentence, after in recap.text:gmatch("(.-[%.!%?]+[\"')]*)%s+()") do
+            sentences[#sentences + 1] = sentence
+            rest = after
+        end
+        local tail = recap.text:sub(rest):gsub("^%s+", ""):gsub("%s+$", "")
+        if tail ~= "" then sentences[#sentences + 1] = tail end
+        if #sentences == 0 then sentences = { recap.text } end
+        local pages, cur = {}, nil
+        for _i, x in ipairs(sentences) do
+            local try_ = cur and (cur .. " " .. x) or x
+            if cur and TextPages.linesNeeded(try_, { s = 15 }, w) > per then
+                pages[#pages + 1] = cur
+                cur = x
+            else
+                cur = try_
+            end
+        end
+        if cur then pages[#pages + 1] = cur end
+        sheet.recap_pages, sheet.recap_key = pages, recap.text .. "#" .. w .. "#" .. per
+        sheet.rpage = 1
+    end
+    local pages = sheet.recap_pages
+    sheet.rpage = math.max(1, math.min(sheet.rpage or 1, #pages))
+    return {
+        title,
+        text(pages[sheet.rpage], { s = 15, w = w, lines = per, data = true }),
+        pager(w, sheet.rpage, #pages, "rpage") or false,
+        SheetUI.pillRow(w, {
+            { label = _("The story"), icon = "list", kind = "outline", action = { kind = "tab", view = "story" } },
+        }),
+    }
 end
 
 -- The chapters summarised just before and after chapter i, in book order.
@@ -504,6 +625,12 @@ local function onAction(sheet, action)
     elseif k == "spage" then
         sheet.spage = (sheet.spage or 1) + action.delta
         sheet:refresh()
+    elseif k == "recap" then
+        sheet.view, sheet.rpage = "recap", 1
+        sheet:refresh()
+    elseif k == "rpage" then
+        sheet.rpage = (sheet.rpage or 1) + action.delta
+        sheet:refresh()
     elseif k == "chapter" then
         sheet.view, sheet.chapter = "chapter", action.i
         sheet:refresh()
@@ -543,6 +670,7 @@ local function openSheet(ui, view, entry)
                 if page.view == "entry" then return entryBody(page, w, max_body) end
                 if page.view == "story" then return storyBody(page, w, max_body) end
                 if page.view == "chapter" then return chapterBody(page, w) end
+                if page.view == "recap" then return recapBody(page, w, max_body) end
                 if page.view == "previous" then return previousBody(page, w) end
                 return listBody(page, w, max_body)
             end, { pop_w = 540 })
@@ -556,6 +684,9 @@ local function openSheet(ui, view, entry)
             elseif page.view == "story" then
                 local to = (page.spage or 1) + delta
                 if to >= 1 and to <= (page.spages or 1) then page.spage = to; page:refresh() end
+            elseif page.view == "recap" then
+                local to = (page.rpage or 1) + delta
+                if to >= 1 and to <= #(page.recap_pages or {}) then page.rpage = to; page:refresh() end
             elseif page.view == "chapter" then
                 -- The summary before or after this one.
                 local before, after = neighbours(page.ui, page.chapter or 0)

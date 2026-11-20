@@ -36,31 +36,47 @@ local function positive(v)
     if v and v >= 1 and v < 1e6 then return math.floor(v + 0.5) end
 end
 
+-- A Calibre column's value, when it is a plain number. A column of text that
+-- merely starts with digits (the "#npages" column of page-count buckets holds
+-- "300s") is not a page count.
+local function numberValue(body)
+    return positive(body:match('"#value#"%s*:%s*"?([%d%.]+)"?%s*[,}]'))
+end
+
+-- The tag name may carry a namespace prefix: Calibre writes <opf:meta ...> as
+-- well as <meta ...>.
+local META_TAG = "<[%w_]*:?meta%s[^>]*>"
+
 -- The page count in an OPF's text, or nil.
 function Pages.fromOpf(xml)
     if type(xml) ~= "string" or xml == "" then return nil end
     -- OPF 2: one <meta name="calibre:user_metadata:#pages" content="{json}"/>
     -- per column (attributes in either order).
-    for tag in xml:gmatch("<meta%s[^>]*>") do
+    local best, best_rank
+    local function offer(name, n)
+        if not n then return end
+        -- A column named just "pages" wins over one that only mentions pages.
+        local rank = tostring(name):lower():gsub("^#", ""):match("^pages?$") and 0 or 1
+        if not best_rank or rank < best_rank then best, best_rank = n, rank end
+    end
+    for tag in xml:gmatch(META_TAG) do
         local name = tag:match('name%s*=%s*"calibre:user_metadata:([^"]+)"') or tag:match("name%s*=%s*'calibre:user_metadata:([^']+)'")
         if name and pageColumn(name) then
             local content = tag:match('content%s*=%s*"([^"]*)"') or tag:match("content%s*=%s*'([^']*)'")
-            local n = content and positive(unescape(content):match('"#value#"%s*:%s*"?([%d%.]+)'))
-            if n then return n end
+            offer(name, content and numberValue(unescape(content)))
         end
     end
-    -- OPF 3: all columns in one <meta property="calibre:user_metadata">{json}</meta>.
-    local blob = xml:match('<meta[^>]-property%s*=%s*"calibre:user_metadata"[^>]*>(.-)</meta>')
+    if best then return best end
+    -- OPF 3: all columns in one <meta property="calibre:user_metadata">{json}</meta>
+    -- (or <opf:meta ...>).
+    local blob = xml:match('<[%w_]*:?meta[^>]-property%s*=%s*"calibre:user_metadata"[^>]*>(.-)</[%w_]*:?meta>')
     if blob then
         blob = unescape(blob)
         for key, body in blob:gmatch('"(#[^"]+)"%s*:%s*(%b{})') do
-            if pageColumn(key) then
-                local n = positive(body:match('"#value#"%s*:%s*"?([%d%.]+)'))
-                if n then return n end
-            end
+            if pageColumn(key) then offer(key, numberValue(body)) end
         end
     end
-    return nil
+    return best
 end
 
 local function readFile(path, limit)

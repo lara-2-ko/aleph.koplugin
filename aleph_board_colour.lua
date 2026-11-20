@@ -22,6 +22,8 @@ so each colour is painted with its hue turned half way round: it shows in its
 own hue at the inverse lightness.
 ]]
 
+local _ = require("aleph_gettext")
+
 local Colour = {}
 
 Colour.SCHEMES = { "accents", "tinted", "off" }
@@ -59,6 +61,19 @@ local HUE = {
     ["shelf:random"] = "brown", ["shelf:recently-added"] = "teal", ["shelf:pick-back-up"] = "gold",
     ["shelf:up-next-in-series"] = "violet", ["shelf:want-to-read"] = "red", ["shelf:finished"] = "teal",
     ["shelf:in-progress"] = "blue",
+    -- Aleph modification, 2026-11-19: the goals and Diversity score in their
+    -- own families (they all fell back to blue): Today gold like Pick back
+    -- up, This week violet like Series, This month rose like Word of the day,
+    -- Goals and Diversity score gold like On device.
+    goal_day = "gold", goal_week = "violet", goal_month = "rose", goals = "gold", diversity = "gold",
+    -- Reading DNA teal, Reading rhythm orange (green until 1.2.58), Year projection orange; Monthly
+    -- challenge, Reading bingo and Weather stay blue (named here so they are
+    -- blue by choice, not by falling back).
+    dna = "teal", rhythm = "orange", projection = "orange", challenge = "blue", bingo = "blue", weather = "blue",
+    -- Hours read: teal, picked at random.
+    hours_total = "teal",
+    -- Time read blue (picked at random), Books and pages green.
+    time_read = "blue", books_pages = "green",
 }
 Colour.HUE = HUE
 
@@ -236,6 +251,39 @@ end
 
 function Colour.tinted(ctx)
     return Colour.on(ctx) and ctx.colour == "tinted"
+end
+
+-- Aleph modification, 2026-11-20: a colour chosen for one widget on Home
+-- (Customize Home > select it > Colour), kept with it in the layout as
+-- item.colour, a family name; nil is the widget's own colour.
+Colour.CHOICES = {
+    { fam = "yellow", name = function() return _("Yellow") end },
+    { fam = "orange", name = function() return _("Orange") end },
+    { fam = "green", name = function() return _("Green") end },
+    { fam = "blue", name = function() return _("Blue") end },
+    { fam = "red", name = function() return _("Red") end },
+    { fam = "violet", name = function() return _("Purple") end },
+    { fam = "gold", name = function() return _("Gold") end },
+    { fam = "teal", name = function() return _("Teal") end },
+    { fam = "rose", name = function() return _("Pink") end },
+    { fam = "brown", name = function() return _("Brown") end },
+    { fam = "night", name = function() return _("Dark blue") end },
+}
+
+-- The key a tile's colour is looked up by: the colour chosen for it, else
+-- its widget's.
+function Colour.tileKey(item)
+    local c = item and item.colour
+    if type(c) == "string" and FAM[c] then return c end
+    return Colour.keyFor(item and item.type, item and item.props)
+end
+
+-- The name of a tile's chosen colour, or nil for its own.
+function Colour.choiceName(fam)
+    for _i, c in ipairs(Colour.CHOICES) do
+        if c.fam == fam then return c.name() end
+    end
+    return nil
 end
 
 -- The key a tile's colour is looked up by.

@@ -179,23 +179,36 @@ function BoardData.yearMinutes(now)
 end
 
 -- When the current book ends at this reader's pace, from its own statistics.
-local pace_cache = {}
+-- The time left is the one KOReader's status bar shows in the book (and
+-- Aleph's "time left in book"): pages left in its present layout times its
+-- average time per page (StatsReader.getBookPace). The pace is asked again
+-- whenever the statistics change (StatsReader remembers it until then).
+-- The days the recent pace is spread over: from the day of `first` (the
+-- first read in the last two weeks) to today, both counted, 1 to 14.
+function BoardData.paceDays(first, now)
+    if not first then return 14 end
+    local days = math.floor((dayStart(now) - dayStart(first)) / DAY + 0.5) + 1
+    return math.max(1, math.min(14, days))
+end
+
 function BoardData.forecast(book, md5, now)
     if not book or not md5 then return nil end
     now = now or os.time()
-    local key = md5 .. ":" .. dateKey(now)
-    local pace = pace_cache[key]
-    if pace == nil then
-        pace = StatsReader.getBookPace(md5, 14) or false
-        pace_cache[key] = pace
-    end
+    local pace = StatsReader.getBookPace(md5, 14)
     if not pace or not pace.seconds_per_page or not pace.total_pages or pace.total_pages <= 0 then return nil end
     local progress = (tonumber(book.progressPercentage) or 0) / 100
-    local pages_left = math.max(0, pace.total_pages * (1 - progress))
+    -- The page being read is page progress × pages; KOReader counts the
+    -- pages after it.
+    local pages_left = math.max(0, math.floor(pace.total_pages - pace.total_pages * progress + 0.5))
     local minutes_left = pages_left * pace.seconds_per_page / 60
     -- Average over the last two weeks, at least five minutes a day, so a book
     -- read in one sitting does not forecast as finishing today forever.
-    local per_day = math.max(5, pace.recent_seconds / 60 / 14)
+    -- Aleph modification, 2026-11-20: over the days since the book was first
+    -- read in those two weeks, today included, not always fourteen: a book
+    -- started two days ago (half of it read since) was forecast at a
+    -- seventh of its pace, two weeks out.
+    local days = BoardData.paceDays(pace.recent_first, now)
+    local per_day = math.max(5, pace.recent_seconds / 60 / days)
     local days_out = math.max(0, math.ceil(minutes_left / per_day) - 1)
     local finish = dayStart(now) + days_out * DAY + 12 * 3600
     return {
@@ -764,6 +777,42 @@ local function readingWeek(d, body, now)
     if d.streak.current == 0 and d.today_min > 0 then d.streak.current = 1 end
     d.streak_week = {}
     for i = 1, 7 do d.streak_week[i] = (week[i] or 0) > 0 or d.streak.last_seven[i] == true end
+    BoardData.goals(d, body, now, today_index)
+end
+
+-- Aleph modification, 2026-11-18: the Goals widget's four goals, from the
+-- day's minutes, this week's days with reading (from the first day of the
+-- week KOReader's statistics calendar uses, Monday unless set), and the
+-- books finished this month and this year. goal 0 or nil: off.
+function BoardData.weekStart(now)
+    local first = 2
+    pcall(function()
+        local st = G_reader_settings:readSetting("statistics")
+        first = tonumber(type(st) == "table" and st.calendar_start_day_of_week) or 2
+    end)
+    local wday = tonumber(os.date("%w", now)) + 1 -- 1 Sunday .. 7 Saturday
+    return (wday - first) % 7                       -- days since the week began
+end
+
+function BoardData.goals(d, body, now, today_index)
+    local g = type(body.readingGoal) == "table" and body.readingGoal or {}
+    local since = BoardData.weekStart(now)
+    local days = 0
+    -- This week's days in order: true (read), false (not), nil (to come).
+    local flags = {}
+    for i = 0, since do
+        local read = (d.heatmap[(today_index or BoardData.HEATMAP_DAYS) - i] or 0) > 0
+        if read then days = days + 1 end
+        flags[since - i + 1] = read
+    end
+    local initials = {}
+    for i = 1, 7 do initials[i] = BoardData.shortWeekday(now + (i - 1 - since) * 86400):sub(1, 1) end
+    d.goals = {
+        day = { done = d.today_min or 0, goal = tonumber(g.dayMinutes) },
+        week = { done = days, goal = tonumber(g.weekDays), flags = flags, initials = initials, today = since + 1 },
+        month = { done = tonumber(g.monthDone) or 0, goal = tonumber(g.monthBooks) },
+        year = { done = tonumber(g.completedBooks) or 0, goal = tonumber(g.goalBooks), year = tonumber(g.year) },
+    }
 end
 
 local function setFingerprint(d, body, now)
@@ -775,6 +824,8 @@ local function setFingerprint(d, body, now)
         tostring(body.generatedAt), tostring(body), tostring(d.online), tostring(d.stale), dateKey(now),
         d.light and (d.light.brightness .. "/" .. tostring(d.light.warmth)) or "-",
         d.today_min, d.week_min, d.streak.current, d.counts.device or 0,
+        d.goals and table.concat({ tostring(d.goals.day.goal), d.goals.week.done, tostring(d.goals.week.goal),
+            d.goals.month.done, tostring(d.goals.month.goal), d.goals.year.done, tostring(d.goals.year.goal) }, "/") or "-",
         d.word and d.word.word or "-", d.forecast and math.floor(d.forecast.minutes_left) or "-",
         table.concat(covers, ","), tostring(G_reader_settings:isTrue("night_mode")),
         table.concat(d.recent_searches or {}, ","), d.loading and "l" or "",
@@ -788,9 +839,96 @@ local function lazyFields(d, host, body, now, lead, lead_md5)
     local lazy = {
         hours = function() return BoardData.hours(now) end,
         records = function() return BoardData.records(now) end,
+        -- Aleph modification, 2026-11-20: the Hours read widget.
+        -- Aleph modification, 2026-11-20: the Time read and Books and pages
+        -- widgets: this year month by month (hours and pages from the
+        -- statistics, books from the finished books).
+        year_months = function()
+            local t = os.date("*t", now)
+            local y0 = os.time{ year = t.year, month = 1, day = 1, hour = 0 }
+            local y1 = os.time{ year = t.year + 1, month = 1, day = 1, hour = 0 }
+            local s = StatsReader.getMonthStats(y0, y1)
+            if not s then return nil end
+            local books = {}
+            for m = 1, 12 do books[m] = 0 end
+            local prefix = tostring(t.year) .. "-"
+            -- The books the yearly goal counts (deleted ones kept on the record too).
+            for _i, b in ipairs(body.finishedThisYear or body.finishedBooks or {}) do
+                local f = type(b.finishedOn) == "string" and b.finishedOn or ""
+                if f:sub(1, 5) == prefix then
+                    local m = tonumber(f:sub(6, 7))
+                    if m and books[m] then books[m] = books[m] + 1 end
+                end
+            end
+            return { year = t.year, month = t.month, seconds = s.seconds, pages = s.pages, books = books }
+        end,
+        hours_total = function()
+            local t = os.date("*t", now)
+            return StatsReader.getTotalTime(os.time{ year = t.year, month = 1, day = 1, hour = 0 })
+        end,
         pages = function() return BoardData.pageTurns(now) end,
         months = function() return BoardData.monthTotals(d.heatmap, d.heatmap_start, now) end,
         moon = function() return BoardData.moon(now) end,
+        -- Aleph modification, 2026-11-18: Monthly challenge, Reading rhythm,
+        -- Year projection, Diversity score (aleph_more_stats.lua).
+        challenge = function()
+            local More = require("aleph_more_stats")
+            local t = os.date("*t", now)
+            local month_start = os.time{ year = t.year, month = t.month, day = 1, hour = 0 }
+            local month_days = {}
+            for day = 1, t.day do
+                local key_t = os.time{ year = t.year, month = t.month, day = day, hour = 12 }
+                local idx = math.floor((key_t - d.heatmap_start) / 86400 + 0.5) + 1
+                month_days[day] = (d.heatmap[idx] or 0) > 0
+            end
+            local pages = StatsReader.getPagesSince(month_start, dayStart(now) - 29 * DAY)
+            -- The month's challenge, kept once chosen.
+            local Prefs = require("aleph_prefs")
+            local kept = Prefs.get().challenge
+            local month = os.date("%Y-%m", now)
+            local chosen = type(kept) == "table" and kept.month == month and kept.id or nil
+            local c = More.challenge(body.finishedBooks, body.readingBooks, month_days, pages and pages[1] or 0, now, chosen)
+            if not chosen then pcall(Prefs.set, "challenge", { month = month, id = c.id }) end
+            return c
+        end,
+        rhythm = function()
+            local today = 0
+            for i = 1, BoardData.HEATMAP_DAYS + 7 do if d.heatmap[i] ~= nil then today = i end end
+            local minutes = {}
+            for i = 13, 0, -1 do minutes[#minutes + 1] = today - i >= 1 and (d.heatmap[today - i] or 0) or 0 end
+            local r = require("aleph_more_stats").rhythm(minutes)
+            r.initials = {}
+            for i = 1, 14 do r.initials[i] = BoardData.shortWeekday(now - (14 - i) * DAY):sub(1, 1) end
+            return r
+        end,
+        projection = function()
+            local recent_since = dayStart(now) - 29 * DAY
+            local recent_day = os.date("%Y-%m-%d", recent_since)
+            local books = 0
+            for _i, b in ipairs(body.finishedBooks or {}) do
+                if type(b.finishedOn) == "string" and b.finishedOn >= recent_day then books = books + 1 end
+            end
+            local t = os.date("*t", now)
+            local pages = StatsReader.getPagesSince(os.time{ year = t.year, month = t.month, day = 1, hour = 0 }, recent_since)
+            local today, minutes = 0, 0
+            for i = 1, BoardData.HEATMAP_DAYS + 7 do if d.heatmap[i] ~= nil then today = i end end
+            for i = math.max(1, today - 29), today do minutes = minutes + (d.heatmap[i] or 0) end
+            return require("aleph_more_stats").projection(d.goal.done or 0, books, pages and pages[2] or 0, minutes / 60, now)
+        end,
+        diversity = function()
+            return require("aleph_more_stats").diversity(body.finishedBooks, body.libraryGenres)
+        end,
+        -- Aleph modification, 2026-11-18: Reading DNA (aleph_dna.lua): the
+        -- finished books' part from the library, the rest from the
+        -- statistics already read for When you read and Reading records.
+        dna = function()
+            local DNA = require("aleph_dna")
+            local b = type(body.dnaBooks) == "table" and body.dnaBooks or { books = 0, avg_pages = 0, genres = 0 }
+            local peak = DNA.peakHour(BoardData.hours(now))
+            local records = BoardData.records(now)
+            local pph = records and records.sessions and records.sessions > 0 and records.pages_per_hour or nil
+            return DNA.compute(b.avg_pages, b.genres, b.books, DNA.ratio(d.heatmap, 182), peak or 12, pph)
+        end,
         glyph = function()
             return BoardData.glyphOfTheDay(now, function(font) return require("aleph_board_art").hasFont(font) end)
         end,

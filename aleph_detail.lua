@@ -239,7 +239,30 @@ local function columnItems(br, b, tw)
     if authors == "" then
         items[#items + 1] = text(_("Author unknown"), { s = 15, col = INK.g5, i = true, w = tw })
     else
-        items[#items + 1] = text(authors, { s = 15, col = INK.g2, w = tw, data = true })
+        -- Aleph modification, 2026-11-18: a tap on an author lists their
+        -- books, as "More by" does. Each name on its own when they fit on
+        -- the line; one author, or names too long for it: the whole line (the
+-- first author's books).
+        local function authorAction(name)
+            return { kind = "books", params = { author = name, sort = "title" }, title = name }
+        end
+        local parts, used = {}, 0
+        for i, name in ipairs(b.authors) do
+            local t = text(name, { s = 15, col = INK.g2, data = true })
+            used = used + wOf(t)
+            if i > 1 then
+                local comma = text(", ", { s = 15, col = INK.g2 })
+                used = used + wOf(comma)
+                parts[#parts + 1] = comma
+            end
+            parts[#parts + 1] = UI.hit(t, authorAction(name))
+        end
+        if #b.authors > 1 and used <= tw then
+            parts[#parts + 1] = flex(0)
+            items[#items + 1] = hstack({ w = tw }, parts)
+        else
+            items[#items + 1] = UI.hit(text(authors, { s = 15, col = INK.g2, w = tw, data = true }), authorAction(b.authors[1]))
+        end
     end
     items[#items + 1] = space(nil, px(10))
     items[#items + 1] = verdictRow(b, tw)

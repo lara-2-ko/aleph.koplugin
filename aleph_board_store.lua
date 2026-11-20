@@ -45,14 +45,44 @@ function BoardStore.pageName(id)
     return (PAGE_NAMES[id] or PAGE_NAMES.home)()
 end
 
--- The names of a list of pages, in order.
+-- The names of a list of pages, in order: the reader's own name for a page
+-- (Pages > Rename this page) when given, else the page's.
 function BoardStore.pageNames(pages)
     local names = {}
+    local own = {}
+    pcall(function()
+        local stored = require("aleph_prefs").get().page_names
+        if type(stored) == "table" then own = stored end
+    end)
     for index = 1, BoardStore.PAGE_COUNT do
         local page = pages and pages[index]
-        names[index] = BoardStore.pageName(page and page.id or BoardStore.PAGE_IDS[index])
+        local mine = own[tostring(index)]
+        names[index] = (type(mine) == "string" and mine ~= "") and mine or BoardStore.pageName(page and page.id or BoardStore.PAGE_IDS[index])
     end
     return names
+end
+
+function BoardStore.renamePage(index, name)
+    local Prefs = require("aleph_prefs")
+    local stored = Prefs.get().page_names
+    local names = {}
+    if type(stored) == "table" then for k, v in pairs(stored) do names[k] = v end end
+    name = tostring(name or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    names[tostring(index)] = name ~= "" and name or nil
+    Prefs.set("page_names", next(names) and names or nil)
+end
+
+-- The pages that are shown outside Customize Home: the ones with widgets.
+-- The first page always is, and so is `keep` (the page on screen).
+function BoardStore.shownPages(pages, keep)
+    local out = {}
+    for index = 1, BoardStore.PAGE_COUNT do
+        local page = pages and pages[index]
+        local items = page and (page.items or page.base) or nil
+        local any = type(items) == "table" and #items > 0
+        if index == 1 or index == keep or any then out[#out + 1] = index end
+    end
+    return out
 end
 
 -- Shelf sources a shelf widget can show. Selectors of a list carry params.
@@ -236,7 +266,7 @@ function BoardStore.withCustomPages(settings, cols, pages, landscape)
     for index, page in ipairs(pages) do
         local items = {}
         for _i, it in ipairs(page.items or page.base or {}) do
-            table.insert(items, { type = it.type, cw = it.cw, rh = it.rh, chrome = it.chrome, props = it.props })
+            table.insert(items, { type = it.type, cw = it.cw, rh = it.rh, chrome = it.chrome, props = it.props, colour = it.colour })
         end
         out.pages[index] = { id = page.id, items = items }
     end

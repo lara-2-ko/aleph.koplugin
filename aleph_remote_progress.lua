@@ -73,6 +73,22 @@ local function folderSignature(root)
     return table.concat(parts, ";")
 end
 Remote.folderSignature = folderSignature
+-- A name read from a folder that is a file or folder in it.
+local function isEntry(name) return name ~= "." and name ~= ".." end
+
+-- One book's folder in Syncery's store: listed under its title's key when
+-- it has both a title and a progress file.
+local function addBookFolder(map, Import, dir, id)
+    local f = io.open(dir .. "/title.txt", "r")
+    if not f then return end
+    local title = f:read("*l") or ""
+    f:close()
+    local full = Import.titleKeys(title)
+    if full ~= "" and attr(dir .. "/syncery-progress.json", "mode") == "file" then
+        map[full] = map[full] or {}
+        table.insert(map[full], { path = dir .. "/syncery-progress.json", id = id })
+    end
+end
 
 -- title key -> progress file, from Syncery's title.txt files. Looked at
 -- again at most once a minute, and read again only when the folder changed.
@@ -92,24 +108,10 @@ function Remote.titleIndex(force)
         if attr(root, "mode") ~= "directory" then return end
         local Import = require("aleph_goodreads_import")
         for shard in lfs.dir(root) do
-            if shard ~= "." and shard ~= ".." and #shard <= 4 then
-                local sdir = root .. "/" .. shard
-                if attr(sdir, "mode") == "directory" then
-                    for id in lfs.dir(sdir) do
-                        if id ~= "." and id ~= ".." then
-                            local dir = sdir .. "/" .. id
-                            local f = io.open(dir .. "/title.txt", "r")
-                            if f then
-                                local title = f:read("*l") or ""
-                                f:close()
-                                local full = Import.titleKeys(title)
-                                if full ~= "" and attr(dir .. "/syncery-progress.json", "mode") == "file" then
-                                    map[full] = map[full] or {}
-                                    table.insert(map[full], { path = dir .. "/syncery-progress.json", id = id })
-                                end
-                            end
-                        end
-                    end
+            local sdir = root .. "/" .. shard
+            if isEntry(shard) and #shard <= 4 and attr(sdir, "mode") == "directory" then
+                for id in lfs.dir(sdir) do
+                    if isEntry(id) then addBookFolder(map, Import, sdir .. "/" .. id, id) end
                 end
             end
         end

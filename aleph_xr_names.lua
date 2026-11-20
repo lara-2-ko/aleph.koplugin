@@ -58,10 +58,6 @@ for word in ([[I I'm I'll I've I'd Im Ill Ive Id OK Okay Oh Ah Yes No God Lord C
     STOP[word] = true
 end
 
--- Small words that may stand inside a name between two capitals.
-local PARTICLES = { de = true, del = true, la = true, las = true, los = true, da = true, di = true, du = true,
-    van = true, von = true, der = true, den = true, of = true, the = true, le = true, y = true, e = true }
-
 function Names.new()
     return {
         mid = {},      -- word -> times seen with a capital mid-sentence

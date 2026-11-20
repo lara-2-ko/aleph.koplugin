@@ -355,7 +355,9 @@ local MARIA = { { -0.26, -0.36, 0.24, 0.17, -0.3 }, { 0.2, -0.3, 0.13, 0.12, 0 }
 local function moonDisc(dia, m, ctx)
     local R = dia / 2 - math.max(1, px(1))
     local cx, cy = dia / 2, dia / 2
-    local body = { '<circle cx="' .. n(cx) .. '" cy="' .. n(cy) .. '" r="' .. n(R) .. '" fill="' .. artHex(ctx, "#222222", "#2a3062") .. '" stroke="' .. artHex(ctx, "#666666", "#5a628f") .. '" stroke-width="' .. n(math.max(1, px(1))) .. '"/>' }
+    local body = { '<circle cx="' .. n(cx) .. '" cy="' .. n(cy) .. '" r="' .. n(R) .. '" fill="' .. artHex(ctx,
+        "#222222", "#2a3062") .. '" stroke="' .. artHex(ctx, "#666666",
+        "#5a628f") .. '" stroke-width="' .. n(math.max(1, px(1))) .. '"/>' }
     if m.lit > 0.004 then
         local k = math.cos(2 * math.pi * m.p)
         local waxing = m.p < 0.5
@@ -509,7 +511,9 @@ function Decor.odometer(ctx, w, hh)
                 local pitch = dh * 0.8
                 -- Nothing read today: the wheel rests on its digit.
                 local roll = today > 0 and round(pitch * 0.3) or 0
-                table.insert(layers, { widget = RollingWheel:new{ digit = tonumber(ch), size = BoardMetrics.fs(fs), roll = roll, pitch = pitch, color = hot and INK.white or INK.black, dimen = Geom:new{ w = dw, h = dh } } })
+                table.insert(layers,
+                    { widget = RollingWheel:new{ digit = tonumber(ch), size = BoardMetrics.fs(fs), roll = roll,
+                        pitch = pitch, color = hot and INK.white or INK.black, dimen = Geom:new{ w = dw, h = dh } } })
                 if not hot then
                     table.insert(layers, { widget = BoardUI.box({ w = dw, h = dh, radius = px(3), border = math.max(1, px(1.5)), border_col = INK.black }) })
                 end
@@ -823,8 +827,10 @@ local function lineArt(w, cs, o)
     local track_y = px(10)
     local art_h = px(20)
     local body = {
-        '<line x1="' .. n(train_x) .. '" y1="' .. track_y .. '" x2="' .. n(x1) .. '" y2="' .. track_y .. '" stroke="' .. (o.ahead or "#bbbbbb") .. '" stroke-width="' .. lw .. '" stroke-linecap="round"/>',
-        '<line x1="' .. n(x0) .. '" y1="' .. track_y .. '" x2="' .. n(train_x) .. '" y2="' .. track_y .. '" stroke="' .. (o.line or "#000000") .. '" stroke-width="' .. lw .. '" stroke-linecap="round"/>',
+        '<line x1="' .. n(train_x) .. '" y1="' .. track_y .. '" x2="' .. n(x1) .. '" y2="' .. track_y
+            .. '" stroke="' .. (o.ahead or "#bbbbbb") .. '" stroke-width="' .. lw .. '" stroke-linecap="round"/>',
+        '<line x1="' .. n(x0) .. '" y1="' .. track_y .. '" x2="' .. n(train_x) .. '" y2="' .. track_y
+            .. '" stroke="' .. (o.line or "#000000") .. '" stroke-width="' .. lw .. '" stroke-linecap="round"/>',
     }
     for i, stop in ipairs(cs.stops) do
         local past = stop.pct <= cs.pos
@@ -1032,7 +1038,8 @@ local function medal(D0, b, earned, rf)
         if p > 0.005 then
             local a = p * 2 * math.pi
             table.insert(body, '<path d="M' .. n(cx) .. ' ' .. n(cy - pr) .. ' A' .. n(pr) .. ' ' .. n(pr) .. ' 0 ' .. (p > 0.5 and 1 or 0) .. ' 1 '
-                .. n(cx + pr * math.sin(a)) .. ' ' .. n(cy - pr * math.cos(a)) .. '" fill="none" stroke="' .. (rf and rf.ink or "#000000") .. '" stroke-width="' .. ring_w .. '" stroke-linecap="round"/>')
+                .. n(cx + pr * math.sin(a)) .. ' ' .. n(cy - pr * math.cos(a)) .. '" fill="none" stroke="'
+                    .. (rf and rf.ink or "#000000") .. '" stroke-width="' .. ring_w .. '" stroke-linecap="round"/>')
         end
     end
     local face, ink = earned and (rf and rf.deep or "#000000") or "#ffffff", earned and "#ffffff" or "#000000"
@@ -1066,14 +1073,109 @@ local function medal(D0, b, earned, rf)
     return svg(round(D0), round(D0), table.concat(body))
 end
 
+-- A badge tile is laid out from one table, `k`: ctx, data (the badges), the
+-- tile (w, hh) and its inside (iw, ih), b (the badge shown), earned (it is
+-- one just earned, not the next to earn) and label.
+-- A badge's rarity colours, the same in every scheme.
+local function badgeRarity(k, r)
+    local ctx = k.ctx
+    if not BoardColour.on(ctx) then return nil end
+    local f = BoardColour.rarity(r)
+    return { ink = BoardColour.hex(f.ink), deep = BoardColour.hex(f.deep), tint = BoardColour.hex(f.tint), ribbon = BoardColour.hex(BoardColour.rarity("ribbon").ink) }
+end
+
+local function badgeProgress(k, s)
+    local b, earned = k.b, k.earned
+    if earned then return text(b.when or "", { s = s, col = INK.g4 }) end
+    return runs({ { t = formatCount(b.progress or 0), b = true, col = INK.black }, { t = " " .. T(_("of %1"), formatCount(b.threshold or 0)) } }, { s = s, col = INK.g4 })
+end
+
+-- A tall tile: the medal beside its words, the badge earned last under them.
+-- v = { with the last badge, with the rarity }.
+local function badgeTall(k, v)
+    local data, w, hh, iw, ih, b, label = k.data, k.w, k.hh, k.iw, k.ih, k.b, k.label
+local with_last = v[1] and data.latest ~= nil
+local foot_h = with_last and (math.max(1, px(0.75)) + px(10) + px(36)) or 0
+local room = ih - lh1(13) - px(12) - foot_h - (foot_h > 0 and px(10) or 0)
+local dia = math.min(round(iw * 0.44), room)
+if dia < px(90) then return skip("medal too small") end
+local tw = iw - dia - px(14)
+if tw < px(120) then return skip("no room for words") end
+local items = {
+    head(iw, label, text(T(_("%1 of %2"), data.earned, data.total), { s = 12, col = INK.g4 })),
+    space(nil, px(12)),
+    hstack({ w = iw, h = room, gap = px(14) }, {
+        medal(dia, b, false, badgeRarity(k, b.rarity)),
+        vstack({ w = tw }, {
+            v[2] and text((RARITY[b.rarity] or RARITY.common)(), { s = 12, col = INK.g4, w = tw }) or false,
+            text(b.name, { s = 16, b = true, w = tw, lines = 2, data = true }),
+            text(b.desc, { s = 13, col = INK.g4, w = tw, lines = 2, data = true }),
+            space(nil, px(8)),
+            badgeProgress(k, 13),
+            b.eta and text(b.eta, { s = 12, col = INK.g4, w = tw, lines = 2 }) or false,
+        }),
+    }),
+}
+if with_last then
+    local latest = data.latest
+    table.insert(items, flex(0))
+    table.insert(items, BoardUI.rect(iw, math.max(1, px(0.75)), INK.gc))
+    table.insert(items, space(nil, px(10)))
+    table.insert(items, hstack({ w = iw, h = px(36), gap = px(10) }, {
+        medal(px(36), latest, true, badgeRarity(k, latest.rarity)),
+        vstack({ w = iw - px(46) }, {
+            text(latest.name, { s = 13, b = true, w = iw - px(46), data = true }),
+            text(latest.when or "", { s = 12, col = INK.g4, w = iw - px(46) }),
+        }),
+    }))
+end
+return padded(w, hh, items)
+end
+
+-- A wide tile: the medal at the left. v = { name size, description lines,
+-- time to go, the label }.
+local function badgeWide(k, v)
+    local w, hh, iw, ih, b, earned, label = k.w, k.hh, k.iw, k.ih, k.b, k.earned, k.label
+local dia = math.min(ih, round(iw * 0.36))
+local tw = iw - dia - px(14)
+if tw < px(110) then return skip("no room for words") end
+-- The badge's name steps down to 12 before it is cut.
+local name_s = BoardUI.fitSize(b.name, { s = v[1], b = true }, tw, 12)
+return padded(w, hh, {
+    hstack({ w = iw, h = ih, gap = px(14) }, {
+        medal(dia, b, earned, badgeRarity(k, b.rarity)),
+        vstack({ w = tw }, {
+            v[4] and text(label, { s = 12, col = INK.g4, w = tw }) or false,
+            text(b.name, { s = name_s, b = true, w = tw, data = true }),
+            v[2] > 0 and text(b.desc, { s = 12, col = INK.g4, w = tw, lines = v[2], data = true }) or false,
+            space(nil, px(4)),
+            badgeProgress(k, 12),
+            v[3] and not earned and b.eta and text(b.eta, { s = 12, col = INK.g4, w = tw }) or false,
+        }),
+    }),
+})
+end
+
+-- Any other tile: the medal, with or without the name under it.
+local function badgeSquare(k, with_name)
+    local w, hh, iw, ih, b, earned = k.w, k.hh, k.iw, k.ih, k.b, k.earned
+local cap_h = with_name and (lh1(12) + lh1(12) + px(6)) or 0
+local dia = math.min(iw, ih - cap_h)
+if dia < px(44) and with_name then return skip("medal too small") end
+dia = math.max(1, dia)
+local name_s = BoardUI.fitSize(b.name, { s = 12, b = true }, iw, 10)
+return padded(w, hh, {
+    flex(0),
+    medal(dia, b, earned, badgeRarity(k, b.rarity)),
+    with_name and space(nil, px(6)) or false,
+    with_name and text(b.name, { s = name_s, b = true, w = iw, align = "center", data = true }) or false,
+    with_name and hstack({ w = iw }, { flex(0), badgeProgress(k, 12), flex(0) }) or false,
+    flex(0),
+}, "center")
+end
+
 function Decor.badge(ctx, w, hh)
     local data = ctx.d.badges or { missing = true }
-    -- A badge's rarity colours, the same in every scheme.
-    local function rarity(r)
-        if not BoardColour.on(ctx) then return nil end
-        local f = BoardColour.rarity(r)
-        return { ink = BoardColour.hex(f.ink), deep = BoardColour.hex(f.deep), tint = BoardColour.hex(f.tint), ribbon = BoardColour.hex(BoardColour.rarity("ribbon").ink) }
-    end
     local pad = px(12)
     local iw, ih = w - 2 * pad, hh - 2 * pad
     local function award() return icon("award", px(17), BoardColour.icon(ctx, 2.25)) end
@@ -1092,51 +1194,11 @@ function Decor.badge(ctx, w, hh)
     local earned = not data.next or (data.fresh and not tall)
     local b = earned and data.latest or data.next
     local label = earned and _("New badge") or _("Next badge")
-    local function progressRuns(s)
-        if earned then return text(b.when or "", { s = s, col = INK.g4 }) end
-        return runs({ { t = formatCount(b.progress or 0), b = true, col = INK.black }, { t = " " .. T(_("of %1"), formatCount(b.threshold or 0)) } }, { s = s, col = INK.g4 })
-    end
+    local k = { ctx = ctx, data = data, w = w, hh = hh, iw = iw, ih = ih, b = b, earned = earned, label = label }
     local variants = {}
     if tall and not earned then
         for _i, v in ipairs({ { true, true }, { true, false }, { false, true } }) do
-            table.insert(variants, function()
-                local with_last = v[1] and data.latest ~= nil
-                local foot_h = with_last and (math.max(1, px(0.75)) + px(10) + px(36)) or 0
-                local room = ih - lh1(13) - px(12) - foot_h - (foot_h > 0 and px(10) or 0)
-                local dia = math.min(round(iw * 0.44), room)
-                if dia < px(90) then return skip("medal too small") end
-                local tw = iw - dia - px(14)
-                if tw < px(120) then return skip("no room for words") end
-                local items = {
-                    head(iw, label, text(T(_("%1 of %2"), data.earned, data.total), { s = 12, col = INK.g4 })),
-                    space(nil, px(12)),
-                    hstack({ w = iw, h = room, gap = px(14) }, {
-                        medal(dia, b, false, rarity(b.rarity)),
-                        vstack({ w = tw }, {
-                            v[2] and text((RARITY[b.rarity] or RARITY.common)(), { s = 12, col = INK.g4, w = tw }) or false,
-                            text(b.name, { s = 16, b = true, w = tw, lines = 2, data = true }),
-                            text(b.desc, { s = 13, col = INK.g4, w = tw, lines = 2, data = true }),
-                            space(nil, px(8)),
-                            progressRuns(13),
-                            b.eta and text(b.eta, { s = 12, col = INK.g4, w = tw, lines = 2 }) or false,
-                        }),
-                    }),
-                }
-                if with_last then
-                    local latest = data.latest
-                    table.insert(items, flex(0))
-                    table.insert(items, BoardUI.rect(iw, math.max(1, px(0.75)), INK.gc))
-                    table.insert(items, space(nil, px(10)))
-                    table.insert(items, hstack({ w = iw, h = px(36), gap = px(10) }, {
-                        medal(px(36), latest, true, rarity(latest.rarity)),
-                        vstack({ w = iw - px(46) }, {
-                            text(latest.name, { s = 13, b = true, w = iw - px(46), data = true }),
-                            text(latest.when or "", { s = 12, col = INK.g4, w = iw - px(46) }),
-                        }),
-                    }))
-                end
-                return padded(w, hh, items)
-            end)
+            table.insert(variants, function() return badgeTall(k, v) end)
         end
     end
     if iw > ih * 1.4 then
@@ -1145,44 +1207,11 @@ function Decor.badge(ctx, w, hh)
         -- before the medal loses its words.
         for _i, v in ipairs({ { 16, 2, true, true }, { 15, 1, true, true }, { 15, 1, false, true }, { 14, 1, false, true },
                 { 14, 1, false, false }, { 14, 0, true, false }, { 14, 0, false, false } }) do
-            table.insert(variants, function()
-                local dia = math.min(ih, round(iw * 0.36))
-                local tw = iw - dia - px(14)
-                if tw < px(110) then return skip("no room for words") end
-                -- The badge's name steps down to 12 before it is cut.
-                local name_s = BoardUI.fitSize(b.name, { s = v[1], b = true }, tw, 12)
-                return padded(w, hh, {
-                    hstack({ w = iw, h = ih, gap = px(14) }, {
-                        medal(dia, b, earned, rarity(b.rarity)),
-                        vstack({ w = tw }, {
-                            v[4] and text(label, { s = 12, col = INK.g4, w = tw }) or false,
-                            text(b.name, { s = name_s, b = true, w = tw, data = true }),
-                            v[2] > 0 and text(b.desc, { s = 12, col = INK.g4, w = tw, lines = v[2], data = true }) or false,
-                            space(nil, px(4)),
-                            progressRuns(12),
-                            v[3] and not earned and b.eta and text(b.eta, { s = 12, col = INK.g4, w = tw }) or false,
-                        }),
-                    }),
-                })
-            end)
+            table.insert(variants, function() return badgeWide(k, v) end)
         end
     end
     for _i, with_name in ipairs({ true, false }) do
-        table.insert(variants, function()
-            local cap_h = with_name and (lh1(12) + lh1(12) + px(6)) or 0
-            local dia = math.min(iw, ih - cap_h)
-            if dia < px(44) and with_name then return skip("medal too small") end
-            dia = math.max(1, dia)
-            local name_s = BoardUI.fitSize(b.name, { s = 12, b = true }, iw, 10)
-            return padded(w, hh, {
-                flex(0),
-                medal(dia, b, earned, rarity(b.rarity)),
-                with_name and space(nil, px(6)) or false,
-                with_name and text(b.name, { s = name_s, b = true, w = iw, align = "center", data = true }) or false,
-                with_name and hstack({ w = iw }, { flex(0), progressRuns(12), flex(0) }) or false,
-                flex(0),
-            }, "center")
-        end)
+        table.insert(variants, function() return badgeSquare(k, with_name) end)
     end
     return pick(variants)
 end
@@ -1264,7 +1293,8 @@ end
 
 local function pill(label, icon_name, action)
     local h = px(30)
-    local inner = hstack({ h = h, gap = px(6) }, { space(px(10) - px(6), 1), icon(icon_name, px(15), { sw = 2.5, col = "white" }), text(label, { s = 13, b = true, col = INK.white }), space(px(12) - px(6), 1) })
+    local inner = hstack({ h = h, gap = px(6) },
+        { space(px(10) - px(6), 1), icon(icon_name, px(15), { sw = 2.5, col = "white" }), text(label, { s = 13, b = true, col = INK.white }), space(px(12) - px(6), 1) })
     return BoardUI.hit(BoardUI.box({ w = inner:getSize().w, h = h, radius = math.floor(h / 2), bg = INK.black }, inner), action)
 end
 
@@ -1276,6 +1306,13 @@ function Decor.dust(ctx, w, hh)
     if not book then
         return emptyTile(w, hh, _("Gathering dust"), nil, _("Books you download and never open collect dust here."), _("Unopened books collect dust here."))
     end
+    -- Aleph modification, 2026-11-20: the cover is asked for here. Home made
+    -- covers only for the first few books of each list, and this one is the
+    -- day's pick from anywhere in the unopened books, so it showed the
+    -- made-up title card unless its cover had been made for another screen.
+    -- When the cover arrives, Home is drawn again with it.
+    local host = ctx.menu
+    if host and host.prepareCover then pcall(host.prepareCover, host, book) end
     local since
     if (dd.months or 0) >= 1 then
         since = T(_.ngettext("Never opened in %1 month", "Never opened in %1 months", dd.months), dd.months)
@@ -1291,7 +1328,7 @@ function Decor.dust(ctx, w, hh)
     local function buttons()
         return hstack({ gap = px(8) }, {
             pill(_("Open"), "book-open", { kind = "book", book = book, resume = true }),
-            
+
             roundButton("arrow-right", { kind = "dust-next" }),
         })
     end

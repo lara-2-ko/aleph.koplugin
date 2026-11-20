@@ -226,10 +226,6 @@ local function pluginNamed(ui, name)
     return Plugins.find(name, ui)
 end
 
-function Integrations.hasInsights(ui)
-    return pluginNamed(ui, "readinginsights") ~= nil
-end
-
 -- KOReader's Reading statistics: its calendar, or Reading progress.
 local function openStatistics(ui, which)
     local stats = pluginNamed(ui, "statistics")

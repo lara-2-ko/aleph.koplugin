@@ -100,51 +100,10 @@ local function clean(str)
     return (tostring(str or ""):gsub("[%c]+", " "))
 end
 
-local function dump(value, out, depth)
-    local t = type(value)
-    if t == "table" then
-        out[#out + 1] = "{"
-        local n = #value
-        for i = 1, n do
-            dump(value[i], out, depth + 1)
-            out[#out + 1] = ","
-        end
-        for k, v in pairs(value) do
-            if type(k) == "string" then
-                out[#out + 1] = "[" .. string.format("%q", k) .. "]="
-                dump(v, out, depth + 1)
-                out[#out + 1] = ","
-            end
-        end
-        out[#out + 1] = depth <= 2 and "}\n" or "}"
-    elseif t == "string" then
-        out[#out + 1] = string.format("%q", value)
-    elseif t == "number" or t == "boolean" then
-        out[#out + 1] = tostring(value)
-    else
-        out[#out + 1] = "nil"
-    end
-end
-
--- Written beside its place and moved there whole, so a file half written
--- (the device going to sleep, the process stopped) is never read.
-local function writeFile(path, value)
-    local out = { "return " }
-    dump(value, out, 1)
-    local f = io.open(path .. ".part", "w")
-    if not f then return false end
-    f:write(table.concat(out))
-    f:close()
-    return os.rename(path .. ".part", path) and true or false
-end
+-- X-Ray's files are Lua tables, read and written by aleph_file.lua.
+local File = require("aleph_file")
+local writeFile, readFile = File.write, File.read
 XR.writeFile = writeFile
-
-local function readFile(path)
-    local fn = loadfile(path)
-    if not fn then return nil end
-    local ok, value = pcall(fn)
-    return ok and type(value) == "table" and value or nil
-end
 
 -- ------------------------------------------------------- reading the book
 -- Everything below, down to "the scan", runs in the background process (or
@@ -280,13 +239,6 @@ function XR.scanning(ui)
     return job ~= nil and (ui == nil or job.file == (ui.document and ui.document.file))
 end
 
-local function subprocess()
-    local ok, u = pcall(require, "ffi/util")
-    if ok and type(u) == "table" and type(u.runInSubProcess) == "function" and type(u.isSubProcessDone) == "function" then
-        return u
-    end
-end
-
 local function finish(ok)
     local j = job
     job = nil
@@ -300,25 +252,10 @@ local function finish(ok)
     for _i, fn in ipairs(j.done) do try(fn, ok) end
 end
 
-local function poll()
+-- The scan has ended (stopped: it was taking too long).
+local function scanned(stopped)
     local j = job
     if not j then return end
-    local UIManager = require("ui/uimanager")
-    local u = subprocess()
-    local ok, done = pcall(u.isSubProcessDone, j.pid)
-    if not ok then done = true end
-    local stopped = false
-    if not done and os.time() - j.started > XR.SCAN_WAIT then
-        pcall(function()
-            if u.terminateSubProcess then u.terminateSubProcess(j.pid) end
-            u.isSubProcessDone(j.pid, true)
-        end)
-        done, stopped = true, true
-    end
-    if not done then
-        UIManager:scheduleIn(1, poll)
-        return
-    end
     local data = readFile(j.dir .. "/aleph_xray.lua")
     finish(not stopped and data ~= nil and (data.scanned or 0) >= j.started)
 end
@@ -342,16 +279,12 @@ function XR.scan(ui, on_done, keep_names)
         keep = data and data.names or nil
     end
     job = { file = doc.file, dir = dir, ui = ui, started = os.time(), done = { on_done } }
-    local u = subprocess()
-    if u then
-        local ok, pid = pcall(u.runInSubProcess, function()
-            pcall(XR.work, doc, dir, keep)
-        end)
-        if ok and pid then
-            job.pid = pid
-            require("ui/uimanager"):scheduleIn(1, poll)
-            return true
-        end
+    local Job = require("aleph_job")
+    local pid = Job.start(function() pcall(XR.work, doc, dir, keep) end)
+    if pid then
+        job.pid = pid
+        Job.watch(pid, { timeout = XR.SCAN_WAIT, on_done = scanned })
+        return true
     end
     -- No background process on this device: read here. The screen waits.
     local ok, written = pcall(XR.work, doc, dir, keep)
@@ -643,15 +576,9 @@ end
 
 -- ------------------------------------------------------------- the reader
 function XR.install()
-    local View = require("apps/reader/modules/readerview")
-    if not View._aleph_xr then
-        View._aleph_xr = true
-        local paint = View.paintTo
-        View.paintTo = function(self, bb, x, y)
-            paint(self, bb, x, y)
-            local ok, err = pcall(XR.paint, self, bb)
-            if not ok then require("aleph_try").report("aleph_xr.lua paint", err) end
-        end
+    local Paint = require("aleph_reader_paint")
+    if not Paint.has("x-ray") then
+        Paint.add("x-ray", 40, function(view, bb) XR.paint(view, bb) end)
         -- The page browser's thumbnails are made by another process: no
         -- underlines are worked out there.
         try(function()

@@ -369,8 +369,7 @@ ListView.RAIL_W = function() return px(30) + px(12) end
 -- A cover in a hairline frame. Covers within 30% of 2:3 are cropped to fill;
 -- other shapes sit centred on a gray plate. Dimmed when offline and not on
 -- this device, since it cannot open until the server is back.
-local function cover(book, w, h, o)
-    o = o or {}
+local function cover(book, w, h)
     local path = env and env.thumb and env.thumb(book) or nil
     local dim = env and env.offline and not (env.on_device and env.on_device(book))
     if path then
@@ -511,8 +510,7 @@ local function pictureCol(hh, widget)
     return hstack({ w = VW(), h = hh - 1 }, { flex(0), widget, flex(0) })
 end
 
-local function textCol(tw, title, second, o)
-    o = o or {}
+local function textCol(tw, title, second)
     local items = { text(title, { s = 15, b = true, w = tw, data = true }) }
     if second then
         if type(second) == "table" then table.insert(items, runs(second, { s = 13, col = INK.g4, w = tw, data = true }))
@@ -727,7 +725,8 @@ function ListView.bookCell(g, b, o)
     local minutes = env and env.minutes_left and env.minutes_left(b)
     local meta = o.meta and o.meta(b) or ListData.bookMeta(b, { minutes_left = minutes, now = env and env.now, author = o.author })
     local on_device = env and env.on_device and env.on_device(b)
-    local inner = vstack({ w = g.cover_w }, { cv, space(nil, px(8)), caption(g.cover_w, o.title and o.title(b) or b.title or "", meta, { device = on_device, implied = minutes ~= nil and not o.meta }) })
+    local inner = vstack({ w = g.cover_w },
+        { cv, space(nil, px(8)), caption(g.cover_w, o.title and o.title(b) or b.title or "", meta, { device = on_device, implied = minutes ~= nil and not o.meta }) })
     return hstack({ w = g.cw }, { flex(0), inner, flex(0) })
 end
 
@@ -886,6 +885,56 @@ local function groupCard(w, rows)
 end
 ListView.groupCard = groupCard
 
+-- The sheet's frame around its body, and where it stands: a panel on a wide
+-- screen; on a narrow one the full width, hanging from the top edge or
+-- standing on the bottom.
+local function sheetLayers(body, header_bottom, mx, o, pad, pad_x, pw, screen_h, screen_w, wide)
+    local line = math.max(1, px(1.5))
+    local r = px(16)
+    local layers, x, y, ph
+    if wide then
+        ph = hOf(body) + 2 * pad
+        local content = vstack({ w = pw - 2 * line, pad = { pad - line, pad - line, pad - line, pad - line } }, { body })
+        local panel = BoardUI.box({ w = pw, h = ph, radius = r, border = line, border_col = INK.black, bg = INK.white }, content)
+        x = o.kind == "top" and (screen_w - mx - pw) or math.floor((screen_w - pw) / 2)
+        y = o.kind == "top" and (o.top or px(112)) or (screen_h - px(56) - ph)
+        -- On a short screen a tall sheet rises toward the header rather than
+        -- run off the bottom, and over it when it must.
+        if y + ph > screen_h - px(8) then
+            local lowest = screen_h - px(8) - ph
+            y = lowest >= header_bottom and lowest or math.max(px(8), lowest)
+        end
+        layers = { { widget = panel, x = x, y = y } }
+    else
+        local pad_t = o.kind == "top" and px(10) or pad
+        local pad_b = o.kind == "top" and pad or px(14)
+        ph = pad_t + hOf(body) + pad_b
+        local content = vstack({ w = pw, pad = { pad_t, pad_x, pad_b, pad_x } }, { body })
+        x = 0
+        if o.kind == "top" then
+            y = 0
+            -- Square at the top edge, rounded at the bottom with a black rule along it.
+            layers = {
+                { widget = BoardUI.rect(pw, ph + line, INK.black, r), x = 0, y = 0 },
+                { widget = BoardUI.rect(pw, r, INK.black), x = 0, y = 0 },
+                { widget = BoardUI.rect(pw, ph, INK.white, r), x = 0, y = 0 },
+                { widget = BoardUI.rect(pw, r, INK.white), x = 0, y = 0 },
+                { widget = content, x = 0, y = 0 },
+            }
+        else
+            y = screen_h - ph
+            layers = {
+                { widget = BoardUI.rect(pw, ph + line, INK.black, r), x = 0, y = y - line },
+                { widget = BoardUI.rect(pw, r, INK.black), x = 0, y = screen_h - r },
+                { widget = BoardUI.rect(pw, ph, INK.white, r), x = 0, y = y },
+                { widget = BoardUI.rect(pw, r, INK.white), x = 0, y = screen_h - r },
+                { widget = content, x = 0, y = y },
+            }
+        end
+    end
+    return layers, ph, x, y
+end
+
 -- The sheet's frame: a top sheet (from the toolbar) or a bottom sheet (from
 -- the pager); a popover on wide screens.
 -- o: kind ("top"/"bottom"), pop_w (dp), top (px, popover), build(inner_w).
@@ -963,55 +1012,13 @@ function ListView.sheet(screen_w, screen_h, o)
         takeBack()
         local split = columns(col_w < px(300))
         if split then
-            pw, inner = pw2, pw2 - 2 * pad
+            pw = pw2
             body = split
         else
             body = stack(o.build(inner, max_body), inner)
         end
     end
-    local line = math.max(1, px(1.5))
-    local r = px(16)
-    local layers, x, y, ph
-    if wide then
-        ph = hOf(body) + 2 * pad
-        local content = vstack({ w = pw - 2 * line, pad = { pad - line, pad - line, pad - line, pad - line } }, { body })
-        local panel = BoardUI.box({ w = pw, h = ph, radius = r, border = line, border_col = INK.black, bg = INK.white }, content)
-        x = o.kind == "top" and (screen_w - mx - pw) or math.floor((screen_w - pw) / 2)
-        y = o.kind == "top" and (o.top or px(112)) or (screen_h - px(56) - ph)
-        -- On a short screen a tall sheet rises toward the header rather than
-        -- run off the bottom, and over it when it must.
-        if y + ph > screen_h - px(8) then
-            local lowest = screen_h - px(8) - ph
-            y = lowest >= header_bottom and lowest or math.max(px(8), lowest)
-        end
-        layers = { { widget = panel, x = x, y = y } }
-    else
-        local pad_t = o.kind == "top" and px(10) or pad
-        local pad_b = o.kind == "top" and pad or px(14)
-        ph = pad_t + hOf(body) + pad_b
-        local content = vstack({ w = pw, pad = { pad_t, pad_x, pad_b, pad_x } }, { body })
-        x = 0
-        if o.kind == "top" then
-            y = 0
-            -- Square at the top edge, rounded at the bottom with a black rule along it.
-            layers = {
-                { widget = BoardUI.rect(pw, ph + line, INK.black, r), x = 0, y = 0 },
-                { widget = BoardUI.rect(pw, r, INK.black), x = 0, y = 0 },
-                { widget = BoardUI.rect(pw, ph, INK.white, r), x = 0, y = 0 },
-                { widget = BoardUI.rect(pw, r, INK.white), x = 0, y = 0 },
-                { widget = content, x = 0, y = 0 },
-            }
-        else
-            y = screen_h - ph
-            layers = {
-                { widget = BoardUI.rect(pw, ph + line, INK.black, r), x = 0, y = y - line },
-                { widget = BoardUI.rect(pw, r, INK.black), x = 0, y = screen_h - r },
-                { widget = BoardUI.rect(pw, ph, INK.white, r), x = 0, y = y },
-                { widget = BoardUI.rect(pw, r, INK.white), x = 0, y = screen_h - r },
-                { widget = content, x = 0, y = y },
-            }
-        end
-    end
+    local layers, ph, x, y = sheetLayers(body, header_bottom, mx, o, pad, pad_x, pw, screen_h, screen_w, wide)
     return layers, { x = x, y = y, w = pw, h = ph }
 end
 
@@ -1037,7 +1044,8 @@ function ListView.jumpKeys(w, present, current)
             local body = hstack({ w = kw, h = kh }, { flex(0), label, flex(0) })
             local key
             if here then key = BoardUI.box({ w = kw, h = kh, radius = px(10), bg = INK.black }, body)
-            elseif has then key = BoardUI.box({ w = kw, h = kh, radius = px(10), border = line1(), border_col = INK.g8, bg = INK.white }, hstack({ w = kw - 2 * line1(), h = kh - 2 * line1() }, { flex(0), label, flex(0) }))
+            elseif has then key = BoardUI.box({ w = kw, h = kh, radius = px(10), border = line1(), border_col = INK.g8, bg = INK.white },
+                hstack({ w = kw - 2 * line1(), h = kh - 2 * line1() }, { flex(0), label, flex(0) }))
             else key = BoardUI.box({ w = kw, h = kh, radius = px(10), bg = INK.ge }, body) end
             table.insert(cells, has and region(key, { kind = "jump-letter", letter = k, close = true }, "jump-row-" .. math.ceil(i / cols), "key-" .. k) or key)
         end
@@ -1053,7 +1061,8 @@ function ListView.pageStepper(w, page, pages)
         local c = BoardUI.circle(s, { border = math.max(1, px(1.5)), border_col = on and INK.black or INK.gb, bg = INK.white }, icon(name, px(16), { sw = 2.75, col = on and "black" or "gb" }))
         return on and region(c, { kind = "page", delta = delta }, "jump-stepper", "step-" .. (delta < 0 and "minus" or "plus")) or c
     end
-    local mid = vstack({ w = px(52), align = "center" }, { text(tostring(page), { s = 18, b = true, w = px(52), align = "center" }), text(T(_("of %1"), pages), { s = 12, col = INK.g4, w = px(52), align = "center" }) })
+    local mid = vstack({ w = px(52), align = "center" },
+        { text(tostring(page), { s = 18, b = true, w = px(52), align = "center" }), text(T(_("of %1"), pages), { s = 12, col = INK.g4, w = px(52), align = "center" }) })
     local stepper = hstack({ gap = px(10) }, { btn("minus", -1, page > 1), mid, btn("plus", 1, page < pages) })
     local first = region(ListView.pill(_("First"), { kind = "outline", icon = "chevrons-left", h = 40, s = 14, pad_x = 14 }), { kind = "page-to", page = 1, close = true }, "jump-stepper", "first")
     local last = region(ListView.pill(_("Last"), { kind = "outline", icon = "chevrons-right", h = 40, s = 14, pad_x = 14 }), { kind = "page-to", page = pages, close = true }, "jump-stepper", "last")
@@ -1177,17 +1186,24 @@ function ListView.sortSheet(sheet)
             local items = {
                 ListView.sheetHead(inner, sheet.title, region(ListView.pill(_("Done"), { h = 36, s = 14, pad_x = 16 }), { kind = "sheet-done" }, "sheet-head", "done")),
                 ListView.sheetLabel(inner, _("Sort by")),
-                ListView.segmented(inner, sheet.sorts.labels, sheet.sorts.selected, function(i) return { kind = "sheet-sort", index = i } end, { h = 40, s = 13, row = "sheet-sort", key = "sort" }),
+                ListView.segmented(inner, sheet.sorts.labels, sheet.sorts.selected, function(i) return { kind = "sheet-sort", index = i } end, { h = 40, s = #sheet.sorts.labels > 5 and 12 or 13, row = "sheet-sort", key = "sort" }),
             }
             if sheet.names then
                 -- Author: by first or by last name.
-                table.insert(items, ListView.segmented(inner, sheet.names.labels, sheet.names.selected, function(i) return { kind = "sheet-names", index = i } end, { h = 36, s = 13, row = "sheet-names", key = "names" }))
+                table.insert(items,
+                    ListView.segmented(inner, sheet.names.labels, sheet.names.selected,
+                        function(i) return { kind = "sheet-names", index = i } end,
+                        { h = 36, s = 13, row = "sheet-names", key = "names" }))
             end
             if sheet.order then
-                table.insert(items, ListView.segmented(inner, sheet.order.labels, sheet.order.selected, function(i) return { kind = "sheet-order", index = i } end, { h = 36, s = 13, row = "sheet-order", key = "order" }))
+                table.insert(items,
+                    ListView.segmented(inner, sheet.order.labels, sheet.order.selected,
+                        function(i) return { kind = "sheet-order", index = i } end,
+                        { h = 36, s = 13, row = "sheet-order", key = "order" }))
             end
             table.insert(items, ListView.sheetLabel(inner, _("Show")))
-            table.insert(items, ListView.segmented(inner, sheet.shows.labels, sheet.shows.selected, function(i) return { kind = "sheet-show", index = i } end, { h = 40, s = 12, row = "sheet-show", key = "show" }))
+            table.insert(items,
+                ListView.segmented(inner, sheet.shows.labels, sheet.shows.selected, function(i) return { kind = "sheet-show", index = i } end, { h = 40, s = 12, row = "sheet-show", key = "show" }))
             if sheet.rows and #sheet.rows > 0 then
                 local rw = inner - 2 * px(16)
                 local rows = {}
@@ -1195,7 +1211,9 @@ function ListView.sortSheet(sheet)
                 -- (Lower again with the First name / Last name row above.)
                 local rh = #sheet.rows > 4 and (sheet.names and 40 or 44) or 50
                 for i, r in ipairs(sheet.rows) do
-                    table.insert(rows, ListView.groupRow(rw, { icon = r.icon, label = r.label, value = r.value, toggle = r.toggle, chevron = r.chevron, action = r.action, row = "sheet-row-" .. i, key = r.key, h = rh, s = 15 }))
+                    table.insert(rows,
+                        ListView.groupRow(rw,
+                            { icon = r.icon, label = r.label, value = r.value, toggle = r.toggle, chevron = r.chevron, action = r.action, row = "sheet-row-" .. i, key = r.key, h = rh, s = 15 }))
                 end
                 table.insert(items, ListView.groupCard(inner, rows))
             end
@@ -1210,14 +1228,15 @@ end
 function ListView.pickSheet(sheet)
     return function(screen_w, screen_h)
         return ListView.sheet(screen_w, screen_h, { kind = "top", pop_w = 460, top = px(112), build = function(inner, max_body)
-            local back = region(hstack({ h = px(32), gap = px(2) }, { icon("chevron-left", px(22), { sw = 2.25 }), text(_("Back"), { s = 14, b = true }) }), { kind = "sheet-back" }, "sheet-head", "pick-back")
+            local back = region(hstack({ h = px(32), gap = px(2) }, { icon("chevron-left", px(22), { sw = 2.25 }), text(_("Back"), { s = 14, b = true }) }),
+                { kind = "sheet-back" }, "sheet-head", "pick-back")
             local head = hstack({ w = inner, h = px(32) }, { back, flex(px(8)), text(sheet.title, { s = 18, b = true }), flex(px(8)), space(wOf(back), 1) })
             -- A list too long for one column takes two; one too long for both is
             -- paged, with the pager under the card.
             local n = #sheet.options
             local rowh = px(46)
             local room = max_body or screen_h
-            local fixed = px(32) + px(14) + px(8)
+            local fixed = px(32) + px(14) + px(8) + (sheet.note and (BoardMetrics.lh1(13) + px(14)) or 0)
             local fits_one = math.floor((room - fixed) / rowh)
             local paged = n > 2 * fits_one
             local per_col = n <= fits_one and n or math.max(3, math.floor((room - fixed - (paged and (px(14) + px(44)) or 0)) / rowh))
@@ -1236,7 +1255,9 @@ function ListView.pickSheet(sheet)
                 local rows = {}
                 for i = from, to do
                     local o = sheet.options[i]
-                    table.insert(rows, ListView.groupRow(rw, { label = o.label, radio = o.on, action = { kind = "sheet-pick", value = o.value }, row = "pick-" .. i, key = "pick-" .. i, h = 46, s = 15, bold = o.on }))
+                    table.insert(rows,
+                        ListView.groupRow(rw,
+                            { label = o.label, radio = o.on, action = { kind = "sheet-pick", value = o.value }, row = "pick-" .. i, key = "pick-" .. i, h = 46, s = 15, bold = o.on }))
                 end
                 return ListView.groupCard(card_w, rows)
             end
@@ -1254,6 +1275,9 @@ function ListView.pickSheet(sheet)
                 local mid = text(page .. " / " .. pages, { s = 14, b = true })
                 table.insert(items, hstack({ w = inner, h = px(44) }, { step("chevron-left", -1), flex(0), mid, flex(0), step("chevron-right", 1) }))
             end
+            -- Aleph modification, 2026-11-19: a line under the list (Hold a
+            -- collection to rename or delete it).
+            if sheet.note then table.insert(items, text(sheet.note, { s = 13, col = INK.g4, w = inner })) end
             return items
         end })
     end
@@ -1334,105 +1358,8 @@ function ListView.seriesLayout(screen_w, screen_h, view, n, offline)
     return { pages = pages, first = cap1, rest = capn, list_w = list_w, list_h1 = h1, list_hn = hn, g1 = g1, gn = gn }
 end
 
--- The stack, how far through it you are as a ruler of its books, Up next and
--- Continue; then its books in reading order, as rows or covers. Landscape
--- puts the summary beside the books.
-function ListView.seriesBody(m, f)
-    local all_books = m.entries
-    local layout = ListView.seriesLayout(m.screen_w, m.screen_h, m.view, #all_books, m.offline ~= nil)
-    local page = math.max(1, math.min(layout.pages, m.local_page or 1))
-    local books = {}
-    local start = page == 1 and 1 or (layout.first + (page - 2) * layout.rest + 1)
-    local stop = page == 1 and layout.first or (start + layout.rest - 1)
-    for i = start, math.min(#all_books, stop) do table.insert(books, all_books[i]) end
-    local next_book = m.next_book
-    local side = BoardMetrics.get().w > BoardMetrics.get().h
-    local side_w = side and math.floor(f.w * 0.38 + 0.5) or f.w
-    local list_w = side and (f.w - side_w - px(28)) or f.w
-    local hero_h = side and f.content_h or math.max(px(156), math.min(px(200), math.floor(f.content_h * 0.27 + 0.5)))
-    local deck_h = side and math.min(px(220), math.floor(f.content_h * 0.42 + 0.5)) or hero_h
-    local deck_w = math.floor(deck_h * 0.74 + 0.5)
-    local tw = side and side_w or (f.w - deck_w - px(20))
-    local states = m.states or {}
-    local n = math.max(1, #states)
-    local gap = px(4)
-    local seg_w = math.floor((tw - (n - 1) * gap) / n)
-    local cur = m.current_index
-    local segs, nums = {}, {}
-    for i, s in ipairs(states) do
-        local h = px(i == cur and 10 or 8)
-        local col = s == "finished" and INK.black or s == "reading" and INK.g8 or INK.gd
-        local seg = BoardUI.rect(seg_w, h, col, px(5))
-        if i == cur then
-            local r1, r2 = math.max(1, px(1.5)), math.max(2, px(3))
-            seg = BoardUI.overlay(seg_w + 2 * r2, h + 2 * r2, {
-                { widget = BoardUI.rect(seg_w + 2 * r2, h + 2 * r2, INK.black, px(5) + r2) },
-                { widget = BoardUI.rect(seg_w + 2 * r1, h + 2 * r1, INK.white, px(5) + r1), x = r2 - r1, y = r2 - r1 },
-                { widget = BoardUI.rect(seg_w, h, col, px(5)), x = r2, y = r2 },
-            })
-        end
-        table.insert(segs, seg)
-        if seg_w >= px(16) then
-            table.insert(nums, text(tostring(m.indexes and m.indexes[i] or i), { s = 11, b = i == cur, col = i == cur and INK.black or INK.g4, w = seg_w, align = "center" }))
-        end
-    end
-    local seg_row = {}
-    for i, s in ipairs(segs) do
-        local sw = wOf(s)
-        local pad = math.floor((sw - seg_w) / 2)
-        table.insert(seg_row, BoardUI.overlay(seg_w, px(10), { { widget = s, x = -pad, y = math.floor((px(10) - hOf(s)) / 2) } }))
-    end
-    local p = m.progress
-    -- level 1 gives the next title one line, level 2 also drops the ruler's
-    -- numbers: a short screen at a large interface size keeps the summary
-    -- inside its band instead of pushing it into the header. live = false
-    -- measures without making the button tappable.
-    local function summaryOf(level, live)
-        local with_nums = #nums > 0 and level < 2
-        local ruler = vstack({ w = tw }, {
-            hstack({ gap = gap, h = px(10) }, seg_row),
-            with_nums and space(nil, px(4)) or false,
-            with_nums and hstack({ gap = gap }, nums) or false,
-        })
-        local summary = {
-            runs({ { t = T(_("%1 of %2 read"), p.finished, p.count), b = true, col = INK.black, s = 19 }, { t = "   " .. T(_("%1 in progress"), p.reading) } }, { s = 13, col = INK.g4, w = tw }),
-            space(nil, px(8)), ruler, space(nil, level > 0 and px(12) or (px(8) + px(4) + px(8))),
-        }
-        if next_book then
-            table.insert(summary, text(next_book.seriesIndex and T(_("Up next · Book %1"), tostring(next_book.seriesIndex)) or _("Up next"), { s = 12, b = true, col = INK.g4, w = tw }))
-            table.insert(summary, space(nil, px(level > 0 and 4 or 8)))
-            table.insert(summary, text(next_book.title or "", { s = 16, b = true, lines = level == 0 and 2 or nil, w = tw, data = true }))
-            table.insert(summary, space(nil, px(8)))
-            local pill = ListView.pill(ListData.stateOf(next_book) == "reading" and _("Continue") or (next_book.seriesIndex and T(_("Start book %1"), tostring(next_book.seriesIndex)) or _("Start book")), { icon = "book-open", h = 40, s = 14, pad_x = 18 })
-            local cont = live and region(pill, m.open_action and m.open_action(next_book) or { kind = "book", book = next_book }, "series-hero", "continue") or pill
-            local right = nil
-            if ListData.stateOf(next_book) == "reading" then
-                local left = m.next_minutes and (" · " .. T(_("%1 left"), ListData.duration(m.next_minutes))) or (" · " .. (require("aleph_board_data").relativeDay(next_book.lastReadAt) or ""))
-                right = runs({ { t = ListData.pctLabel(next_book) or "0%", b = true, col = INK.black }, { t = left } }, { s = 13, col = INK.g4, data = true })
-            end
-            table.insert(summary, hstack({ gap = px(12) }, { cont, right or false }))
-        end
-        return vstack({ w = tw }, summary)
-    end
-    local level = 0
-    if not side then
-        while level < 2 do
-            -- Measured only; its ruler pieces are reused, so it is not freed.
-            if hOf(summaryOf(level, false)) <= hero_h then break end
-            level = level + 1
-        end
-    end
-    local summary_col = summaryOf(level, true)
-    local deck = region(hstack({ w = side and side_w or deck_w, h = deck_h, valign = "bottom" }, { side and space(1, 1) or flex(0), ListView.stackFit(m.deck or books, deck_w, deck_h), flex(0) }),
-        next_book and (m.open_action and m.open_action(next_book) or { kind = "book", book = next_book }) or { kind = "noop" }, "series-hero", "deck")
-    local hero
-    if side then
-        hero = vstack({ w = side_w, h = hero_h }, { space(nil, px(6)), deck, space(nil, px(18)), summary_col, flex(0) })
-    else
-        hero = hstack({ w = f.w, h = hero_h, gap = px(20) }, { deck, vstack({ w = tw, h = hero_h }, { flex(0), summary_col, flex(0) }) })
-    end
-    local head = ListView.sectionHead(list_w, { icon = "layers-2", label = m.order_label or _("Reading order"), count = #all_books, right = ListView.viewToggle(m.view, "series-head") })
-    local list_h = page == 1 and layout.list_h1 or layout.list_hn
+-- The books of this page: covers in a grid, or rows.
+local function seriesList(books, layout, list_h, list_w, m)
     local content
     if m.view == "grid" then
         local g = layout.single and layout.g1 or ListView.fitStd(m.screen_w, m.screen_h, list_w, nil, 1)
@@ -1460,6 +1387,123 @@ function ListView.seriesBody(m, f)
             row = function(w, hh, b) return ListView.bookRow(w, hh, b, { context = "series", select = m.select, selected = m.selected and m.selected(b) }) end, action = m.action,
         })
     end
+    return content
+end
+
+-- The ruler across the top: one piece per book (read, being read, not yet),
+-- the current one ringed, and the books' numbers under it when there is room.
+local function seriesRuler(cur, m, seg_w, states)
+    local segs, nums = {}, {}
+    for i, s in ipairs(states) do
+        local h = px(i == cur and 10 or 8)
+        local col = s == "finished" and INK.black or s == "reading" and INK.g8 or INK.gd
+        local seg = BoardUI.rect(seg_w, h, col, px(5))
+        if i == cur then
+            local r1, r2 = math.max(1, px(1.5)), math.max(2, px(3))
+            seg = BoardUI.overlay(seg_w + 2 * r2, h + 2 * r2, {
+                { widget = BoardUI.rect(seg_w + 2 * r2, h + 2 * r2, INK.black, px(5) + r2) },
+                { widget = BoardUI.rect(seg_w + 2 * r1, h + 2 * r1, INK.white, px(5) + r1), x = r2 - r1, y = r2 - r1 },
+                { widget = BoardUI.rect(seg_w, h, col, px(5)), x = r2, y = r2 },
+            })
+        end
+        table.insert(segs, seg)
+        if seg_w >= px(16) then
+            table.insert(nums, text(tostring(m.indexes and m.indexes[i] or i), { s = 11, b = i == cur, col = i == cur and INK.black or INK.g4, w = seg_w, align = "center" }))
+        end
+    end
+    local seg_row = {}
+    for i, s in ipairs(segs) do
+        local sw = wOf(s)
+        local pad = math.floor((sw - seg_w) / 2)
+        table.insert(seg_row, BoardUI.overlay(seg_w, px(10), { { widget = s, x = -pad, y = math.floor((px(10) - hOf(s)) / 2) } }))
+    end
+    return nums, seg_row
+end
+
+-- The summary beside the series' covers: how much is read, the ruler, and
+-- what comes next with its button.
+-- level 1 gives the next title one line, level 2 also drops the ruler's
+-- numbers: a short screen at a large interface size keeps the summary
+-- inside its band instead of pushing it into the header. live = false
+-- measures without making the button tappable.
+local function seriesSummary(s, level, live)
+    local m, next_book, p, nums, seg_row, tw, gap = s.m, s.next_book, s.p, s.nums, s.seg_row, s.tw, s.gap
+    local with_nums = #nums > 0 and level < 2
+    local ruler = vstack({ w = tw }, {
+        hstack({ gap = gap, h = px(10) }, seg_row),
+        with_nums and space(nil, px(4)) or false,
+        with_nums and hstack({ gap = gap }, nums) or false,
+    })
+    local summary = {
+        runs({ { t = T(_("%1 of %2 read"), p.finished, p.count), b = true, col = INK.black, s = 19 }, { t = "   " .. T(_("%1 in progress"), p.reading) } }, { s = 13, col = INK.g4, w = tw }),
+        space(nil, px(8)), ruler, space(nil, level > 0 and px(12) or (px(8) + px(4) + px(8))),
+    }
+    if next_book then
+        table.insert(summary, text(next_book.seriesIndex and T(_("Up next · Book %1"), tostring(next_book.seriesIndex)) or _("Up next"), { s = 12, b = true, col = INK.g4, w = tw }))
+        table.insert(summary, space(nil, px(level > 0 and 4 or 8)))
+        table.insert(summary, text(next_book.title or "", { s = 16, b = true, lines = level == 0 and 2 or nil, w = tw, data = true }))
+        table.insert(summary, space(nil, px(8)))
+        local pill = ListView.pill(ListData.stateOf(next_book) == "reading" and _("Continue") or (next_book.seriesIndex and T(_("Start book %1"), tostring(next_book.seriesIndex)) or _("Start book")),
+            { icon = "book-open", h = 40, s = 14, pad_x = 18 })
+        local cont = live and region(pill, m.open_action and m.open_action(next_book) or { kind = "book", book = next_book }, "series-hero", "continue") or pill
+        local right = nil
+        if ListData.stateOf(next_book) == "reading" then
+            local left = m.next_minutes and (" · " .. T(_("%1 left"), ListData.duration(m.next_minutes))) or (" · " .. (require("aleph_board_data").relativeDay(next_book.lastReadAt) or ""))
+            right = runs({ { t = ListData.pctLabel(next_book) or "0%", b = true, col = INK.black }, { t = left } }, { s = 13, col = INK.g4, data = true })
+        end
+        table.insert(summary, hstack({ gap = px(12) }, { cont, right or false }))
+    end
+    return vstack({ w = tw }, summary)
+end
+
+-- The stack, how far through it you are as a ruler of its books, Up next and
+-- Continue; then its books in reading order, as rows or covers. Landscape
+-- puts the summary beside the books.
+function ListView.seriesBody(m, f)
+    local all_books = m.entries
+    local layout = ListView.seriesLayout(m.screen_w, m.screen_h, m.view, #all_books, m.offline ~= nil)
+    local page = math.max(1, math.min(layout.pages, m.local_page or 1))
+    local books = {}
+    local start = page == 1 and 1 or (layout.first + (page - 2) * layout.rest + 1)
+    local stop = page == 1 and layout.first or (start + layout.rest - 1)
+    for i = start, math.min(#all_books, stop) do table.insert(books, all_books[i]) end
+    local next_book = m.next_book
+    local side = BoardMetrics.get().w > BoardMetrics.get().h
+    local side_w = side and math.floor(f.w * 0.38 + 0.5) or f.w
+    local list_w = side and (f.w - side_w - px(28)) or f.w
+    local hero_h = side and f.content_h or math.max(px(156), math.min(px(200), math.floor(f.content_h * 0.27 + 0.5)))
+    local deck_h = side and math.min(px(220), math.floor(f.content_h * 0.42 + 0.5)) or hero_h
+    local deck_w = math.floor(deck_h * 0.74 + 0.5)
+    local tw = side and side_w or (f.w - deck_w - px(20))
+    local states = m.states or {}
+    local n = math.max(1, #states)
+    local gap = px(4)
+    local seg_w = math.floor((tw - (n - 1) * gap) / n)
+    local cur = m.current_index
+    local nums, seg_row = seriesRuler(cur, m, seg_w, states)
+    local p = m.progress
+    local summary = { m = m, next_book = next_book, p = p, nums = nums, seg_row = seg_row, tw = tw, gap = gap }
+    local function summaryOf(level, live) return seriesSummary(summary, level, live) end
+    local level = 0
+    if not side then
+        while level < 2 do
+            -- Measured only; its ruler pieces are reused, so it is not freed.
+            if hOf(summaryOf(level, false)) <= hero_h then break end
+            level = level + 1
+        end
+    end
+    local summary_col = summaryOf(level, true)
+    local deck = region(hstack({ w = side and side_w or deck_w, h = deck_h, valign = "bottom" }, { side and space(1, 1) or flex(0), ListView.stackFit(m.deck or books, deck_w, deck_h), flex(0) }),
+        next_book and (m.open_action and m.open_action(next_book) or { kind = "book", book = next_book }) or { kind = "noop" }, "series-hero", "deck")
+    local hero
+    if side then
+        hero = vstack({ w = side_w, h = hero_h }, { space(nil, px(6)), deck, space(nil, px(18)), summary_col, flex(0) })
+    else
+        hero = hstack({ w = f.w, h = hero_h, gap = px(20) }, { deck, vstack({ w = tw, h = hero_h }, { flex(0), summary_col, flex(0) }) })
+    end
+    local head = ListView.sectionHead(list_w, { icon = "layers-2", label = m.order_label or _("Reading order"), count = #all_books, right = ListView.viewToggle(m.view, "series-head") })
+    local list_h = page == 1 and layout.list_h1 or layout.list_hn
+    local content = seriesList(books, layout, list_h, list_w, m)
     local list = vstack({ w = list_w }, { head, space(nil, px(8)), content })
     if side then return hstack({ w = f.w, valign = "top", gap = px(28) }, { hero, list }) end
     if page > 1 then return vstack({ w = f.w }, { list }) end
@@ -1566,7 +1610,8 @@ function ListView.seriesRow(w, hh, s)
     local tw = w - VW() - px(12) - (right and (sw + px(10)) or 0)
     local who = ListData.seriesWho(s)
     local second = (who and (who .. " · ") or "") .. ListData.seriesCounts(s)
-    return hstack({ w = w, h = hh - 1 }, { pictureCol(hh, stackFit(s.previewBooks or {}, VW(), hh - px(14))), space(px(12), 1), textCol(tw, s.title or "", second), right and space(px(10), 1) or false, right or false })
+    return hstack({ w = w, h = hh - 1 },
+        { pictureCol(hh, stackFit(s.previewBooks or {}, VW(), hh - px(14))), space(px(12), 1), textCol(tw, s.title or "", second), right and space(px(10), 1) or false, right or false })
 end
 
 function ListView.seriesCell(g, s)
@@ -1622,7 +1667,8 @@ function ListView.authorCell(g, a)
     for _i, v in ipairs(variants) do
         if runsWidth(v, { s = 11 }) <= side then meta = v; break end
     end
-    local inner = vstack({ w = side, align = "center" }, { hstack({ w = side, h = side, valign = "bottom" }, { flex(0), pic, flex(0) }), space(nil, px(8)), caption(side, a.title or "", meta, { center = true }) })
+    local inner = vstack({ w = side, align = "center" },
+        { hstack({ w = side, h = side, valign = "bottom" }, { flex(0), pic, flex(0) }), space(nil, px(8)), caption(side, a.title or "", meta, { center = true }) })
     return hstack({ w = g.cw }, { flex(0), inner, flex(0) })
 end
 

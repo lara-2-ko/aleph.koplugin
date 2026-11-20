@@ -141,20 +141,215 @@ function Chain.progress(folders, peers)
     return done, total > 0 and math.floor(sum / total) or 0
 end
 
--- ------------------------------------------------------------ the run
--- ui: the reader or the file browser; o.on_done(ok) after it finishes.
-function Chain.run(ui, o)
-    o = o or {}
+-- A run is kept in one table, `r`, handed from step to step:
+--   ui, on_done      as given to Chain.run
+--   in_book, use_st, use_cloud
+--   steps, state     what the panel shows ({ id, label }; state.at is the step being done)
+--   panel
+--   folders, names, peers   Syncthing's shared folders and devices, once looked up
+-- Each step shows itself (enter), does its part and hands over to the
+-- next; the ones that wait look again every Chain.TICK seconds and stop
+-- looking once the run has finished (finish), whichever way it ended.
+local function redraw(r)
+    if r.panel and not r.panel.closed then r.panel:refresh() end
+end
+
+local function enter(r, id, note)
+    for i, s in ipairs(r.steps) do
+        if s.id == id then r.state.at = i; break end
+    end
+    r.state.note = note
+    redraw(r)
+end
+
+local function stopSyncthing(r)
+    if not r.state.started_here then return end
+    r.state.started_here = false
+    try(function() api().control.stop(function() end) end)
+end
+
+local function finish(r, ok, msg)
+    local UIManager = require("ui/uimanager")
+    local state = r.state
+    if state.finished then return end
+    state.finished = true
+    Chain.running = false
+    if not ok then state.failed = msg end
+    state.at = ok and (#r.steps + 1) or state.at
+    state.note = ok and msg or nil
+    redraw(r)
+    -- Let Syncthing pass the last changes before stopping it.
+    UIManager:scheduleIn(ok and 8 or 1, function() stopSyncthing(r) end)
+    if ok then
+        UIManager:scheduleIn(3, function() if r.panel and not r.panel.closed then r.panel:close() end end)
+    end
+    if r.on_done then pcall(r.on_done, ok) end
+end
+
+-- Syncthing started (again) by this run, so that it is stopped at the end.
+local function startSyncthing(r)
+    try(function() api().control.start(function() end) end)
+    r.state.started_here = true
+end
+
+-- Looks every Chain.TICK seconds, from `first` seconds on, until look()
+-- hands over to another step (it returns true then) or the run has finished.
+local function every(r, look, first)
+    local UIManager = require("ui/uimanager")
+    local tick
+    tick = function()
+        if r.state.finished then return end
+        if look() then return end
+        UIManager:scheduleIn(Chain.TICK, tick)
+    end
+    UIManager:scheduleIn(first or Chain.TICK, tick)
+end
+
+local function stepCheck(r)
     local _ = require("aleph_gettext")
     local T = require("ffi/util").template
-    local UIManager = require("ui/uimanager")
-    local logger = require("logger")
-    if Chain.running then
-        try(function() require("aleph_toast").show(_("Already syncing…")) end)
-        return
+    enter(r, "check")
+    local s = syncery(r.ui)
+    if r.in_book and s then
+        try(function()
+            if type(s.checkRemote) == "function" then s:checkRemote() else s:syncNow() end
+        end)
     end
-    local in_book = ui and ui.document ~= nil
-    local use_st, use_cloud = Chain.modes(ui)
+    local who = {}
+    for _id, n in pairs(r.peers or {}) do who[#who + 1] = n end
+    table.sort(who)
+    if r.use_cloud then who[#who + 1] = _("the cloud") end
+    finish(r, true, T(_("Synced with %1."), table.concat(who, ", ")))
+end
+
+-- Syncery's cloud sync runs on its own (with its own progress): waited
+-- for until it is no longer under way.
+local function stepCloud(r)
+    local _ = require("aleph_gettext")
+    enter(r, "cloud")
+    local s = syncery(r.ui)
+    local t0 = os.time()
+    every(r, function()
+        local busy = s and s._sync_all_in_progress
+        if not busy and os.time() - t0 >= 3 then stepCheck(r); return true end
+        if os.time() - t0 > Chain.EXCHANGE_WAIT then
+            finish(r, false, _("The cloud sync did not finish in time. Check the connection, and the cloud settings in Syncery."))
+            return true
+        end
+    end)
+end
+
+local function afterSyncthing(r)
+    if r.use_cloud then return stepCloud(r) end
+    return stepCheck(r)
+end
+
+local function stepSwap(r)
+    local _ = require("aleph_gettext")
+    enter(r, "swap")
+    -- Look at the folders now, so what Syncery just wrote is offered.
+    for _i, f in ipairs(r.folders) do call("db/scan?folder=" .. f.id, "POST") end
+    local t0 = os.time()
+    local quiet = 0
+    every(r, function()
+        local now_peers = Chain.connected(r.folders, r.names)
+        if now_peers then r.peers = now_peers end
+        local done, pct = Chain.progress(r.folders, r.peers)
+        -- Syncthing may have been stopped by another plugin: once more.
+        if not isRunning() and not r.state.restarted then
+            r.state.restarted = true
+            startSyncthing(r)
+        end
+        r.state.note = pct .. "%"
+        redraw(r)
+        -- Done twice in a row (a scan can start between two looks), and
+        -- not in the first seconds (the two still compare their lists).
+        if done and os.time() - t0 >= 6 then quiet = quiet + 1 else quiet = 0 end
+        if quiet >= 2 then afterSyncthing(r); return true end
+        if os.time() - t0 > Chain.EXCHANGE_WAIT then
+            finish(r, false, _("The exchange did not finish in time. Try again with both e-readers on the same Wi-Fi."))
+            return true
+        end
+    end)
+end
+
+-- The names of every device the folders are shared with, in order.
+local function peerNames(folders, names)
+    local all = {}
+    for _i, f in ipairs(folders) do
+        for id in pairs(f.devices) do all[names[id] or id:sub(1, 7)] = true end
+    end
+    local list = {}
+    for n in pairs(all) do list[#list + 1] = n end
+    table.sort(list)
+    return list
+end
+
+local function stepPeer(r)
+    local _ = require("aleph_gettext")
+    local T = require("ffi/util").template
+    local my
+    my, r.folders, r.names = Chain.topology()
+    if not my or #r.folders == 0 then
+        if r.use_cloud then return stepCloud(r) end
+        return finish(r, false, _("Syncthing has no shared folders yet. Set them up in KOSyncthing+ first."))
+    end
+    local list = peerNames(r.folders, r.names)
+    enter(r, "peer", T(_("Tap Sync on %1 too."), #list > 0 and table.concat(list, _(" or ")) or _("the other e-reader")))
+    local t0 = os.time()
+    every(r, function()
+        -- KOSyncthing+ may stop a Syncthing its own Quick Sync started:
+        -- started again, once.
+        if not isRunning() then
+            if r.state.restarted then finish(r, false, _("Syncthing stopped.")); return true end
+            r.state.restarted = true
+            startSyncthing(r)
+        end
+        r.peers = Chain.connected(r.folders, r.names)
+        if r.peers then stepSwap(r); return true end
+        -- With the cloud as well, no device nearby is fine.
+        if r.use_cloud and os.time() - t0 > Chain.CLOUD_PEER_WAIT then stepCloud(r); return true end
+        if os.time() - t0 > Chain.CONNECT_WAIT then
+            finish(r, false, _("The other e-reader did not show up. Start Sync on it while this one is waiting, with both on the same Wi-Fi."))
+            return true
+        end
+    end)
+end
+
+local function stepSave(r)
+    enter(r, "save")
+    local s = syncery(r.ui)
+    if s then
+        local ok, err = pcall(function() s:syncNow() end)
+        if not ok then require("logger").warn("Aleph: Syncery sync now failed:", err) end
+    end
+    require("ui/uimanager"):scheduleIn(1.5, function()
+        if r.use_st then stepPeer(r) else stepCloud(r) end
+    end)
+end
+
+local function stepStart(r)
+    local _ = require("aleph_gettext")
+    local T = require("ffi/util").template
+    enter(r, "start")
+    if not isRunning() then
+        r.state.started_here = true
+        local ok, err = pcall(function() api().control.start(function() end) end)
+        if not ok then return finish(r, false, T(_("Could not start Syncthing: %1"), tostring(err))) end
+    end
+    local t0 = os.time()
+    every(r, function()
+        if call("system/status") then stepSave(r); return true end
+        if os.time() - t0 > 90 then
+            finish(r, false, _("Syncthing did not start. Open KOSyncthing+ to see why."))
+            return true
+        end
+    end, 1)
+end
+
+-- The steps the panel lists, for how Syncery is set to carry the data.
+local function stepList(in_book, use_st, use_cloud)
+    local _ = require("aleph_gettext")
     local steps = { { id = "wifi", label = _("Wi-Fi") } }
     if use_st then steps[#steps + 1] = { id = "start", label = _("Starting Syncthing") } end
     steps[#steps + 1] = { id = "save", label = _("Saving this e-reader's positions") }
@@ -164,186 +359,46 @@ function Chain.run(ui, o)
     end
     if use_cloud then steps[#steps + 1] = { id = "cloud", label = _("Sending and receiving through the cloud") } end
     steps[#steps + 1] = { id = "check", label = in_book and _("Looking for a newer position") or _("Updating the library") }
-    local state = { at = 1, started_here = false, note = nil, failed = nil, finished = false, cancelled = false }
+    return steps
+end
+
+-- ------------------------------------------------------------ the run
+-- ui: the reader or the file browser; o.on_done(ok) after it finishes.
+function Chain.run(ui, o)
+    o = o or {}
+    local _ = require("aleph_gettext")
+    if Chain.running then
+        try(function() require("aleph_toast").show(_("Already syncing…")) end)
+        return
+    end
+    local in_book = ui and ui.document ~= nil
+    local use_st, use_cloud = Chain.modes(ui)
+    local r = {
+        ui = ui, on_done = o.on_done, in_book = in_book, use_st = use_st, use_cloud = use_cloud,
+        steps = stepList(in_book, use_st, use_cloud),
+        state = { at = 1, started_here = false, note = nil, failed = nil, finished = false, cancelled = false },
+    }
     Chain.running = true
-    local panel
-    local function redraw() if panel and not panel.closed then panel:refresh() end end
-    local function stepIndex(id) for i, s in ipairs(steps) do if s.id == id then return i end end end
-    local function enter(id, note) state.at = stepIndex(id); state.note = note; redraw() end
-
-    local function stopSyncthing()
-        if not state.started_here then return end
-        state.started_here = false
-        try(function() api().control.stop(function() end) end)
-    end
-    local function finish(ok, msg)
-        if state.finished then return end
-        state.finished = true
-        Chain.running = false
-        if not ok then state.failed = msg end
-        state.at = ok and (#steps + 1) or state.at
-        state.note = ok and msg or nil
-        redraw()
-        -- Let Syncthing pass the last changes before stopping it.
-        UIManager:scheduleIn(ok and 8 or 1, stopSyncthing)
-        if ok then
-            UIManager:scheduleIn(3, function() if panel and not panel.closed then panel:close() end end)
-        end
-        if o.on_done then pcall(o.on_done, ok) end
-    end
-
-    local my, folders, names, peers
-    local t0
-    local tick
-
-    local function stepCheck()
-        enter("check")
-        local s = syncery(ui)
-        if in_book and s then
-            try(function()
-                if type(s.checkRemote) == "function" then s:checkRemote() else s:syncNow() end
-            end)
-        end
-        local who = {}
-        for _id, n in pairs(peers or {}) do who[#who + 1] = n end
-        table.sort(who)
-        if use_cloud then who[#who + 1] = _("the cloud") end
-        finish(true, T(_("Synced with %1."), table.concat(who, ", ")))
-    end
-
-    -- Syncery's cloud sync runs on its own (with its own progress): waited
-    -- for until it is no longer under way.
-    local function stepCloud()
-        enter("cloud")
-        local s = syncery(ui)
-        t0 = os.time()
-        tick = function()
-            if state.finished then return end
-            local busy = s and s._sync_all_in_progress
-            if not busy and os.time() - t0 >= 3 then return stepCheck() end
-            if os.time() - t0 > Chain.EXCHANGE_WAIT then
-                return finish(false, _("The cloud sync did not finish in time. Check the connection, and the cloud settings in Syncery."))
-            end
-            UIManager:scheduleIn(Chain.TICK, tick)
-        end
-        UIManager:scheduleIn(Chain.TICK, tick)
-    end
-    local function afterSyncthing()
-        if use_cloud then return stepCloud() end
-        return stepCheck()
-    end
-
-    local function stepSwap()
-        enter("swap")
-        -- Look at the folders now, so what Syncery just wrote is offered.
-        for _i, f in ipairs(folders) do call("db/scan?folder=" .. f.id, "POST") end
-        t0 = os.time()
-        local quiet = 0
-        tick = function()
-            if state.finished then return end
-            local now_peers = Chain.connected(folders, names)
-            if now_peers then peers = now_peers end
-            local done, pct = Chain.progress(folders, peers)
-            -- Syncthing may have been stopped by another plugin: once more.
-            if not isRunning() and not state.restarted then
-                state.restarted = true
-                try(function() api().control.start(function() end) end)
-                state.started_here = true
-            end
-            state.note = pct .. "%"
-            redraw()
-            -- Done twice in a row (a scan can start between two looks), and
-            -- not in the first seconds (the two still compare their lists).
-            if done and os.time() - t0 >= 6 then quiet = quiet + 1 else quiet = 0 end
-            if quiet >= 2 then return afterSyncthing() end
-            if os.time() - t0 > Chain.EXCHANGE_WAIT then
-                return finish(false, _("The exchange did not finish in time. Try again with both e-readers on the same Wi-Fi."))
-            end
-            UIManager:scheduleIn(Chain.TICK, tick)
-        end
-        UIManager:scheduleIn(Chain.TICK, tick)
-    end
-
-    local function stepPeer()
-        my, folders, names = Chain.topology()
-        if not my or #folders == 0 then
-            if use_cloud then return stepCloud() end
-            return finish(false, _("Syncthing has no shared folders yet. Set them up in KOSyncthing+ first."))
-        end
-        local all = {}
-        for _i, f in ipairs(folders) do for id in pairs(f.devices) do all[names[id] or id:sub(1, 7)] = true end end
-        local list = {}
-        for n in pairs(all) do list[#list + 1] = n end
-        table.sort(list)
-        enter("peer", T(_("Tap Sync on %1 too."), #list > 0 and table.concat(list, _(" or ")) or _("the other e-reader")))
-        t0 = os.time()
-        tick = function()
-            if state.finished then return end
-            -- KOSyncthing+ may stop a Syncthing its own Quick Sync started:
-            -- started again, once.
-            if not isRunning() then
-                if state.restarted then return finish(false, _("Syncthing stopped.")) end
-                state.restarted = true
-                try(function() api().control.start(function() end) end)
-                state.started_here = true
-            end
-            peers = Chain.connected(folders, names)
-            if peers then return stepSwap() end
-            -- With the cloud as well, no device nearby is fine.
-            if use_cloud and os.time() - t0 > Chain.CLOUD_PEER_WAIT then return stepCloud() end
-            if os.time() - t0 > Chain.CONNECT_WAIT then
-                return finish(false, _("The other e-reader did not show up. Start Sync on it while this one is waiting, with both on the same Wi-Fi."))
-            end
-            UIManager:scheduleIn(Chain.TICK, tick)
-        end
-        UIManager:scheduleIn(Chain.TICK, tick)
-    end
-
-    local function stepSave()
-        enter("save")
-        local s = syncery(ui)
-        if s then
-            local ok, err = pcall(function() s:syncNow() end)
-            if not ok then logger.warn("Aleph: Syncery sync now failed:", err) end
-        end
-        UIManager:scheduleIn(1.5, use_st and stepPeer or stepCloud)
-    end
-
-    local function stepStart()
-        enter("start")
-        if not isRunning() then
-            state.started_here = true
-            local ok, err = pcall(function() api().control.start(function() end) end)
-            if not ok then return finish(false, T(_("Could not start Syncthing: %1"), tostring(err))) end
-        end
-        t0 = os.time()
-        tick = function()
-            if state.finished then return end
-            if call("system/status") then return stepSave() end
-            if os.time() - t0 > 90 then return finish(false, _("Syncthing did not start. Open KOSyncthing+ to see why.")) end
-            UIManager:scheduleIn(Chain.TICK, tick)
-        end
-        UIManager:scheduleIn(1, tick)
-    end
-
-    panel = Chain.panel(steps, state)
-    panel.on_close = function()
-        if not state.finished then
-            state.cancelled = true
-            finish(false, _("Stopped."))
+    r.panel = Chain.panel(r.steps, r.state)
+    r.panel.on_close = function()
+        if not r.state.finished then
+            r.state.cancelled = true
+            finish(r, false, _("Stopped."))
         end
     end
-    panel:show()
+    r.panel:show()
 
     local NetworkMgr = require("ui/network/manager")
-    local first = use_st and stepStart or stepSave
+    local function first()
+        if use_st then stepStart(r) else stepSave(r) end
+    end
     if NetworkMgr:isConnected() then first()
     elseif use_cloud then
-        NetworkMgr:runWhenOnline(function() if not state.finished then first() end end)
+        NetworkMgr:runWhenOnline(function() if not r.state.finished then first() end end)
     else
-        NetworkMgr:runWhenConnected(function() if not state.finished then first() end end)
+        NetworkMgr:runWhenConnected(function() if not r.state.finished then first() end end)
     end
-    return panel, state
+    return r.panel, r.state
 end
 
 -- The panel: the steps with a mark each, and Stop / Close.

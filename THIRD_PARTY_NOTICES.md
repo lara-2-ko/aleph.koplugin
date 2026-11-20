@@ -80,3 +80,41 @@ and is included as a short excerpt.
 Credit to The Guardian and its readers, to JohannesNE, to Carlos Bonadeo and
 the other contributors, to readinpixels, and to the authors of the books
 quoted.
+
+## Weather data — Open-Meteo, CC BY 4.0
+
+The Weather widget (aleph_weather.lua) shows forecasts and place names from
+Open-Meteo (https://open-meteo.com), fetched on the device when the widget
+is on Home and Wi-Fi is on. No Open-Meteo data is bundled with the plugin.
+Weather data by Open-Meteo.com, licensed under CC BY 4.0
+(https://creativecommons.org/licenses/by/4.0/).
+
+## Goodreads plugin (advokatb/goodreads.koplugin 0.5.0) — MIT License
+
+`aleph_gr_api.lua`, `aleph_gr_legacy.lua`, `aleph_gr_parser.lua`,
+`aleph_gr_ids.lua` and `aleph_gr_settings.lua` (2026-11-18) are that plugin's
+goodreads_api, goodreads_api_legacy, goodreads_parser, goodreads_identifiers and
+goodreads_settings, taken into Aleph with small changes marked "Aleph:".
+`aleph_gr.lua` and `aleph_goodreads_track.lua` follow its automatic tracking.
+
+MIT License
+
+Copyright (c) 2026 advokatb
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
